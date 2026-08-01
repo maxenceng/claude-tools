@@ -49,6 +49,12 @@ jobs:
       - name: Backend — lint, tests, duplication
         run: make ci
 
+      # The template ships check-openapi.sh and a CI step that calls it, but that
+      # workflow only ever runs inside a generated project. Exercise it here too, or the
+      # script can rot and we find out from someone else's build.
+      - name: OpenAPI schema is current
+        run: make openapi-check
+
       - name: Frontend — typecheck and tests
         run: |
           make -C frontend install
