@@ -83,7 +83,7 @@ check it before writing `@ApiResponse` annotations.
 ## Working with Claude Code
 
 ```
-/plugin marketplace add /home/maxenceng/projects/claude-tools
+/plugin marketplace add maxenceng/claude-tools
 /plugin install ddd-workflow@maxence-tools
 ```
 

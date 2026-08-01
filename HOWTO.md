@@ -22,13 +22,10 @@ is judgement.
 ## 2. One-time, per machine
 
 ```bash
-/plugin marketplace add /home/maxenceng/projects/claude-tools
+/plugin marketplace add maxenceng/claude-tools
 ```
 
-The marketplace is `maxence-tools`; the plugin inside it is `ddd-workflow`. The path is
-absolute, so this is machine-bound until the repo is pushed somewhere. Once it is on
-GitHub the command becomes `/plugin marketplace add maxenceng/claude-tools` and nothing
-else changes.
+The marketplace is `maxence-tools`; the plugin inside it is `ddd-workflow`.
 
 ---
 
@@ -42,7 +39,8 @@ Build and install the archetype once per machine. The archetype is generated fro
 template rather than committed, so this step is also what a fresh clone needs:
 
 ```bash
-cd /home/maxenceng/projects/claude-tools
+git clone git@github.com:maxenceng/claude-tools.git
+cd claude-tools
 ./scripts/build-archetype.sh
 mvn -f templates/spring-ddd-archetype/pom.xml clean install
 ```

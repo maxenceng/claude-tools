@@ -4,8 +4,12 @@ Shared Claude Code configuration for personal projects, packaged as a plugin so 
 installed by reference rather than copied. Copied `.claude/` folders drift apart within
 a couple of projects; this does not.
 
-Currently local-only. Nothing here depends on being hosted, so publishing it later is
-a push and a one-line change to the marketplace source.
+Lives at [maxenceng/claude-tools](https://github.com/maxenceng/claude-tools). CI builds
+the template and, separately, generates a project from the archetype and builds that —
+because the archetype can stop copying a file without the template ever noticing.
+
+After cloning, run `./scripts/build-archetype.sh` once: the archetype is generated from
+the template rather than committed, so that a second hand-editable copy cannot exist.
 
 **[HOWTO.md](HOWTO.md)** is the working guide: starting a project, the ticket loop, where
 your judgement is actually needed, recipes, and what to do when something breaks. This
@@ -28,14 +32,11 @@ example before.
 
 ```bash
 # once per machine
-/plugin marketplace add /home/maxenceng/projects/claude-tools
+/plugin marketplace add maxenceng/claude-tools
 
 # once per project
 /plugin install ddd-workflow@maxence-tools
 ```
-
-Later, when this repo lives on GitHub, the first command becomes
-`/plugin marketplace add maxenceng/claude-tools` and everything else is unchanged.
 
 ## What it provides
 
