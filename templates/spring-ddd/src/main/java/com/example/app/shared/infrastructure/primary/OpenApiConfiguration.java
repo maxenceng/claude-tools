@@ -30,18 +30,21 @@ class OpenApiConfiguration {
     private static final String API_VERSION = "v1";
 
     @Bean
-    OpenAPI courseApi() {
+    OpenAPI applicationApi() {
         return new OpenAPI()
                 .info(new Info()
                         .title("app API")
                         .description("""
-                                Training courses: scheduling, enrolment and capacity.
+                                Describe what this API is for, in the language of the domain. \
+                                This text reaches the frontend's generated client and anyone reading \
+                                Swagger UI, so it is worth a sentence rather than a placeholder.
 
                                 Failure responses are RFC 7807 problem details, produced centrally by \
-                                GlobalExceptionHandler — 404 for a course that does not exist, 409 for \
-                                one that is full, 400 for a request that was never valid.""")
+                                GlobalExceptionHandler: 404 for something that does not exist, 409 for \
+                                a request the current state does not allow, 400 for one that was never \
+                                valid.""")
                         .version(API_VERSION)
-                        .license(new License().name("Unlicensed — example project")))
+                        .license(new License().name("Unlicensed")))
                 // Relative, so the schema does not pin the machine that captured it.
                 // springdoc otherwise writes an absolute http://localhost:8080, which
                 // would appear as a diff every time it is captured elsewhere.

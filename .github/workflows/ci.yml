@@ -11,6 +11,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The plugin is what people install, and a malformed manifest fails at install time in
+  # someone else's session with an error that does not name the file. Cheapest job, so it
+  # runs first and fails fast.
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate manifests, frontmatter and cross-references
+        run: |
+          pip install --quiet pyyaml
+          ./scripts/verify-plugin.sh
+
   # The template is the readable, buildable source. If it does not build, nothing
   # downstream can.
   template:
@@ -19,15 +32,15 @@ jobs:
       run:
         working-directory: templates/spring-ddd
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: templates/spring-ddd/frontend/.nvmrc
           cache: npm
@@ -48,15 +61,15 @@ jobs:
   archetype:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: templates/spring-ddd/frontend/.nvmrc
 

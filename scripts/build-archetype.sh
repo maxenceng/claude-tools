@@ -197,7 +197,7 @@ if (shipped.exists()) {
 
 // 2. Archetypes do not carry the executable bit. The Makefile calls ./mvnw, so
 //    without this every make target fails with "permission denied" on a fresh project.
-["mvnw", "scripts/doctor.sh", "scripts/guard-generated.sh"].each { name ->
+["mvnw", "scripts/doctor.sh", "scripts/guard-generated.sh", "scripts/check-openapi.sh"].each { name ->
     def f = new File(projectDir, name)
     if (f.exists()) {
         def perms = Files.getPosixFilePermissions(f.toPath())

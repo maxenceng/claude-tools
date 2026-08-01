@@ -203,6 +203,7 @@ honest surface for you.
 | `npm ci` fails | No lockfile | Commit `package-lock.json` |
 | `@WebMvcTest` will not resolve | Boot 4 moved the MVC slice | Add `spring-boot-webmvc-test` |
 | Tests pass but you do not believe them | Possibly justified | Break the code and watch the test fail |
+| CI says the schema is stale | Backend changed, nobody recaptured | `make run`, `make openapi`, `make openapi-client` |
 
 `make doctor` first whenever the build looks wrong before your change should have touched
 it. It checks the toolchain, which is the usual culprit.
@@ -229,6 +230,10 @@ detects divergence between those two yet.
 **Keep claude-learning green.** It is the template's source and the skill's reference.
 The skill contradicted it in five places precisely because nobody had run both against
 each other.
+
+**Verify before pushing to claude-tools.** `./scripts/verify-plugin.sh` checks the
+manifests and frontmatter; `./scripts/verify-archetype.sh` generates a project and builds
+it. CI runs both, plus the template's own suite.
 
 **No ticket-tracker integration.** Tickets are pasted in. A Jira or Linear MCP server
 would close that; the ticket format would not change.

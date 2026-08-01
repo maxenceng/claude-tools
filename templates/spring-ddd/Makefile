@@ -18,7 +18,7 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor build test arch docs fmt lint dup run openapi ci clean
+.PHONY: help doctor build test arch docs fmt lint dup run openapi openapi-check ci clean
 .PHONY: fe-install fe-check fe-build openapi-client
 
 help: ## Show available targets
@@ -53,9 +53,14 @@ run: ## Start the application
 	$(MVN) spring-boot:run
 
 openapi: ## Capture the OpenAPI schema from a running app into docs/openapi.json
-	@curl -sf http://localhost:8080/v3/api-docs -o docs/openapi.json \
+	@curl -sf http://localhost:8080/v3/api-docs \
+		| python3 -m json.tool --indent 2 --no-ensure-ascii > docs/openapi.json.tmp \
+		&& mv docs/openapi.json.tmp docs/openapi.json \
 		&& echo "wrote docs/openapi.json" \
-		|| { echo "app not reachable on :8080 — run 'make run' first"; exit 1; }
+		|| { rm -f docs/openapi.json.tmp; echo "app not reachable on :8080 — run 'make run' first"; exit 1; }
+
+openapi-check: ## Fail if the committed schema does not match the running app
+	@bash scripts/check-openapi.sh
 
 fe-install: ## Install frontend dependencies
 	$(MAKE) -C frontend install
