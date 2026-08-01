@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same branch — the older result is no longer interesting.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The template is the readable, buildable source. If it does not build, nothing
+  # downstream can.
+  template:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: templates/spring-ddd
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: templates/spring-ddd/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: templates/spring-ddd/frontend/package-lock.json
+
+      - name: Backend — lint, tests, duplication
+        run: make ci
+
+      - name: Frontend — typecheck and tests
+        run: |
+          make -C frontend install
+          make fe-check
+
+  # The check that actually matters: a project generated from the archetype has to
+  # build. The template building says nothing about whether the descriptor still copies
+  # every file, filters the right ones, or restores the executable bit — and those break
+  # silently, surfacing only when someone starts a new project.
+  archetype:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: templates/spring-ddd/frontend/.nvmrc
+
+      # Generates the archetype, installs it, generates a project, asserts the things the
+      # archetype format cannot express, then builds both halves. Identical to what runs
+      # locally, so a green run here means the same script passed there.
+      - name: Generate a project and build it
+        run: ./scripts/verify-archetype.sh

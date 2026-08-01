@@ -1,0 +1,18 @@
+### Generated ###
+# The archetype is derived from templates/spring-ddd by scripts/build-archetype.sh.
+# Committing it would create a second copy that can be hand-edited and drift, which is
+# the failure this repo exists to avoid. Run the script after cloning.
+templates/spring-ddd-archetype/
+
+### Build output ###
+target/
+node_modules/
+dist/
+
+### IDE ###
+.idea/
+*.iml
+
+### Claude Code ###
+# Personal, machine-specific permission overrides. settings.json is shared; this is not.
+.claude/settings.local.json

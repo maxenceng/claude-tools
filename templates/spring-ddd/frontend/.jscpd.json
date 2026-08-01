@@ -1,0 +1,11 @@
+{
+  "threshold": 3,
+  "minTokens": 60,
+  "reporters": ["consoleFull"],
+  "ignore": [
+    "**/generated/**",
+    "**/node_modules/**",
+    "**/dist/**"
+  ],
+  "absolute": true
+}

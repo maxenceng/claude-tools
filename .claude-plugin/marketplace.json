@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "maxence-tools",
+  "description": "Personal workflow toolkit: DDD backend, frontend, devops and architecture review agents shared across projects",
+  "owner": {
+    "name": "maxenceng"
+  },
+  "plugins": [
+    {
+      "name": "ddd-workflow",
+      "source": "./plugins/ddd-workflow",
+      "description": "Role agents and skills for DDD/hexagonal Spring Boot projects with a typed frontend",
+      "category": "workflow"
+    }
+  ]
+}

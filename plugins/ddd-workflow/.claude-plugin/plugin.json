@@ -1,0 +1,7 @@
+{
+  "name": "ddd-workflow",
+  "description": "Role agents and skills for DDD/hexagonal Spring Boot projects with a typed frontend",
+  "author": {
+    "name": "maxenceng"
+  }
+}

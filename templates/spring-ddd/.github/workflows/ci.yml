@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same branch — the older result is no longer interesting.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      # Ordered cheapest first, so an obvious failure does not wait on the slow steps.
+      - name: Formatting
+        run: make lint
+
+      - name: Tests, architecture rules included
+        run: make test
+
+      - name: Duplication
+        run: make dup
+
+      - name: Publish architecture diagrams
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-docs
+          path: target/spring-modulith-docs/
+          if-no-files-found: ignore
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Duplication
+        run: npm run dup
