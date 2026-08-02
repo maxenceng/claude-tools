@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# Read-only by default. Widen this per job if you add one that comments on a PR or
+# publishes something, rather than granting write to the whole workflow.
+permissions:
+  contents: read
+
 # Cancel superseded runs on the same branch — the older result is no longer interesting.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
