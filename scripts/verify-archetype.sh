@@ -47,9 +47,22 @@ step "Check what the archetype format cannot express"
 # .gitignore commits target/ on the first add, and one without +x on mvnw cannot run make
 # at all.
 [[ -f .gitignore ]] || { echo "FAIL: .gitignore missing — archetype dropped it again" >&2; exit 1; }
+[[ -f frontend/.gitignore ]] || { echo "FAIL: frontend/.gitignore missing — the first 'git add -A' commits node_modules/" >&2; exit 1; }
 [[ -x mvnw ]]       || { echo "FAIL: mvnw is not executable — post-generate hook did not run" >&2; exit 1; }
 [[ ! -e .claude/settings.local.json ]] || { echo "FAIL: machine-specific settings.local.json leaked into the template" >&2; exit 1; }
-echo "ok: .gitignore, mvnw +x, no leaked local settings"
+[[ ! -e HELP.md ]] || { echo "FAIL: HELP.md is git-ignored in the template but shipped anyway" >&2; exit 1; }
+echo "ok: both .gitignore files, mvnw +x, no git-ignored file leaked"
+
+step "Check Velocity filtering did not eat the markdown"
+# "##" opens a comment in Velocity, so every heading below H1 was being deleted during
+# generation — the ticket template arrived with no sections at all. A build cannot see
+# this; only someone opening the file can, which is why it survived so long.
+while IFS= read -r f; do
+	want=$(grep -c '^#\{1,6\} ' "$ROOT/templates/spring-ddd/$f" || true)
+	got=$(grep -c '^#\{1,6\} ' "$f" || true)
+	[[ "$want" == "$got" ]] || { echo "FAIL: $f kept $got of the template's $want headings" >&2; exit 1; }
+done < <(cd "$ROOT/templates/spring-ddd" && git ls-files '*.md')
+echo "ok: every markdown file kept all of its headings"
 
 step "Check nothing kept the template's identity"
 if grep -rn "com\.example\.app" . --exclude-dir=target --exclude-dir=node_modules; then
@@ -61,6 +74,17 @@ grep -qx "# $ARTIFACT_ID" CLAUDE.md  || { echo "FAIL: CLAUDE.md title not substi
 grep -q "packages = \"$PACKAGE\""  src/test/java/${PACKAGE//.//}/ArchitectureTest.java \
 	|| { echo "FAIL: ArchitectureTest does not scan the generated package" >&2; exit 1; }
 echo "ok: package, titles and scanned package all substituted"
+
+step "Check the project brief survives generation and is detectable"
+# The brief is the only thing in a generated project that says what is being built. The
+# marker and the check that reads it live in different files, so assert them end to end
+# rather than assuming they still agree.
+grep -q "^## What this is" CLAUDE.md || { echo "FAIL: generated CLAUDE.md has no brief section" >&2; exit 1; }
+grep -q "REPLACE-ME" CLAUDE.md       || { echo "FAIL: brief placeholder marker missing, so doctor cannot detect an unwritten brief" >&2; exit 1; }
+doctor_output="$(./scripts/doctor.sh || true)"
+grep -q "still has the placeholder" <<<"$doctor_output" \
+	|| { echo "FAIL: doctor does not flag the unwritten brief" >&2; exit 1; }
+echo "ok: brief ships with prompts, and doctor reports it as unwritten"
 
 step "Build the generated project"
 make ci

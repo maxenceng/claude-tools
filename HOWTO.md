@@ -103,6 +103,13 @@ Then delete `src/test/resources/archunit.properties`. It exists only so the arch
 rules tolerate a project with no bounded context; once you have one, you want the strict
 default back, because a rule that suddenly matches nothing is telling you something.
 
+And write the `## What this is` brief at the top of `CLAUDE.md`, replacing the four
+prompts it ships with. Everything else in a generated project describes how to build;
+that section is the only thing saying what is being built, and without it an agent will
+infer a purpose from the code and be confidently wrong about scope. `make doctor` reports
+it as unwritten until you replace it. Keep it to the length it arrives at — the file is
+read on every request.
+
 ---
 
 ## 4. Add the toolkit to an existing project
@@ -214,7 +221,7 @@ change for different reasons should stay apart. Never extract across a context b
 
 Yours, and it is about five minutes of material:
 
-- `CLAUDE.md` — the hard rules, deliberately short
+- `CLAUDE.md` — what this project is, and the hard rules; deliberately short
 - `docs/glossary.md` — the words
 - `docs/context-map.md` — the contexts
 - `docs/adr/` — why things are as they are

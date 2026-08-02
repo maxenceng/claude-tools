@@ -73,7 +73,7 @@ check it before writing `@ApiResponse` annotations.
 
 ## Where to look
 
-- `CLAUDE.md` — the hard rules, deliberately short
+- `CLAUDE.md` — what this project is, and the hard rules; deliberately short
 - `docs/backlog/` — features to do and their status
 - `docs/glossary.md` — the words the code uses
 - `docs/context-map.md` — contexts and their relationships

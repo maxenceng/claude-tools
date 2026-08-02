@@ -2,6 +2,25 @@
 
 Spring Boot 4 / Java 25. DDD bounded contexts with hexagonal layering.
 
+## What this is
+
+<!-- REPLACE-ME: delete this comment and the four prompts below once written. This file is
+     read on every request, so keep the result to about the length it already is — four
+     short paragraphs. Anything longer belongs in docs/ and is read when relevant. -->
+
+*What the system does*, in two sentences, in the language of the domain rather than of the
+stack. Everything below this section is stack; none of it says what is being built.
+
+*Who uses it*, and whose vocabulary wins when a plain word and a technical one both fit.
+This settles naming arguments before they reach the glossary.
+
+*What is deliberately out of scope.* The most valuable line here, and the only one nothing
+else in the project records — an agent will keep building, and a written fence makes "that
+is out of scope" a fact rather than an argument.
+
+*What stage it is at*: greenfield, live, or migrating. The same request deserves a
+different answer before and after there are users.
+
 ## Commands
 
 Use `make`, never `mvn` directly — the Makefile selects the Java 25 toolchain.

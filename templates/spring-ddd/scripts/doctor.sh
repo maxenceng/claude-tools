@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Reports toolchain problems as actionable instructions rather than as build failures.
+# Reports toolchain and project-setup problems as actionable instructions rather than as
+# build failures. Nothing here fails a fresh project — a scaffold that greets you with a
+# red build gets deleted rather than fixed.
 set -uo pipefail
 
 status=0
@@ -60,5 +62,17 @@ for tool in docker gh; do
 		report "${tool}" "not installed"
 	fi
 done
+
+echo
+echo "Project"
+
+# The brief in CLAUDE.md is the only thing telling an agent what it is building. Left
+# unwritten it is worse than absent: four paragraphs of prompts are read on every request
+# and say nothing. Deliberately a warning — a fresh project is meant to pass everything.
+if [[ -f CLAUDE.md ]] && grep -q "REPLACE-ME" CLAUDE.md; then
+	report "brief" "CLAUDE.md still has the placeholder — agents know how to build this, not what it is"
+else
+	report "brief" "written"
+fi
 
 exit "${status}"
