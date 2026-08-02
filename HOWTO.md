@@ -27,6 +27,12 @@ is judgement.
 
 The marketplace is `maxence-tools`; the plugin inside it is `ddd-workflow`.
 
+If you forked, use `<your-owner>/<your-repo>` instead. Everything below works the same
+from a fork, with one thing to change: the archetype's coordinates are `dev.maxenceng`
+in `scripts/build-archetype.sh` and `scripts/new-ddd-project.sh`. Change both together
+or generation stops resolving — `scripts/verify-archetype.sh` will tell you if you miss
+one.
+
 ---
 
 ## 3. Start a new project
@@ -39,13 +45,14 @@ Build and install the archetype once per machine. The archetype is generated fro
 template rather than committed, so this step is also what a fresh clone needs:
 
 ```bash
-git clone git@github.com:maxenceng/claude-tools.git
+git clone https://github.com/maxenceng/claude-tools.git
 cd claude-tools
 ./scripts/build-archetype.sh
 mvn -f templates/spring-ddd-archetype/pom.xml clean install
 ```
 
-Put the wrapper on your PATH once:
+Put the wrapper on your PATH once — anywhere on your `PATH` works, `~/.local/bin` is
+just a common choice:
 
 ```bash
 ln -s "$PWD/scripts/new-ddd-project.sh" ~/.local/bin/new-ddd-project
@@ -119,13 +126,21 @@ a question history answers.
 ```
 /ticket                    # the board: what is todo, in progress, in review
 /ticket new <description>  # writes a ticket, forces the context and model questions
-/ticket start TRAIN-42     # branch, then implement test-first
-/ticket review TRAIN-42    # make ci, architecture review, code review, PR
-/ticket done TRAIN-42      # after merge; notes, retro, ADR if warranted
+/ticket start BILLING-14   # branch, then implement test-first
+/ticket review BILLING-14  # make ci, architecture review, code review, PR
+/ticket done BILLING-14    # after merge; notes, retro, ADR if warranted
 ```
+
+The prefix is the bounded context the work sits in, so a ticket you cannot prefix is
+usually two tickets — or a context you have not named yet. Either is worth discovering
+before the code, which is the whole reason the prefix is not free-form.
 
 Between `start` and `review` you mostly read and answer questions. That is the intended
 shape, not a sign something is wrong.
+
+Of everything here this is the least exercised part, and unlike the template and the
+archetype nothing in CI can check it — a command is prose, and prose only fails when a
+person runs it. Read what it proposes before agreeing, at least for the first few.
 
 Open `docs/backlog/` as an Obsidian vault for a board view. Nothing depends on Obsidian —
 the files are plain markdown, and `/ticket` reads and writes them directly.
@@ -159,7 +174,7 @@ argued with.
 
 ### Add a bounded context
 
-1. `com.example.<app>.<context>` with a `package-info.java` carrying `@ApplicationModule`.
+1. `<your root package>.<context>` with a `package-info.java` carrying `@ApplicationModule`.
 2. `domain`, `application`, `infrastructure.primary`, `infrastructure.secondary` beneath it.
 3. Expose to other contexts from the context **root** package only.
 4. Add its row to `docs/context-map.md` and its terms to `docs/glossary.md`, in this change.
@@ -205,8 +220,8 @@ Yours, and it is about five minutes of material:
 - `docs/adr/` — why things are as they are
 - `docs/backlog/` — what is in flight
 
-Not yours: `skills/ddd-backend/SKILL.md`, ~390 lines written for the agent. That
-asymmetry is the design — prose for the machine, enforcement for the build, a small
+Not yours: `skills/ddd-backend/SKILL.md`, several hundred lines written for the agent.
+That asymmetry is the design — prose for the machine, enforcement for the build, a small
 honest surface for you.
 
 ---
@@ -243,16 +258,24 @@ readable, buildable source; `scripts/build-archetype.sh` derives the archetype f
 Edit the template, re-run the script, `mvn install`. Never edit anything under
 `templates/spring-ddd-archetype/`.
 
-**The template's `ArchitectureTest` is still a copy** of claude-learning's. Nothing
-detects divergence between those two yet.
+**The archetype is installed, not published.** `mvn install` puts it in your own `~/.m2`,
+so it exists on the machine that built it and nowhere else. That is fine for one person
+and not fine for a team: everyone runs the clone-and-install above, and nothing tells
+them when the template has moved on. Deploying the archetype to a shared repository is
+the fix, and this toolkit does not do it for you.
 
-**Keep claude-learning green.** It is the template's source and the skill's reference.
-The skill contradicted it in five places precisely because nobody had run both against
-each other.
+**Dependencies are pinned and unwatched.** The template fixes Spring Boot, Java and the
+frontend toolchain at the versions it was written against, with no Dependabot or Renovate
+configuration. A project generated a year from now starts a year behind.
 
-**Verify before pushing to claude-tools.** `./scripts/verify-plugin.sh` checks the
-manifests and frontmatter; `./scripts/verify-archetype.sh` generates a project and builds
-it. CI runs both, plus the template's own suite.
+**Verify before pushing.** `./scripts/verify-plugin.sh` checks the manifests and
+frontmatter; `./scripts/verify-archetype.sh` generates a project, builds both halves, and
+generates again through the wrapper. CI runs both, plus the template's own suite.
+
+**Prose is the part that rots.** The build catches a broken archetype, a stale schema and
+a violated boundary. It cannot catch a skill recommending a method that does not exist,
+which had happened here and was found by reading rather than by CI. When a document and
+the code disagree, the code is the one that ran.
 
 **No ticket-tracker integration.** Tickets are pasted in. A Jira or Linear MCP server
 would close that; the ticket format would not change.
