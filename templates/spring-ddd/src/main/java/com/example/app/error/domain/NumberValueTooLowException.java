@@ -11,8 +11,8 @@ public final class NumberValueTooLowException extends AssertionException {
 
     private NumberValueTooLowException(NumberValueTooLowExceptionBuilder builder) {
         super(requireNonNull(builder.field), builder.message());
-        Assert.notNull("max", builder.minValue);
-        Assert.notNull("courseId", builder.value);
+        Assert.notNull("min", builder.minValue);
+        Assert.notNull("value", builder.value);
         min = builder.minValue;
         value = builder.value;
     }
@@ -28,7 +28,7 @@ public final class NumberValueTooLowException extends AssertionException {
 
     @Override
     public Map<String, String> parameters() {
-        return Map.of("min", min, "courseId", value);
+        return Map.of("min", min, "value", value);
     }
 
     public static class NumberValueTooLowExceptionBuilder {

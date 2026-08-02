@@ -11,7 +11,7 @@ public final class StringTooShortException extends AssertionException {
 
     private StringTooShortException(StringTooShortExceptionBuilder builder) {
         super(requireNonNull(builder.field), message(builder));
-        Assert.notNull("courseId", builder.value);
+        Assert.notNull("value", builder.value);
         Assert.notNull("minLength", builder.minLength);
         minLength = String.valueOf(builder.minLength);
         currentLength = String.valueOf(builder.value.length());
@@ -22,9 +22,9 @@ public final class StringTooShortException extends AssertionException {
     }
 
     private static String message(StringTooShortExceptionBuilder builder) {
-        Assert.notNull("courseId", builder.value);
+        Assert.notNull("value", builder.value);
 
-        return "The courseId in field \"%s\" must be at least %d long but was only %d".formatted(builder.field, builder.minLength, builder.value.length());
+        return "The value in field \"%s\" must be at least %d long but was only %d".formatted(builder.field, builder.minLength, builder.value.length());
     }
 
     @Override

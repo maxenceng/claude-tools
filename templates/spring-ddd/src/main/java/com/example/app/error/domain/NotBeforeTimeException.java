@@ -19,7 +19,7 @@ public final class NotBeforeTimeException extends AssertionException {
 
     public record NotBeforeTimeExceptionBuilder(String fieldName, Instant value) {
         private static String message(String fieldName, Instant actual, String hint, Instant other) {
-            return "Time in \"%s\" having courseId : %s %s %s but wasn't".formatted(fieldName, actual, hint, other);
+            return "Time in \"%s\" having value : %s %s %s but wasn't".formatted(fieldName, actual, hint, other);
         }
 
         public NotBeforeTimeException strictlyNotBefore(Instant other) {

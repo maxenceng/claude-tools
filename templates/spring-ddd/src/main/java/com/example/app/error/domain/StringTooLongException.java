@@ -11,7 +11,7 @@ public final class StringTooLongException extends AssertionException {
 
     private StringTooLongException(StringTooLongExceptionBuilder builder) {
         super(requireNonNull(builder.field), message(builder));
-        Assert.notNull("courseId", builder.value);
+        Assert.notNull("value", builder.value);
         Assert.notNull("maxLength", builder.maxLength);
         maxLength = String.valueOf(builder.maxLength);
         currentLength = String.valueOf(builder.value.length());
@@ -22,9 +22,9 @@ public final class StringTooLongException extends AssertionException {
     }
 
     private static String message(StringTooLongExceptionBuilder builder) {
-        Assert.notNull("courseId", builder.value);
+        Assert.notNull("value", builder.value);
 
-        return "The courseId in field \"%s\" must be at most %d long but was %d".formatted(builder.field, builder.maxLength, builder.value.length());
+        return "The value in field \"%s\" must be at most %d long but was %d".formatted(builder.field, builder.maxLength, builder.value.length());
     }
 
     @Override

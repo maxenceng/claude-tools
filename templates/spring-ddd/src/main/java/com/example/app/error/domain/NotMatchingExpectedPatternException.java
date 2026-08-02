@@ -54,7 +54,7 @@ public final class NotMatchingExpectedPatternException extends AssertionExceptio
         }
 
         private String message() {
-            return "The courseId \"%s\" in field \"%s\" must match the pattern %s".formatted(value, field, pattern);
+            return "The value \"%s\" in field \"%s\" must match the pattern %s".formatted(value, field, pattern);
         }
 
         public NotMatchingExpectedPatternException build() {

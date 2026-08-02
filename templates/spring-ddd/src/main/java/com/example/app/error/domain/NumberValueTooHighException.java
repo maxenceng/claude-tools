@@ -12,7 +12,7 @@ public final class NumberValueTooHighException extends AssertionException {
     private NumberValueTooHighException(NumberValueTooHighExceptionBuilder builder) {
         super(requireNonNull(builder.field), builder.message());
         Assert.notNull("max", builder.maxValue);
-        Assert.notNull("courseId", builder.value);
+        Assert.notNull("value", builder.value);
         max = builder.maxValue;
         value = builder.value;
     }
@@ -28,7 +28,7 @@ public final class NumberValueTooHighException extends AssertionException {
 
     @Override
     public Map<String, String> parameters() {
-        return Map.of("max", max, "courseId", value);
+        return Map.of("max", max, "value", value);
     }
 
     public static class NumberValueTooHighExceptionBuilder {

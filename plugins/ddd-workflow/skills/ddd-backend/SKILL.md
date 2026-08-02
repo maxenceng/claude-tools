@@ -81,9 +81,13 @@ method that performs the transition.
 instance cannot exist. `Seats` rejecting a negative count is worth more than every
 downstream check for a negative count.
 
-Read the assertion you are calling before relying on it. `Assert.positive()` accepts
-zero; `strictlyPositive()` is the one that does not. A value object whose javadoc and
-whose assertion disagree is worse than one with no javadoc.
+Read the assertion you are calling before relying on it. `Assert.field("seats", seats)
+.positive()` accepts zero; `.strictlyPositive()` is the one that does not. A value object
+whose javadoc and whose assertion disagree is worse than one with no javadoc.
+
+`AssertTest` pins that boundary for every numeric type. If you need a bound the asserters
+do not express, add it there with a test rather than open-coding the check in a value
+object, where the next aggregate cannot reuse it.
 
 **Identities** are records wrapping a `UUID`, one per aggregate. Distinct `CourseId`
 and `StudentId` types make it impossible to pass one where the other is expected —

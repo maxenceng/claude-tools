@@ -450,6 +450,19 @@ public final class Assert {
         }
 
         /**
+         * Ensure that the input value is strictly positive (0 is not strictly positive)
+         *
+         * @return The current asserters
+         * @throws MissingMandatoryValueException if the value is null
+         * @throws NumberValueTooLowException     if the value is zero or negative
+         */
+        public IntegerAsserter strictlyPositive() {
+            // min(1), not an exclusive over(0) as on the decimal asserters: ints are discrete,
+            // so the two are the same set of values and this one reports the bound a caller can act on.
+            return min(1);
+        }
+
+        /**
          * Ensure that the input value is over the given value
          *
          * @param minValue inclusive min value
@@ -508,6 +521,17 @@ public final class Assert {
          */
         public LongAsserter positive() {
             return min(0);
+        }
+
+        /**
+         * Ensure that the input value is strictly positive (0 is not strictly positive)
+         *
+         * @return The current asserters
+         * @throws MissingMandatoryValueException if the value is null
+         * @throws NumberValueTooLowException     if the value is zero or negative
+         */
+        public LongAsserter strictlyPositive() {
+            return min(1);
         }
 
         /**
