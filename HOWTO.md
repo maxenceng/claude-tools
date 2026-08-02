@@ -45,7 +45,28 @@ cd claude-tools
 mvn -f templates/spring-ddd-archetype/pom.xml clean install
 ```
 
-Then generate as many projects as you like:
+Put the wrapper on your PATH once:
+
+```bash
+ln -s "$PWD/scripts/new-ddd-project.sh" ~/.local/bin/new-ddd-project
+```
+
+Then generate as many projects as you like, from anywhere:
+
+```bash
+new-ddd-project com.acme billing
+cd billing && git init
+```
+
+The package defaults to `<groupId>.<artifactId>` with hyphens removed, since a hyphen is
+legal in an artifactId and not in a Java package — `billing-service` gives
+`com.acme.billingservice`. Pass a third argument to override it.
+
+Generation resolves the archetype from `~/.m2`, so this needs no path to the clone. It
+refuses to run inside an existing Maven project, which otherwise succeeds and buries the
+new project inside the old one.
+
+Without the wrapper, the underlying command is:
 
 ```bash
 mvn archetype:generate \
@@ -54,8 +75,6 @@ mvn archetype:generate \
   -DarchetypeVersion=1.0.0-SNAPSHOT \
   -DgroupId=com.acme -DartifactId=billing -Dpackage=com.acme.billing \
   -DinteractiveMode=false
-
-cd billing && git init
 ```
 
 Nothing needs renaming. The package directories, every `package` and `import`

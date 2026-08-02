@@ -69,4 +69,17 @@ step "Build the generated frontend"
 (cd frontend && npm ci --no-audit --no-fund >/dev/null)
 make fe-check
 
+step "Generate again through the convenience wrapper"
+# new-ddd-project.sh is what a human actually types. It duplicates the coordinates above,
+# so without exercising it here it can drift from the archetype and nobody would notice
+# until someone tried to start a project.
+WRAPPER_DIR="$WORK/wrapper"
+mkdir -p "$WRAPPER_DIR"
+cd "$WRAPPER_DIR"
+"$ROOT/scripts/new-ddd-project.sh" com.acme orders >/dev/null
+[[ -f orders/pom.xml ]] || { echo "FAIL: wrapper produced no project" >&2; exit 1; }
+grep -q "<artifactId>orders</artifactId>" orders/pom.xml || { echo "FAIL: wrapper produced wrong coordinates" >&2; exit 1; }
+[[ -d orders/src/main/java/com/acme/orders ]] || { echo "FAIL: wrapper defaulted the package wrongly" >&2; exit 1; }
+echo "ok: wrapper generates a project with the expected coordinates and package"
+
 printf '\n=== generated project builds clean\n'

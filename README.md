@@ -86,6 +86,9 @@ to be done by hand and half-finished.
 Edit the template, re-run the script, `mvn install`. Never edit the archetype directly —
 it is build output, and one source of truth is the whole point.
 
+`scripts/new-ddd-project.sh com.acme billing` wraps the generate command. Symlink it onto
+your PATH and it works from any directory, since the archetype resolves from `~/.m2`.
+
 ## Design rules for anything added here
 
 **Push each rule to the cheapest layer that can enforce it.** A rule an ArchUnit test
