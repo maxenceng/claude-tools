@@ -1,6 +1,6 @@
 ---
 description: Work a backlog ticket end to end — create it, start it, review it, close it
-argument-hint: "[new <description> | start <ID> | review <ID> | done <ID>] (no args: show the board)"
+argument-hint: "[new <description> | start <ID> | review <ID> | respond <ID> | done <ID>] (no args: show the board)"
 ---
 
 Tickets live in `docs/backlog/` as markdown with YAML frontmatter. Read that folder's
@@ -94,6 +94,11 @@ Then:
 1. Set `status: in-review`.
 2. Run `make ci`, and `make fe-check` if the frontend changed. Report what actually
    passed — not what should pass.
+
+   `make ci` is not the pipeline. Read `.github/workflows/` and account for every step
+   the job runs, because the workflow adds steps beyond it — a schema capture that boots
+   the application needs whatever the application needs to start. A criterion that says
+   "`make ci` passes" can be true while the build is red for the whole branch.
 3. Dispatch `architecture-reviewer` for the modelling: does the behaviour sit where the
    ticket said it would, and does the language hold? Hand it the ticket's *Model
    decision* and the diff, so it reviews against what was decided rather than against
@@ -103,13 +108,55 @@ Then:
    are separate reviewers with separate jobs; collapsing them buries the modelling
    findings in style noise.
 5. Push and open a PR whose body links the ticket file and lists the acceptance criteria
-   with their outcomes.
+   with their outcomes. Feedback arriving on that PR is `respond`, below — not a second
+   `review`, which would re-run the reviewers over comments a human has already made.
 
 Invoke the `verification-before-completion` skill before ticking anything or reporting
 that a step passed.
 
 Tick an acceptance criterion only once something demonstrates it. An unticked box is
 information; a ticked one that nothing verifies is a lie the next reader will act on.
+
+## respond
+
+Feedback has arrived on the PR and the branch has to answer it. The ticket stays
+`in-review` throughout — this step changes code, not status, and it repeats as often as
+the conversation does.
+
+1. Collect all of it before changing anything. Comments arrive at three different
+   endpoints, and reading one of them silently drops the rest:
+
+   ```
+   gh api repos/{owner}/{repo}/pulls/<n>/comments    # inline, anchored to a line
+   gh api repos/{owner}/{repo}/issues/<n>/comments   # top-level, on the PR
+   gh api repos/{owner}/{repo}/pulls/<n>/reviews     # review summaries
+   ```
+
+2. Invoke the `receiving-code-review` skill and follow it. Check each item against this
+   codebase before implementing it, and push back with reasoning where a comment is wrong
+   here. A reviewer is often right that something is wrong and wrong about what to do —
+   an item worth acting on can still need a different fix than the one suggested.
+
+3. If any item is unclear, ask about every unclear item before implementing any of them.
+   They relate to each other, and a half-understood set implemented in order produces a
+   change nobody asked for.
+
+4. Re-run `make ci` and re-check every acceptance criterion the change could have
+   invalidated. Evidence gathered before the change does not cover the code after it, and
+   a review fix that removes a dependency or a setting invalidates more than it looks.
+
+5. Untick any criterion whose evidence is now stale, rather than leaving the tick and
+   quietly re-earning it. The tick means something demonstrated it; until something
+   demonstrates it again, the box is not true.
+
+6. Reply in the comment's own thread rather than as a new top-level comment:
+   `gh api repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies`. Say what changed, or
+   why nothing did. A silent fix leaves the reviewer diffing the branch to work out
+   whether they were heard, and a disagreement that is never written down gets raised
+   again by the next reader.
+
+7. Push to the same branch. Do not close and reopen the PR — the threads are the record
+   of the exchange, and they do not survive it.
 
 ## done
 
