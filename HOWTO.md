@@ -141,9 +141,14 @@ a question history answers.
 
 `respond` is the one that repeats. Leave comments on the PR — inline on a line is best,
 since the file and line come along with the text — then run it. It collects every comment
-endpoint, checks each item against the code before implementing it, re-verifies the
-acceptance criteria the change touched, and replies in each thread saying what changed or
-why nothing did. Disagreeing with a comment is a valid outcome and gets written down.
+endpoint, checks each item against the code before implementing it, commits the answer as
+one change and pushes, then re-verifies the acceptance criteria the change touched and
+replies in each thread saying what changed or why nothing did. Disagreeing with a comment
+is a valid outcome and gets written down.
+
+It pushes before re-verifying on purpose: CI starts services and boots the application, so
+it demonstrates criteria a local shell often cannot, and waiting for it beats unticking a
+box the pipeline is about to prove.
 
 The prefix is the bounded context the work sits in, so a ticket you cannot prefix is
 usually two tickets — or a context you have not named yet. Either is worth discovering

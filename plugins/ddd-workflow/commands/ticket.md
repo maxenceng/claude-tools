@@ -142,22 +142,37 @@ the conversation does.
    They relate to each other, and a half-understood set implemented in order produces a
    change nobody asked for.
 
-4. Re-run `make ci` and re-check every acceptance criterion the change could have
-   invalidated. Evidence gathered before the change does not cover the code after it, and
-   a review fix that removes a dependency or a setting invalidates more than it looks.
+4. Run `make ci`, then commit the whole answer as one change and push it to the same
+   branch. Subject line and at most a sentence; the threads carry the reasoning. Do not
+   close and reopen the PR — the threads are the record of the exchange and do not
+   survive it.
 
-5. Untick any criterion whose evidence is now stale, rather than leaving the tick and
-   quietly re-earning it. The tick means something demonstrated it; until something
-   demonstrates it again, the box is not true.
+   Push here rather than at the end. CI is evidence you are about to need, and it takes
+   minutes to arrive.
 
-6. Reply in the comment's own thread rather than as a new top-level comment:
-   `gh api repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies`. Say what changed, or
-   why nothing did. A silent fix leaves the reviewer diffing the branch to work out
-   whether they were heard, and a disagreement that is never written down gets raised
-   again by the next reader.
+5. Re-check every acceptance criterion the change could have invalidated, against the
+   pushed commit. Evidence gathered before the change does not cover the code after it,
+   and a review fix that removes a dependency or a setting invalidates more than it
+   looks.
 
-7. Push to the same branch. Do not close and reopen the PR — the threads are the record
-   of the exchange, and they do not survive it.
+   Read the CI run before deciding a criterion is unverifiable. The job starts services
+   and boots the application, so it demonstrates things a local shell may not be able to
+   — a criterion you cannot exercise on this machine is often already green in the
+   pipeline. Unticking one that CI just proved, then re-ticking it, is churn in the
+   history and a correction in public.
+
+6. Untick any criterion nothing now demonstrates, rather than leaving the tick and
+   quietly re-earning it. Say which ones and what would re-earn them.
+
+7. Reply in each comment's own thread rather than as a new top-level comment:
+   `gh api repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies`. One or two sentences:
+   what changed, or why nothing did. A silent fix leaves the reviewer diffing the branch
+   to work out whether they were heard, and a disagreement that is never written down
+   gets raised again by the next reader.
+
+   Match the reviewer's register. Someone who writes "remove this, I know how Docker
+   works" is telling you the explanation was the problem; a paragraph defending the fix
+   repeats it.
 
 ## done
 

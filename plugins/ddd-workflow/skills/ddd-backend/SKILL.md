@@ -349,6 +349,13 @@ Comment the decision, not the mechanics. `enroll()` returning a new `Course` nee
 comment; *why* it re-checks capacity when the caller already did is worth two lines,
 because the next reader will otherwise delete the check as redundant.
 
+Two lines is the ceiling, not the target, and it buys less outside Java. `pom.xml`,
+`compose.yaml`, `application.properties`, the `Makefile` and CI workflows get a line at
+most and usually nothing: their readers already know the tools, and a paragraph on how
+Docker publishes a port reads as a prompt rather than as code. A dependency that is easy
+to get wrong earns one line naming the trap. Everything else earns silence — including,
+especially, the reasoning you found interesting while working it out.
+
 Check a comment against the code before trusting it, especially one that sounds precise.
 `Seats` was documented as rejecting zero while its assertion accepted zero, and zero is
 what every new course is created with — the comment had been wrong for as long as it had
