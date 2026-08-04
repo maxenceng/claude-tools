@@ -113,21 +113,38 @@ for name in sorted(os.listdir(command_dir)):
 # --- cross references -----------------------------------------------------------------
 # A skill or agent named in prose that does not exist is a dead instruction: the agent
 # reads it, tries to invoke it, and silently carries on without the conventions.
+#
+# Reusing another plugin's skill is deliberate rather than a mistake — the README says to
+# check what `superpowers` and the review plugins already provide before adding anything
+# here. So a reference carrying a `plugin:` prefix is accepted as an external dependency
+# and reported below. What is not accepted is a bare name this plugin does not define:
+# unqualified, there is no way to tell a deliberate reuse from a typo, and both fail the
+# same silent way at runtime.
 known = skills | agents
+external = set()
 for dirpath, dirnames, filenames in os.walk(plugin_root):
     for name in filenames:
         if not name.endswith(".md"):
             continue
         path = os.path.join(dirpath, name)
         text = open(path, encoding="utf-8").read()
-        for ref in re.findall(r"`([a-z][a-z0-9-]+)` (?:skill|agent)", text):
-            if ref not in known:
-                fail(path, f"refers to `{ref}` skill/agent, which this plugin does not define")
+        for ns, ref in re.findall(r"`(?:([a-z][a-z0-9-]+):)?([a-z][a-z0-9-]+)` (?:skill|agent)", text):
+            if ns:
+                external.add(f"{ns}:{ref}")
+            elif ref not in known:
+                fail(
+                    path,
+                    f"refers to `{ref}` skill/agent, which this plugin does not define — "
+                    f"qualify it as `<plugin>:{ref}` if another plugin owns it",
+                )
 
 print(f"checked {checked} manifests and documents")
 print(f"  agents:   {', '.join(sorted(agents))}")
 print(f"  skills:   {', '.join(sorted(skills))}")
 print(f"  commands: {', '.join(sorted(commands))}")
+if external:
+    print(f"  external: {', '.join(sorted(external))}")
+    print("            these must be installed separately; nothing reports it if they are not")
 
 if errors:
     print("\nFAIL")

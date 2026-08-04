@@ -65,9 +65,11 @@ the change fits the domain model.
 
 ### Commands
 
-- `/ticket` — work a backlog ticket end to end: create, start, review, close. Tickets are
-  markdown in `docs/backlog/`, so status changes ride along in the branch and the PR that
-  caused them. Open the folder as an Obsidian vault for a board; nothing depends on it.
+- `/ticket` — work a backlog ticket end to end: create, start, review, respond to
+  feedback, close. Tickets are markdown in `docs/backlog/`, so status changes ride along
+  in the branch and the PR that caused them. Open the folder as an Obsidian vault for a
+  board; nothing depends on it. Each step names the agent or skill that owns it, so the
+  reviewers are dispatched rather than suggested.
 - `/onboard` — understand a project and refresh its architecture docs.
 - `/find-duplication` — run the duplication detectors and propose extractions worth making.
 
@@ -103,3 +105,12 @@ until it is needed.
 
 **Do not duplicate an installed plugin.** Check what `code-review`, `pr-review-toolkit`
 and `superpowers` already provide before adding something here.
+
+**Depending on one is fine; depending silently is not.** `/ticket` invokes
+`superpowers:brainstorming`, `superpowers:receiving-code-review` and
+`superpowers:verification-before-completion`, and sends its general code review to
+`code-review` or `pr-review-toolkit`. That is the rule above working as intended — but
+those steps do nothing if the plugin is absent, and nothing reports it at runtime. Qualify
+an outside reference with its plugin: `verify-plugin.sh` accepts a `plugin:` prefix as a
+declared dependency and lists it, and rejects a bare name this plugin does not define,
+because unqualified there is no way to tell deliberate reuse from a typo.

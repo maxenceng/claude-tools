@@ -131,12 +131,19 @@ in the branch and the PR that caused them, so "what state was this in when we me
 a question history answers.
 
 ```
-/ticket                    # the board: what is todo, in progress, in review
-/ticket new <description>  # writes a ticket, forces the context and model questions
-/ticket start BILLING-14   # branch, then implement test-first
-/ticket review BILLING-14  # make ci, architecture review, code review, PR
-/ticket done BILLING-14    # after merge; notes, retro, ADR if warranted
+/ticket                     # the board: what is todo, in progress, in review
+/ticket new <description>   # writes a ticket, forces the context and model questions
+/ticket start BILLING-14    # branch, then implement test-first
+/ticket review BILLING-14   # make ci, architecture review, code review, PR
+/ticket respond BILLING-14  # act on PR comments; repeat as often as needed
+/ticket done BILLING-14     # after merge; notes, retro, ADR if warranted
 ```
+
+`respond` is the one that repeats. Leave comments on the PR — inline on a line is best,
+since the file and line come along with the text — then run it. It collects every comment
+endpoint, checks each item against the code before implementing it, re-verifies the
+acceptance criteria the change touched, and replies in each thread saying what changed or
+why nothing did. Disagreeing with a comment is a valid outcome and gets written down.
 
 The prefix is the bounded context the work sits in, so a ticket you cannot prefix is
 usually two tickets — or a context you have not named yet. Either is worth discovering
@@ -245,6 +252,8 @@ honest surface for you.
 | `@WebMvcTest` will not resolve | Boot 4 moved the MVC slice | Add `spring-boot-webmvc-test` |
 | Tests pass but you do not believe them | Possibly justified | Break the code and watch the test fail |
 | CI says the schema is stale | Backend changed, nobody recaptured | `make run`, `make openapi`, `make openapi-client` |
+| `make ci` green, CI red | `make ci` is three steps; the job runs more, and the schema capture boots the app | Read `.github/workflows/`; give the capture step whatever the app now needs to start |
+| A `/ticket` step silently does nothing | It names a skill from `superpowers` that is not installed | `/plugin install superpowers@claude-plugins-official` |
 
 `make doctor` first whenever the build looks wrong before your change should have touched
 it. It checks the toolchain, which is the usual culprit.
@@ -259,6 +268,15 @@ Worth knowing before you rely on any of it.
 types and `make` targets that do not exist. Install it, then delete or rewrite that skill
 rather than letting it answer confidently and wrongly. `project-retro`,
 `architecture-reviewer` and `codebase-explorer` travel fine.
+
+**`/ticket` leans on `superpowers`, and fails quietly without it.** `new` invokes
+`superpowers:brainstorming`, `respond` invokes `superpowers:receiving-code-review`, and
+`review` invokes `superpowers:verification-before-completion`; the general code review
+goes to `code-review` or
+`pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
+named skill that is not installed does not announce itself — the step simply proceeds
+without it, and the result looks like the command being loose rather than a missing
+dependency. Install `superpowers` alongside this, or expect those steps to be advisory.
 
 **The archetype is generated, not hand-maintained.** `templates/spring-ddd` is the
 readable, buildable source; `scripts/build-archetype.sh` derives the archetype from it.

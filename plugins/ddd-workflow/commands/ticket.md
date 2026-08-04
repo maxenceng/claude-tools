@@ -51,7 +51,8 @@ exist yet.
 aggregate, a new aggregate, or a new context. If it is a new context, stop and raise it;
 that is larger than a ticket.
 
-Invoke the `brainstorming` skill unless the request already answers both questions above.
+Invoke the `superpowers:brainstorming` skill unless the request already answers both
+questions above.
 A ticket written from an ambiguous sentence looks precise and misleads everyone who reads
 it afterwards.
 
@@ -111,8 +112,8 @@ Then:
    with their outcomes. Feedback arriving on that PR is `respond`, below — not a second
    `review`, which would re-run the reviewers over comments a human has already made.
 
-Invoke the `verification-before-completion` skill before ticking anything or reporting
-that a step passed.
+Invoke the `superpowers:verification-before-completion` skill before ticking anything or
+reporting that a step passed.
 
 Tick an acceptance criterion only once something demonstrates it. An unticked box is
 information; a ticked one that nothing verifies is a lie the next reader will act on.
@@ -132,7 +133,7 @@ the conversation does.
    gh api repos/{owner}/{repo}/pulls/<n>/reviews     # review summaries
    ```
 
-2. Invoke the `receiving-code-review` skill and follow it. Check each item against this
+2. Invoke the `superpowers:receiving-code-review` skill and follow it. Check each item against this
    codebase before implementing it, and push back with reasoning where a comment is wrong
    here. A reviewer is often right that something is wrong and wrong about what to do —
    an item worth acting on can still need a different fix than the one suggested.
