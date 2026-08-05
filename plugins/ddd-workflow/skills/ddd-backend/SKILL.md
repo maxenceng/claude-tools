@@ -81,6 +81,13 @@ method that performs the transition.
 instance cannot exist. `Seats` rejecting a negative count is worth more than every
 downstream check for a negative count.
 
+Validate there, never coerce. A compact constructor that lowercases an address or trims a
+name also runs when a secondary adapter rebuilds a stored row, so the object comes back
+disagreeing with the row it was built from, and `new EmailAddress(x).value()` stops
+returning `x`. Where one form is canonical, reject the others — a pattern that admits only
+the canonical form — and let the caller send the right thing. Normalising input is a
+protocol concern; if it belongs anywhere it is the primary adapter, on the way in.
+
 Read the assertion you are calling before relying on it. `Assert.field("seats", seats)
 .positive()` accepts zero; `.strictlyPositive()` is the one that does not. A value object
 whose javadoc and whose assertion disagree is worse than one with no javadoc.
@@ -134,6 +141,26 @@ the shape of the protocol rather than the shape of the domain.
 **Secondary** adapters implement domain ports. Persistence entities live here and are
 mapped to domain types — do not annotate an aggregate with `@Entity` and call it a
 domain model, because from then on the database schema drives the design.
+
+Persistence is JPA, via `spring-boot-starter-data-jpa`. A context's persistence is three
+types in `infrastructure.secondary`, and the split is what keeps Hibernate out of the
+domain:
+
+| Type | Role |
+|---|---|
+| `<Aggregate>Entity` | `@Entity`, package-private, mutable, with `from(aggregate)` and `toDomain()` |
+| `SpringData<Aggregate>Repository` | `extends JpaRepository`, derived queries only |
+| `Jpa<Aggregate>Repository` | `@Repository`, implements the domain port, maps and translates |
+
+Liquibase owns the schema, so set `spring.jpa.hibernate.ddl-auto=validate`: an entity that
+has drifted from the changelog then fails at boot instead of at the first query. Set
+`spring.jpa.open-in-view=false` too — left on, it holds a connection open for the whole
+request and hides lazy-loading mistakes until they show up under load.
+
+Use `saveAndFlush`, not `save`, wherever the adapter translates a constraint violation
+into a domain exception. `save` defers the insert to commit, which happens after the
+adapter has returned, so the `DataIntegrityViolationException` is raised outside the
+`try` and leaves as a 500 rather than the 409 the catch was written for.
 
 ## Errors
 
@@ -315,11 +342,17 @@ result. An application service that delegates to a domain service will have a te
 looks almost identical to the domain service's — that duplication is expected and is not
 worth extracting, because the two change for different reasons.
 
-**Secondary adapters.** `@InjectMocks` the adapter, then seed its private state with
-`ReflectionTestUtils.setField(repository, "store", ...)`. Be aware of what this costs: it
-couples the test to a field name, so a rename breaks it in a way the compiler will not
-catch. Prefer driving through the adapter's own API — `create()` then `findById()` — when
-the test can be written that way, and reach for the reflection when it cannot.
+**Secondary adapters.** `@Mock` the `SpringData*` repository, `@InjectMocks` the adapter,
+and assert on what comes back through the port — including the exception translation,
+which is the only part carrying a decision. The entity gets its own test: one round trip,
+`from(fixture).toDomain()` compared recursively against the fixture.
+
+Be clear about what this does not cover. No database is involved, so the SQL, the column
+names and the changelog are all unexercised — a mapping test passes just as happily
+against a table that does not exist. Booting the application with
+`ddl-auto=validate` is what catches entity-versus-schema drift; until there is an
+integration test, say so rather than ticking a persistence criterion on the strength of
+these.
 
 **Primary adapter mappers.** `*Request` and `*Response` records get a round-trip test
 against the domain fixture, one per meaningful shape (`shouldBuildToMinimalDomain`,
