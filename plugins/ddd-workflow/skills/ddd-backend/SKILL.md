@@ -77,16 +77,43 @@ can only check what is true of every instance — presence, and value-object val
 A rule about a *transition* ("you may not enrol into a full course") belongs on the
 method that performs the transition.
 
-**Value objects** are records. Validate in the compact constructor so an invalid
-instance cannot exist. `Seats` rejecting a negative count is worth more than every
-downstream check for a negative count.
+**Value objects** are records wrapping **one** attribute. Validate in the compact
+constructor so an invalid instance cannot exist. `Seats` rejecting a negative count is
+worth more than every downstream check for a negative count.
+
+One attribute is the rule, not a guideline. A domain record holding several holds *value
+objects*, never raw values — so a `String`, a `UUID` or a `Duration` appears in exactly one
+place, the type that gives it a name and a rule. `boolean` is the only exception: there is
+nothing to validate and no name worth inventing. A type composing several value objects
+gets a builder.
+
+A record written as `(String reference, Duration validFor)` wants to be
+`(EnrolmentReference, ValidityWindow)`. The payoff is not tidiness: every rule belonging to
+the raw value — a format, a bound, a `toString` that must not print it — then has exactly one
+home, and each type holding it inherits that rule instead of remembering it. A secret masked
+on its wrapper cannot leak through the fourth record that happens to carry it.
+`ArchitectureTest` enforces this, excluding the error kernel and `*Builder` types.
 
 Validate there, never coerce. A compact constructor that lowercases an address or trims a
-name also runs when a secondary adapter rebuilds a stored row, so the object comes back
-disagreeing with the row it was built from, and `new EmailAddress(x).value()` stops
+title also runs when a secondary adapter rebuilds a stored row, so the object comes back
+disagreeing with the row it was built from, and `new Title(x).value()` stops
 returning `x`. Where one form is canonical, reject the others — a pattern that admits only
 the canonical form — and let the caller send the right thing. Normalising input is a
 protocol concern; if it belongs anywhere it is the primary adapter, on the way in.
+
+Validate what the value *is*, not what a use case will accept. A compact constructor can
+only enforce what is true of every instance ever built, and it is built from stored rows as
+well as from requests. "Not negative" is a property of `Seats`; "a course needs at least five
+of them before it may be published" is a rule about what publishing accepts, and tightening
+it later must not make rows already in the database unreadable. Write the rule as a method on
+the value object — `assertEnoughToPublish()` — and call it from the manager. The type stays
+constructible; the rule stays in one place and is enforced where the use case runs.
+
+A value object never takes a port. `Course.enrol(studentId, waitingListPort)` looks
+convenient and is the wrong shape: it drags the outside world into a type whose whole value
+is that it is inert, and it makes one type responsible for both creating and reconstituting.
+Loading, saving and anything that calls out belong to the manager, which is what ports are
+for.
 
 Read the assertion you are calling before relying on it. `Assert.field("seats", seats)
 .positive()` accepts zero; `.strictlyPositive()` is the one that does not. A value object
@@ -101,11 +128,21 @@ and `StudentId` types make it impossible to pass one where the other is expected
 a mistake `UUID` everywhere invites.
 
 **Domain services** are records taking the ports they need, named `<Aggregate>Manager`.
-Reach for one only when a sequence has to be fixed: `CourseManager.enroll` loads the
-course, asks it whether a seat is free, and saves, and those three steps must not be
-reordered or half-copied into a caller. It lives in `domain`, not `application`, because
-that ordering is a rule. Pass-through methods on it are fine — they keep callers to one
-entry point.
+Reach for one when a sequence has to be fixed: `CourseManager.enroll` loads the course,
+asks it whether a seat is free, and saves, and those three steps must not be reordered or
+half-copied into a caller. It lives in `domain`, not `application`, because that ordering
+is a rule. Pass-through methods on it are fine — they keep callers to one entry point.
+
+The manager is also where the use case's rules run, in the order that makes them cheapest
+to fail: check what costs nothing before what costs a query, and query before you spend a
+expensive call. That ordering is itself worth a test —
+`verifyNoInteractions(courses, waitingLists)` on the refused-input path pins it, and nothing
+else will.
+
+**Use case input** with more than one part gets a record of its own — `EnrolStudent`, not
+`enrol(courseId, studentId)`. It gives the request a name in the ubiquitous language, keeps
+the port and service signatures stable as the use case grows, and gives the fixtures
+somewhere to hang variants (`enrolStudentIntoAFullCourse()`).
 
 **Ports** are interfaces in `domain`, named for what the domain needs rather than for
 what implements them. `CoursePort`, not `JpaCourseAdapter`. The domain declares the
@@ -148,9 +185,17 @@ domain:
 
 | Type | Role |
 |---|---|
-| `<Aggregate>Entity` | `@Entity`, package-private, mutable, with `from(aggregate)` and `toDomain()` |
-| `SpringData<Aggregate>Repository` | `extends JpaRepository`, derived queries only |
-| `Jpa<Aggregate>Repository` | `@Repository`, implements the domain port, maps and translates |
+| `<Aggregate>Entity` | `@Entity`, package-private, mutable, with `create(...)` and `toDomain()` |
+| `Jpa<Aggregate>Repository` | `extends JpaRepository`, derived queries only |
+| `<Aggregate>Repository` | `@Repository`, implements the domain port, maps and translates |
+
+The adapter takes the unprefixed name because it is the one the context deals with; the
+generated Spring Data interface is the implementation detail and carries the `Jpa` prefix.
+Every driven adapter follows this, not only the persistence ones: name it for the port it
+satisfies and annotate it `@Repository`, so `NotifierPort` is implemented by
+`NotifierRepository`, not by `SmtpNotifier`. Naming an adapter after its
+technology dates it the day the technology changes, and `ArchitectureTest`'s placement rule
+then covers every driven adapter rather than the database ones alone.
 
 Liquibase owns the schema, so set `spring.jpa.hibernate.ddl-auto=validate`: an entity that
 has drifted from the changelog then fails at boot instead of at the first query. Set
@@ -158,9 +203,29 @@ has drifted from the changelog then fails at boot instead of at the first query.
 request and hides lazy-loading mistakes until they show up under load.
 
 Use `saveAndFlush`, not `save`, wherever the adapter translates a constraint violation
-into a domain exception. `save` defers the insert to commit, which happens after the
-adapter has returned, so the `DataIntegrityViolationException` is raised outside the
-`try` and leaves as a 500 rather than the 409 the catch was written for.
+into a domain exception. `save` only makes the entity persistent; Hibernate defers the
+INSERT to the flush at commit, which the transaction interceptor performs after the adapter
+has returned, so the `DataIntegrityViolationException` is raised outside the `try` and
+leaves as a 500 rather than the 409 the catch was written for. Catch and rethrow, never
+catch and continue: a swallowed violation leaves the transaction rollback-only and surfaces
+as `UnexpectedRollbackException` at commit, further from the cause than where it started.
+
+Translate the constraint you mean, not its parent. `DataIntegrityViolationException` covers
+every constraint on the write, so converting it wholesale answers "already registered" to a
+NOT NULL violation. Match the constraint name off the Hibernate `ConstraintViolationException`
+in the cause chain, rethrow anything else, and chain the cause — it is the only record of
+which constraint actually fired.
+
+The database generates ids. Give the column a `gen_random_uuid()` default and map the field
+`insertable = false` with Hibernate's `@Generated(event = INSERT)`, so the value is read
+back from the insert. `GenerationType.UUID` mints it in Java, which leaves the column
+default unused by anything going through Hibernate and puts identity generation back in
+code; a `<Aggregate>Id.generate()` in the domain is the same mistake one layer up.
+
+Never edit a changeset that has run. Liquibase identifies it by checksum, so an in-place
+edit fails validation at boot on every database that already applied it — including a
+developer's, whose data survives `db-down`. Add a new changeset; `addDefaultValue` and
+friends exist for exactly this.
 
 ## Errors
 
@@ -304,6 +369,23 @@ A fixture named for its shape rots the moment the state matters. `invalidCourse(
 returned a perfectly valid course that happened to be full, and sent every reader looking
 for the invalidity.
 
+**A unit test class contains tests and nothing else.** A private `courseWithSeats(int)` at
+the bottom of `CourseTest` is a fixture that only one class can reach, so the moment a second
+test needs the same value it gets retyped with a different literal and the two drift. Put it
+in the fixture, name it for the state — `fullCourse()`, `courseWithOneSeatLeft()` — and the
+manager test, the controller test and the request test all pin the same boundary. Worth an
+ArchUnit rule of its own rather than leaving it to review.
+
+Tests that boot a Spring context are out of scope, and the rule exempts them by annotation.
+A `@WebMvcTest` building a `RequestBuilder`, or a `@DataJpaTest` arranging a context, is
+constructing a call to a running application rather than a domain value — that belongs in
+the test that makes the call, not in a fixture beside a type it does not describe.
+
+Values the constructor *refuses* still belong in the fixture, returned as the raw type: a
+fixture cannot hand back a `Seats` that cannot be built, so `negativeSeats()` returns an
+`int`. That is not a leak — it is the fixture saying which side of the boundary
+the value sits on.
+
 ### Assertions
 
 AssertJ only. Three forms cover nearly everything:
@@ -338,21 +420,34 @@ threshold — see below.
 
 **Domain services and application services.** `@ExtendWith(MockitoExtension.class)`,
 `@InjectMocks` on the subject, `@Mock` on the port. Stub with `when(...)`, assert on the
-result. An application service that delegates to a domain service will have a test that
-looks almost identical to the domain service's — that duplication is expected and is not
-worth extracting, because the two change for different reasons.
+result. `<X>ApplicationServiceTest` should be the same tests as `<X>ManagerTest`, method for
+method, differing only in the subject they call. That is not accidental duplication to
+extract later: the manager test proves the rule exists, and the application service test
+proves it is still reachable through the bean Spring wires — a rule can survive the first
+and be bypassed by the second.
 
-**Secondary adapters.** `@Mock` the `SpringData*` repository, `@InjectMocks` the adapter,
-and assert on what comes back through the port — including the exception translation,
-which is the only part carrying a decision. The entity gets its own test: one round trip,
-`from(fixture).toDomain()` compared recursively against the fixture.
+Where a rule moved out of a value object into the manager, its test moves with it. Leaving
+`shouldNotBuildBelowThePublishingMinimum` in `SeatsTest` after the constructor stopped checking
+gives a test that passes for the wrong reason or fails for the right one; either way the
+rule is now the manager's and belongs in its test.
+
+**Secondary adapters.** `@Mock` the `Jpa*` repository, `@InjectMocks` the adapter, and
+assert on what comes back through the port — including the exception translation, which is
+the only part carrying a decision. The entity gets its own test: `create(...)` against the
+fixture ignoring the generated id, and `toDomain()` compared recursively.
 
 Be clear about what this does not cover. No database is involved, so the SQL, the column
-names and the changelog are all unexercised — a mapping test passes just as happily
-against a table that does not exist. Booting the application with
-`ddl-auto=validate` is what catches entity-versus-schema drift; until there is an
-integration test, say so rather than ticking a persistence criterion on the strength of
-these.
+names and the changelog are all unexercised — a mapping test passes just as happily against
+a table that does not exist, and a test that stubs the repository into throwing a constraint
+violation proves only that the `catch` works, never that the constraint exists.
+
+So each aggregate also gets one `<Aggregate>RepositoryIntegrationTest`: `@DataJpaTest`,
+`@AutoConfigureTestDatabase(replace = NONE)`, `@Testcontainers(disabledWithoutDocker = true)`,
+`@Import` the adapter, and a `@ServiceConnection` container on the real image. Liquibase runs
+against it, so it is the only test that fails when a unique index is deleted from the
+changelog — `ddl-auto=validate` checks columns and types, not constraints. Keep it to the
+things only a database can answer: the constraint fires, the generated id comes back.
+`disabledWithoutDocker` is what lets the suite still pass on a machine with no Docker.
 
 **Primary adapter mappers.** `*Request` and `*Response` records get a round-trip test
 against the domain fixture, one per meaningful shape (`shouldBuildToMinimalDomain`,
