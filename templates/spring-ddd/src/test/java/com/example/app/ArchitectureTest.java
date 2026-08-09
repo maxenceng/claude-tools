@@ -1,10 +1,13 @@
 package com.example.app;
 
+import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameMatching;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
+
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -13,10 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.app.error.domain.DomainException;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaField;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 /**
  * Executable architecture. Every rule here is one that no longer needs to be
@@ -167,4 +176,87 @@ class ArchitectureTest {
 			.should()
 			.beAnnotatedWith(Autowired.class)
 			.because("field injection hides a dependency and cannot be set in a plain unit test");
+
+	/**
+	 * A port is a dependency the domain declares and a domain service holds. An adapter that
+	 * holds one is a second place deciding what a missing row or a failed call means, and the
+	 * manager stops being the only entry to the use case.
+	 *
+	 * <p>Adapters still <em>implement</em> ports. This constrains what they hold, not what
+	 * they satisfy.
+	 */
+	@ArchTest
+	static final ArchRule ports_are_held_only_by_the_domain = fields()
+			.that()
+			.haveRawType(nameMatching(".*Port"))
+			.should()
+			.beDeclaredInClassesThat()
+			.resideInAPackage("..domain..")
+			.because("a port is held by the domain service that needs it, not by an adapter");
+
+	/**
+	 * Driven adapters are called by the domain through a port; they do not call inward
+	 * themselves. Reaching for an application service from {@code secondary} inverts the
+	 * direction everything else points.
+	 */
+	@ArchTest
+	static final ArchRule driven_adapters_do_not_call_the_application_layer = noClasses()
+			.that()
+			.resideInAPackage("..infrastructure.secondary..")
+			.should()
+			.dependOnClassesThat()
+			.resideInAPackage("..application..")
+			.because("what is in secondary stays in secondary");
+
+	/**
+	 * A value object wraps one thing. A domain record holding several holds value objects,
+	 * not raw values — so a primitive or a JDK type appears in exactly one place, the type
+	 * that gives it a name and a rule. {@code boolean} is the exception: there is nothing to
+	 * validate and no name worth inventing.
+	 *
+	 * <p>The payoff is not tidiness. Every rule belonging to the raw value — a format, a
+	 * bound, a {@code toString} that must not print it — then has one home, and each type
+	 * holding it inherits that rule instead of remembering it.
+	 */
+	@ArchTest
+	static final ArchRule composite_domain_types_hold_value_objects = classes()
+			.that()
+			.resideInAPackage("..domain..")
+			.and()
+			.resideOutsideOfPackage("..error..")
+			.and()
+			.areRecords()
+			.and()
+			.areNotAssignableTo(Throwable.class)
+			.and()
+			.haveSimpleNameNotEndingWith("Builder")
+			.should(holdOnlyDomainTypesWhenTheyHoldMoreThanOne())
+			.because("a raw value belongs in the value object that names it, not spread across the types that use it");
+
+	private static ArchCondition<JavaClass> holdOnlyDomainTypesWhenTheyHoldMoreThanOne() {
+		return new ArchCondition<>("hold only domain types when they hold more than one") {
+
+			@Override
+			public void check(JavaClass record, ConditionEvents events) {
+				List<JavaField> components = record.getFields().stream()
+						.filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
+						.toList();
+				if (components.size() < 2) {
+					return;
+				}
+
+				components.stream().filter(component -> isRawValue(component.getRawType())).forEach(component -> events.add(SimpleConditionEvent.violated(
+						component,
+						"%s holds %s directly; wrap it in a value object".formatted(record.getSimpleName(), component.getRawType().getSimpleName()))));
+			}
+
+			private static boolean isRawValue(JavaClass type) {
+				if (type.getName().equals(boolean.class.getName())) {
+					return false;
+				}
+
+				return type.isPrimitive() || type.getPackageName().startsWith("java.");
+			}
+		};
+	}
 }

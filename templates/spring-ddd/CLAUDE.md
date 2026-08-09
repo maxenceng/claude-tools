@@ -50,9 +50,12 @@ do not weaken the rule without an ADR.
 1. Dependencies point inward: infrastructure → application → domain.
 2. The domain imports no framework — no Spring, no Jakarta, no Jackson.
 3. Ports are interfaces in `domain`; adapters implement them in `infrastructure.secondary`.
+   Only a domain service *holds* one — an adapter implements a port, it never depends on
+   another. And nothing in `infrastructure.secondary` calls the application layer.
 4. Other contexts are reached by ID through a context's root package, never by
    importing its internals.
-5. Aggregates expose behaviour, not setters.
+5. Aggregates expose behaviour, not setters. A value object wraps one attribute; a domain
+   record holding several holds value objects, never raw values.
 6. One `@RestControllerAdvice`, in `error.infrastructure.primary`. Domain exceptions
    carry a `DomainErrorStatus`; only that handler knows about HTTP.
 7. A context keeps its shape: `@Service` is an `*ApplicationService` in `application`,
