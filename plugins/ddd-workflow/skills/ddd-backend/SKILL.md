@@ -148,6 +148,13 @@ somewhere to hang variants (`enrolStudentIntoAFullCourse()`).
 what implements them. `CoursePort`, not `JpaCourseAdapter`. The domain declares the
 requirement; infrastructure satisfies it.
 
+Only a domain service *holds* a port. An adapter implements one and never depends on
+another: an adapter holding a port is a second place deciding what a missing row means, and
+the manager stops being the only entry to the use case. Nor may a driven adapter reach into
+the application layer — that inverts the direction everything else points. When an adapter
+genuinely needs a row, it uses the Spring Data interface beside it in `secondary`. A port
+method no manager calls should not be on the port at all.
+
 **Exceptions** extend `DomainException`, are named after the rule (`CourseFullException`),
 and pass a `DomainErrorStatus` to `super`. See *Errors* below.
 
