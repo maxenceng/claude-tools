@@ -338,6 +338,23 @@ Name tests after the behaviour, in camelCase:
 
 `testEnroll2` tells a future reader nothing about what broke.
 
+### No comments under `src/test`
+
+Write no comment anywhere in `src/test/java` — no javadoc on a class or a method, no `//`
+above an assertion, no header explaining what a fixture is for. The name is the
+explanation, which is why the naming above is a rule and not a preference:
+`shouldNotBuildIfSeatsIsNull` has already said everything a javadoc would repeat.
+
+A comment there is worse than redundant. It is a second description of the behaviour that
+nothing keeps in step — no compiler checks it and no assertion fails when it goes stale —
+so it rots while the test stays green, and the next reader is misled by the half that
+still looks authoritative.
+
+If a test seems to need explaining, that is a signal about the test. Rename it, or split
+it into two that each assert one thing. Reasoning about *why* the behaviour is what it is
+belongs in the ADR or the ticket that decided it, where it is read on purpose rather than
+stumbled over.
+
 ### Fixtures
 
 Every type a test needs to **construct** gets a `<Type>Fixture` beside it, in the same
