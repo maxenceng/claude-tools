@@ -16,6 +16,12 @@
    `pr-review-toolkit` reviewers. This plugin ships no general reviewer on purpose. They
    are separate reviewers with separate jobs; collapsing them buries the modelling
    findings in style noise.
+
+   Scope both, because a reviewer is a cold start: it re-reads what this session already
+   knows, and it costs the running sum of everything it opens rather than the last file.
+   Name the files the correctness review should read and tell it not to open the whole
+   branch diff. On a second round, skip `architecture-reviewer` where the modelling has
+   not moved — re-reviewing what did not change buys the same report at full price.
 5. Push and open a PR whose body links the ticket file and lists the acceptance criteria
    with their outcomes. Feedback arriving on that PR is `respond` — not a second
    `review`, which would re-run the reviewers over comments a human has already made.
