@@ -529,6 +529,14 @@ stands — reviewing comments and leaving the `FIXME` untouched is how it surviv
 year. When you do act on one, delete it in the same change; a `FIXME` describing work
 already done is worse than one describing work outstanding.
 
+A `deferred:` comment is the other case: not work outstanding but a limit someone chose to
+live with. It names the ceiling and what would justify closing it — `// deferred: <what it
+cannot do> — <what would make it worth fixing>` — and `/debt` collects those across code,
+ADR *Consequences* and ticket *Notes*. Write the trigger even when it is "when a second
+caller exists"; a marker without one is how a decision becomes an accident. Nothing under
+`src/test` carries one: tests hold no comments, and a limit of the code is not a property
+of the test that covers it.
+
 ## Frequent mistakes
 
 Anaemic aggregates — fields and accessors with the logic in a service. This is the
