@@ -1,32 +1,68 @@
 # new
 
-Write a ticket from `_template.md`. Do not invent detail the request does not contain —
-an acceptance criterion nobody asked for is a requirement nobody agreed to.
+Capture, do not analyse. This step exists so a backlog can be written down in one sitting;
+the modelling happens later, in `refine`, one ticket at a time.
 
-Two things must be settled before the file is worth saving, and both are modelling
-questions rather than clerical ones:
+**One idea per line of the argument.** Six lines means six tickets, numbered in sequence.
+Write each one down as close to the words used as the title allows — a captured ticket is a
+record of what someone asked for, and rephrasing it into what you think they meant is the
+one way this step can be wrong.
 
-**Which context.** The `context:` field is the first thing backend work needs. If the
-work does not fit one, say so — that is usually two tickets, or a context that does not
-exist yet.
+Ask nothing about design. Not which aggregate, not what the criteria are, not whether it is
+one ticket or two. Every one of those is a `refine` question, and asking it here costs the
+speed this step exists for. If a line is genuinely two features, capture it as one and note
+the doubt in *Notes* — splitting is a modelling decision.
 
-**Where the behaviour belongs.** Fill in *Model decision*: new behaviour on an existing
-aggregate, a new aggregate, or a new context. If it is a new context, stop and raise it;
-that is larger than a ticket.
+## The one thing to settle
 
-Invoke the `superpowers:brainstorming` skill unless the request already answers both
-questions above.
-A ticket written from an ambiguous sentence looks precise and misleads everyone who reads
-it afterwards.
+`context:`, because the id and the filename are built from it. Infer it: read
+`docs/context-map.md` if there is one, otherwise take the prefixes already in
+`docs/backlog/`. Most lines place themselves.
 
-Use it for the questioning only. Brainstorming's own checklist ends by writing a spec to
-`docs/superpowers/specs/` and going on to `writing-plans`; here it stops once the two
-questions are answered and the ticket is written. The ticket is this project's design
-record, and a spec beside it is a second description of the same decision that nothing
-keeps in step.
+For any line you cannot place, ask **once, for all of them together**, naming just those
+lines. A capture that stops on each ambiguous idea in turn is the thing this step replaces.
 
-Dispatch `codebase-explorer` first when the work touches code not already read this
-session. Its written summary is what keeps forty files out of this conversation.
+If a line fits no existing context even after asking, that is a new context — capture it
+with `context: unassigned` and say so in your report. Do not invent a prefix; an id is
+permanent and a wrong one outlives the confusion that produced it.
 
-Number it by taking the highest existing `<CONTEXT>-<n>` and adding one. Set `status:
-todo` and `created:` to today's absolute date.
+## Writing the file
+
+Number by taking the highest existing `<CONTEXT>-<n>` for that context and adding one, in
+sequence across the batch. `status: draft`, `created:` today's absolute date, `type:` from
+the obvious reading of the line — `feature` unless it plainly says otherwise.
+
+Every analysis section is left explicitly unanalysed, so that a reader can tell a captured
+ticket from an abandoned one:
+
+```markdown
+---
+id: CONTEXT-7
+status: draft
+context: <context>
+type: feature
+created: YYYY-MM-DD
+---
+
+# <the idea, in the words it was given in>
+
+## Acceptance criteria
+
+_Not analysed yet — `/ticket refine CONTEXT-7`._
+
+## Model decision
+
+_Not analysed yet — `/ticket refine CONTEXT-7`._
+
+## Glossary impact
+
+_Not analysed yet._
+
+## Notes
+
+<only what was actually said: a constraint mentioned in passing, a doubt about scope>
+```
+
+Report what you captured as a list of id and title, and say which ones need a context
+decision. Then stop — do not offer to refine one, and do not refine the first because it
+looks easy.

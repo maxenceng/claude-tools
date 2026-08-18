@@ -1,8 +1,12 @@
 # start
 
-Refuse to start a ticket whose *Model decision* is empty, and say why. That section is
-what separates a ticket from a wish, and filling it in afterwards means it was really
-decided at the keyboard.
+Refuse to start a ticket in `draft`, and say it needs `/ticket refine <ID>` first. A draft
+is a captured sentence, not a decision — starting one means the design gets made at the
+keyboard by whoever picked the ticket up.
+
+Refuse a `todo` whose *Model decision* is still empty for the same reason. The status says
+it was analysed; the empty section says it was not, and the section is the one telling the
+truth.
 
 Then:
 
