@@ -27,6 +27,13 @@ that agent has reported back.
 
 ## Throughout
 
+Each verb is a session boundary, and starting one in a fresh session is the cheaper default.
+The ticket file carries the criteria and the model decision, the ADRs carry the reasoning, the
+PR carries the review — so a new session begins this command knowing everything it needs,
+while a continuing one drags every earlier verb's transcript into every tool call it makes.
+Stay in the same session while a verb is unfinished, and while a dispatched agent still has to
+report back: its result arrives in the session that dispatched it and nowhere else.
+
 Edit only the frontmatter field that the step owns. Rewriting a whole ticket file to
 change one status loses whatever a human wrote in it, and the human's words are the part
 worth keeping.
