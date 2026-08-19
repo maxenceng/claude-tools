@@ -22,7 +22,25 @@
    Name the files the correctness review should read and tell it not to open the whole
    branch diff. On a second round, skip `architecture-reviewer` where the modelling has
    not moved — re-reviewing what did not change buys the same report at full price.
-5. Push and open a PR whose body links the ticket file and lists the acceptance criteria
+5. Act on what came back before pushing, and do not stop to ask.
+
+   A finding with one obvious fix and no design choice gets fixed here, together with the
+   test that would have caught it. A finding that forks the design does not: it goes in
+   the PR body under an `Open` heading, written as the decision it needs rather than as a
+   fix. Push either way.
+
+   Check a finding against the code before acting on it. A reviewer reads the diff and not
+   always the file the diff lands in, so it will name a cause confidently and get it
+   wrong, and a fix aimed at the wrong cause is worse than the defect, which at least sat
+   still. Where a finding contradicts a javadoc or an ADR that argued the opposite on
+   purpose, that contradiction is itself the finding — settle it in favour of the recorded
+   decision, or say in the PR why the decision no longer holds.
+
+   Stopping to ask here is what strands a branch. Nothing is pushed, no PR exists, and
+   `respond` has no comments to read, so the round is lost rather than paused. The PR is
+   the channel between verbs, and a fork is answered by a human on it — which is what
+   `respond` is for.
+6. Push and open a PR whose body links the ticket file and lists the acceptance criteria
    with their outcomes. Feedback arriving on that PR is `respond` — not a second
    `review`, which would re-run the reviewers over comments a human has already made.
 
