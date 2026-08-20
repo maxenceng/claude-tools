@@ -38,9 +38,8 @@ jobs:
       - name: Duplication
         run: make dup
 
-      # The frontend's types come from docs/openapi.json. If the backend changes and
-      # nobody recaptures it, the frontend still typechecks against an API that no longer
-      # exists, and the bug surfaces as an undefined field at runtime.
+      # The frontend's types come from docs/openapi.json. Uncaptured, it typechecks against
+      # an API that no longer exists and the bug surfaces as an undefined field at runtime.
       - name: OpenAPI schema is current
         run: make openapi-check
 
