@@ -35,6 +35,11 @@ jobs:
       - name: Tests, architecture rules included
         run: make test
 
+      # A Testcontainers test skips rather than fails when Docker is missing, so the suite
+      # can go green having proved far less than it looks.
+      - name: Nothing was skipped
+        run: make no-skipped-tests
+
       - name: Duplication
         run: make dup
 

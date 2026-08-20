@@ -54,6 +54,10 @@ jobs:
       - name: Backend — lint, tests, duplication
         run: make ci
 
+      # Exercises the script here too, so it cannot rot before a generated project uses it.
+      - name: Nothing was skipped
+        run: make no-skipped-tests
+
       # The template ships check-openapi.sh and a CI step that calls it, but that
       # workflow only ever runs inside a generated project. Exercise it here too, or the
       # script can rot and we find out from someone else's build.
