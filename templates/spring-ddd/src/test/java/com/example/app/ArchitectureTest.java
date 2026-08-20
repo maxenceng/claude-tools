@@ -8,6 +8,9 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -19,6 +22,8 @@ import com.example.app.error.domain.DomainException;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.core.domain.JavaParameterizedType;
+import com.tngtech.archunit.core.domain.JavaType;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -45,8 +50,10 @@ class ArchitectureTest {
 			.resideInAPackage("..domain..")
 			.should()
 			.dependOnClassesThat()
-			.resideInAnyPackage("org.springframework..", "jakarta..", "com.fasterxml..")
-			.because("the domain models the business and must not know about frameworks");
+			.resideInAnyPackage("org.springframework..", "jakarta..", "com.fasterxml..", "lombok..")
+			.because("the domain models the business and must not know about frameworks. Lombok is "
+					+ "named here but caught by DomainIsFreeOfLombokTest: its annotations are "
+					+ "SOURCE-retention, so this rule never sees them - ADR 0005");
 
 	@ArchTest
 	static final ArchRule domain_does_not_depend_on_outer_layers = noClasses()
@@ -128,6 +135,17 @@ class ArchitectureTest {
 			.andShould()
 			.haveSimpleNameEndingWith("ApplicationService")
 			.because("the entry point to a use case should be findable by name");
+
+	@ArchTest
+	static final ArchRule managers_assert_nothing = noClasses()
+			.that()
+			.haveSimpleNameEndingWith("Manager")
+			.should()
+			.dependOnClassesThat()
+			.resideInAPackage("..error..")
+			.because("a manager orders the rules it holds and raises its own context's exceptions; "
+					+ "reaching for the error kernel is how a use case starts second guessing "
+					+ "the types it was handed");
 
 	@ArchTest
 	static final ArchRule persistence_lives_in_secondary_adapters = classes()
@@ -225,13 +243,20 @@ class ArchitectureTest {
 			.and()
 			.resideOutsideOfPackage("..error..")
 			.and()
-			.areRecords()
+			.areNotEnums()
 			.and()
 			.areNotAssignableTo(Throwable.class)
 			.and()
 			.haveSimpleNameNotEndingWith("Builder")
 			.should(holdOnlyDomainTypesWhenTheyHoldMoreThanOne())
 			.because("a raw value belongs in the value object that names it, not spread across the types that use it");
+
+	/**
+	 * The three carriers a composite may hold raw, because naming them names nothing: a list, a map
+	 * and a pair are shapes rather than values, and what they carry is already a domain type. Pair
+	 * is matched by simple name so that whichever one a project adopts is covered.
+	 */
+	private static final Set<String> CARRIERS_WITH_NOTHING_TO_NAME = Set.of(List.class.getName(), Map.class.getName());
 
 	private static ArchCondition<JavaClass> holdOnlyDomainTypesWhenTheyHoldMoreThanOne() {
 		return new ArchCondition<>("hold only domain types when they hold more than one") {
@@ -245,9 +270,37 @@ class ArchitectureTest {
 					return;
 				}
 
-				components.stream().filter(component -> isRawValue(component.getRawType())).forEach(component -> events.add(SimpleConditionEvent.violated(
-						component,
-						"%s holds %s directly; wrap it in a value object".formatted(record.getSimpleName(), component.getRawType().getSimpleName()))));
+				components.forEach(component -> check(record, component, events));
+			}
+
+			private static void check(JavaClass owner, JavaField component, ConditionEvents events) {
+				if (isCarrier(component.getRawType())) {
+					carriedTypes(component)
+							.filter(carried -> isRawValue(carried))
+							.forEach(carried -> events.add(SimpleConditionEvent.violated(
+									component,
+									"%s holds %s<%s>; the carrier is fine, what it carries is a raw value".formatted(
+											owner.getSimpleName(), component.getRawType().getSimpleName(), carried.getSimpleName()))));
+					return;
+				}
+
+				if (isRawValue(component.getRawType())) {
+					events.add(SimpleConditionEvent.violated(
+							component,
+							"%s holds %s directly; wrap it in a value object".formatted(owner.getSimpleName(), component.getRawType().getSimpleName())));
+				}
+			}
+
+			private static Stream<JavaClass> carriedTypes(JavaField component) {
+				if (component.getType() instanceof JavaParameterizedType parameterized) {
+					return parameterized.getActualTypeArguments().stream().map(JavaType::toErasure);
+				}
+
+				return Stream.empty();
+			}
+
+			private static boolean isCarrier(JavaClass type) {
+				return CARRIERS_WITH_NOTHING_TO_NAME.contains(type.getName()) || type.getSimpleName().equals("Pair");
 			}
 
 			private static boolean isRawValue(JavaClass type) {

@@ -1,13 +1,11 @@
-# Single verb surface for humans, hooks, CI and coding agents.
-# Commands are defined once here, so CLAUDE.md can stay short and nothing
-# has to reconstruct build invocations from memory.
+# One verb surface for humans, hooks, CI and coding agents, so nothing has to
+# reconstruct a build invocation from memory.
 
 SHELL := /bin/bash
 MVN   := ./mvnw -B
 
-# Keep an already-correct JAVA_HOME (CI sets one). Otherwise look for a local JDK 25,
-# checking ~/.jdks before the system path. Directories without javac are skipped — a
-# JRE looks fine until compilation starts, which is a confusing way to fail.
+# Keep an already-correct JAVA_HOME (CI sets one), else find a local JDK 25. A JRE is
+# skipped because it looks fine until compilation starts.
 JAVAC_OK := $(shell [ -x "$(JAVA_HOME)/bin/javac" ] && "$(JAVA_HOME)/bin/javac" -version 2>&1 | grep -q '^javac 25' && echo yes)
 ifneq ($(JAVAC_OK),yes)
 JDK25 := $(shell for d in "$$HOME"/.jdks/jdk-25* /usr/lib/jvm/*25*; do [ -x "$$d/bin/javac" ] && echo "$$d" && break; done)
@@ -34,6 +32,10 @@ build: ## Compile main sources
 test: ## Run every test, architecture rules included
 	$(MVN) test
 
+test-one: ## Run one test class or method, e.g. make test-one T=SomeTest
+	@[ -n "$(T)" ] || { echo "T is unset: make test-one T=SomeTest"; exit 1; }
+	$(MVN) test -Dtest='$(T)'
+
 arch: ## Run architecture and modularity tests only
 	$(MVN) test -Dtest='ArchitectureTest,ModularityTest' -DfailIfNoSpecifiedTests=false
 
@@ -48,6 +50,15 @@ lint: ## Verify formatting without touching files
 
 dup: ## Fail on copy-pasted code
 	$(MVN) pmd:cpd-check
+
+config-check: ## Fail on a config comment that explains the tool rather than the choice
+	@python3 scripts/check-config-comments.py
+
+adr-check: ## Fail on a duplicate or missing ADR number
+	@python3 scripts/check-adr-numbers.py
+
+no-skipped-tests: ## Fail if the last test run skipped anything
+	@python3 scripts/check-no-skipped-tests.py
 
 run: ## Start the application
 	$(MVN) spring-boot:run
@@ -74,7 +85,13 @@ fe-build: ## Build the frontend bundle
 openapi-client: ## Regenerate the typed API client from docs/openapi.json
 	$(MAKE) -C frontend openapi-client
 
-ci: lint test dup ## Everything CI runs for the backend
+ci: lint config-check adr-check test dup ## Everything CI runs for the backend
+
+verify: ## Everything CI runs, backend and frontend, in the order CI runs it
+	$(MAKE) ci
+	$(MAKE) no-skipped-tests
+	$(MAKE) openapi-check
+	$(MAKE) fe-check
 
 clean: ## Remove build output
 	$(MVN) clean
