@@ -27,13 +27,24 @@ the conversation does.
    open question because nobody else has yet — a fork settled by the session that raised
    it is the fork going unreviewed.
 
+   Put every open item to the human in one batch, each with the trade-off named and a
+   recommendation. Each round trip costs a session, and items open at the same time are
+   usually entangled — answered one at a time, the first decision constrains the rest
+   before anyone has seen them. This is the same instruction as step 4 and for the same
+   reason; where both apply, they are one batch and not two.
+
    When the answer comes back in the session rather than on the PR, put it on the PR as
    well. A decision that lives only in a transcript is one the next reader re-asks.
 
    Only when all three endpoints are empty and nothing is open is the round genuinely
    empty. Say so and stop; inventing something to change is worse than reporting it.
 
-3. Invoke the `superpowers:receiving-code-review` skill and follow it. Check each item against this
+3. Where an agent applied the comments, check its report against the tree before trusting
+   it: diff what you asked for against `git status` and read the files that matter. An
+   agent reports what it remembers doing, and an interrupted-and-resumed one drops whole
+   items silently.
+
+   Invoke the `superpowers:receiving-code-review` skill and follow it. Check each item against this
    codebase before implementing it, and push back with reasoning where a comment is wrong
    here. A reviewer is often right that something is wrong and wrong about what to do —
    an item worth acting on can still need a different fix than the one suggested.

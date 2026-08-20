@@ -43,6 +43,16 @@ Reference other contexts by ID, never by importing their types.
 
 ## Verifying
 
+Before writing a type, open its counterpart in the most established context and match it,
+and name that file when you report back. Most of what a reviewer will send back is a
+convention the codebase already holds and this brief does not mention.
+
+Read a result from a captured exit code — `make verify > log 2>&1; echo $?` — never from
+a pipeline. `make verify | tail` reports tail's status, so a failing build reads as 0, and
+reporting that as green is worse than not running it. `Skipped: 0` is part of the result:
+a Testcontainers test skips rather than fails when Docker is absent, so a green run can
+have proved far less than it looks.
+
 Run `make test` and read the failures. `ArchitectureTest` and `ModularityTest` encode
 the architecture — when one fails, the code is wrong, not the test. Never weaken a
 rule to make a change fit; if the rule genuinely needs to change, stop and say so, so

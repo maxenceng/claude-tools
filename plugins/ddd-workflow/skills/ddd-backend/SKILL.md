@@ -9,6 +9,24 @@ The hard rules are enforced by `ArchitectureTest` and `ModularityTest`. This doc
 covers the things a test cannot check: where a concept belongs, what to name it, and
 which shape to reach for.
 
+## Read the neighbour first
+
+Before writing a type, open its counterpart in the most established context and match
+it. A project's real conventions live in its code, not here — this document is general
+and the code is specific, so where they differ the code wins. Name the file you matched
+when you report back, because that is what makes the check visible rather than assumed.
+
+The question to answer is not "what is a reasonable way to write this" but "how did this
+project already write this". A new aggregate copies the shape of an existing aggregate.
+A new manager copies an existing manager, including what it *does not* do — if no manager
+in the codebase validates its arguments, the new one does not either, and the absence is
+the convention. A new value object copies the one next to it, including whether it bounds
+its value.
+
+This is the cheapest check available and it catches the failure this document cannot: a
+convention that is real, consistent and written down nowhere. Grepping one sibling file
+takes seconds; a reviewer explaining the same convention for the third time does not.
+
 ## Package layout
 
 ```
@@ -554,6 +572,19 @@ has not been found yet, and they persist long after it has. `<Aggregate>Manager`
 one exception and only in its narrow sense above — a domain service holding a required
 ordering. A `Manager` that has grown methods unrelated to that ordering has stopped
 being one and is hiding a concept that still needs a name.
+
+Adding a rule to `ArchitectureTest` for something ArchUnit cannot see. It reads bytecode,
+so anything the compiler erases is invisible to it: imports, generic type arguments, and
+`SOURCE`-retention annotations — which is every Lombok annotation. Naming `lombok..` in a
+package-based rule passes on a domain built entirely of `@Getter`, because the annotation
+is gone by the time ArchUnit looks. Rules about those need a test that reads source. The
+bar for writing one is not "ArchUnit made this awkward" but "ArchUnit cannot observe this
+at all".
+
+Trusting a rule that has never been seen to fail. A rule that reads as protection and
+gives none is worse than no rule, because the next reader stops looking. Break the thing
+it forbids, watch the build go red, then put it back. This takes a minute and is the only
+evidence that the rule works.
 
 Documenting an intention rather than the code. A comment that states a rule the code
 does not enforce is worse than silence: it is believed, and it stops the reader from

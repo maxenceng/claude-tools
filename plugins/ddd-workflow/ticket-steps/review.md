@@ -36,6 +36,15 @@
    purpose, that contradiction is itself the finding — settle it in favour of the recorded
    decision, or say in the PR why the decision no longer holds.
 
+   Check a dispatched agent's report the same way, against the tree rather than against
+   the report. An agent reports what it remembers doing, which is not always what it did —
+   most sharply after it was interrupted and resumed, where whole items go missing
+   silently. Diff what you asked for against `git status` and read the files that matter.
+   "It says it added the rule" is not evidence the rule is there, and a report claiming a
+   guard was added is the claim to distrust most: watch the guard fail on the case it
+   exists for before believing it. A rule that reads as protection and gives none is worse
+   than no rule, because the next reader stops looking.
+
    Stopping to ask here is what strands a branch. Nothing is pushed, no PR exists, and
    `respond` has no comments to read, so the round is lost rather than paused. The PR is
    the channel between verbs, and a fork is answered by a human on it — which is what
