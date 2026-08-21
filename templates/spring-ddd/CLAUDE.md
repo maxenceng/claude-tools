@@ -30,7 +30,8 @@ Use `make`, never `mvn` directly — the Makefile selects the Java 25 toolchain.
 - `make test-one T=SomeTest` — one class or method, when the full run is too slow to iterate on
 - `make fmt` / `make lint` — apply / verify formatting
 - `make adr-check` — fail on a duplicate or missing ADR number; run it before choosing one
-- `make verify` — everything CI runs; `make ci` is the backend half of it
+- `make verify` — everything CI runs, in CI's order. This is the one to trust before a PR;
+  `make ci` is only the backend job's first step
 
 ## Structure
 
@@ -76,16 +77,23 @@ Settled. Act on these rather than asking.
 
 - A coverage gap closes in the ticket that opened it. Write the test, do not defer it.
 - A decision someone could reverse later without knowing why gets an ADR, in the same change.
-- Work lands on a branch and a PR, never straight to `main`. Push once `make ci` is green.
+- Work lands on a branch and a PR, never straight to `main`. Push once `make verify` is green.
 - Formatting is whatever `make fmt` produces. `.editorconfig` matches the spotless config;
   neither is up for negotiation per file.
 - Re-check an acceptance criterion against the pushed commit, never against an earlier run.
 - A review finding with one obvious fix and no design choice gets fixed in the same pass,
   not reported and left. Only a finding that forks the design waits to be raised.
 - Nothing under `src/test/` carries a comment — no javadoc, no `//`. The test name is the
-  explanation; why the behaviour is what it is belongs in the ADR or the ticket.
+  explanation; why the behaviour is what it is belongs in the assertion's `.as(...)`, the
+  ADR or the ticket. `make test-comment-check` enforces it. The one exemption is a file
+  holding architecture rules, whose rules are fields rather than named methods — ADR 0007.
 - A comment in a config file records the choice, never what the tool does, and fits in two
   lines. `make config-check` enforces the length; the rest is judgement.
+- A limit deliberately chosen carries a `// deferred:` comment naming the ceiling *and* what
+  would make it worth closing — `// deferred: <what it cannot do> — <what triggers closing it>`.
+  Ceiling first, trigger second; a marker with no trigger never gets revisited. `/debt`
+  collects these alongside ADR *Consequences* and ticket *Notes*. A limit nobody chose is not
+  debt, it is an oversight — raise it instead.
 - A new rule, check or guard is not done until it has been watched to fail on the case it
   exists for. A rule nobody has seen fail is a rule nobody has tested — and one that reads
   as protection while giving none is worse than no rule, because the next reader stops looking.

@@ -51,23 +51,15 @@ jobs:
           cache: npm
           cache-dependency-path: templates/spring-ddd/frontend/package-lock.json
 
-      - name: Backend — lint, tests, duplication
-        run: make ci
+      - name: Install frontend dependencies
+        run: make -C frontend install
 
-      # Exercises the script here too, so it cannot rot before a generated project uses it.
-      - name: Nothing was skipped
-        run: make no-skipped-tests
-
-      # The template ships check-openapi.sh and a CI step that calls it, but that
-      # workflow only ever runs inside a generated project. Exercise it here too, or the
-      # script can rot and we find out from someone else's build.
-      - name: OpenAPI schema is current
-        run: make openapi-check
-
-      - name: Frontend — typecheck and tests
-        run: |
-          make -C frontend install
-          make fe-check
+      # `make verify` is defined to run exactly what the template's own workflow runs, so
+      # calling it here exercises every check a generated project will get -- including
+      # check-openapi.sh and check-no-skipped-tests.py, whose own workflow only ever runs
+      # inside a generated project and which would otherwise rot unnoticed.
+      - name: Everything the template's own pipeline runs
+        run: make verify
 
   # The check that actually matters: a project generated from the archetype has to
   # build. The template building says nothing about whether the descriptor still copies

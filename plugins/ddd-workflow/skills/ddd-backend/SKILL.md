@@ -368,10 +368,21 @@ nothing keeps in step — no compiler checks it and no assertion fails when it g
 so it rots while the test stays green, and the next reader is misled by the half that
 still looks authoritative.
 
+`make test-comment-check` enforces this, so do not expect to argue with it in review. It
+reads source, because comments do not survive into bytecode and ArchUnit cannot see them.
+
 If a test seems to need explaining, that is a signal about the test. Rename it, or split
-it into two that each assert one thing. Reasoning about *why* the behaviour is what it is
-belongs in the ADR or the ticket that decided it, where it is read on purpose rather than
-stumbled over.
+it into two that each assert one thing. Where the reasoning is genuinely worth keeping, it
+has two homes that a comment does not: the assertion's `.as(...)` description, which is
+printed when the test fails and so is read exactly when it matters, and the ADR or ticket
+that decided the behaviour.
+
+**One exemption: a file that holds architecture rules** — `@AnalyzeClasses` for ArchUnit,
+`ApplicationModules` for Spring Modulith. Its rules are declarative fields rather than
+named methods, so there is no name for the reasoning to live in, and moving it out would
+separate the rules from their justification. ADR 0007. This exemption is not a precedent
+for "my test is special": every other test under `src/test/java` is scanned, and the check
+fails if it ever finds nothing left to scan.
 
 ### Fixtures
 

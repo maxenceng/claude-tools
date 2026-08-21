@@ -86,12 +86,13 @@ grep -q "still has the placeholder" <<<"$doctor_output" \
 	|| { echo "FAIL: doctor does not flag the unwritten brief" >&2; exit 1; }
 echo "ok: brief ships with prompts, and doctor reports it as unwritten"
 
-step "Build the generated project"
-make ci
-
-step "Build the generated frontend"
+step "Run the generated project's own pipeline"
+# `make verify` rather than `make ci`: verify is defined to run exactly what the template's
+# workflow runs, so this proves a generated project passes the pipeline it ships with --
+# including the schema capture, which boots the application and which nothing else
+# exercises inside a *generated* project.
 (cd frontend && npm ci --no-audit --no-fund >/dev/null)
-make fe-check
+make verify
 
 step "Generate again through the convenience wrapper"
 # new-ddd-project.sh is what a human actually types. It duplicates the coordinates above,

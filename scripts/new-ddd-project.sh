@@ -76,8 +76,8 @@ next:
   cd $ARTIFACT_ID
   git init
   make doctor      # toolchain
-  make ci          # lint, tests, duplication
-  make fe-check    # frontend typecheck and tests
+  make fe-install  # frontend dependencies, once
+  make verify      # everything CI runs, backend and frontend
 
 All three pass on a fresh project. Once you add the first bounded context, delete
 src/test/resources/archunit.properties so the architecture rules go back to strict.

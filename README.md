@@ -65,20 +65,27 @@ the change fits the domain model.
 
 ### Commands
 
-- `/ticket` — work a backlog ticket end to end: create, start, review, respond to
-  feedback, close. Tickets are markdown in `docs/backlog/`, so status changes ride along
-  in the branch and the PR that caused them. Open the folder as an Obsidian vault for a
-  board; nothing depends on it. Each step names the agent or skill that owns it, so the
-  reviewers are dispatched rather than suggested.
+- `/ticket` — work a backlog ticket end to end: capture, refine, start, review, respond
+  to feedback, close. Capture and analysis are separate verbs on purpose: `new` writes a
+  `draft` per line and asks almost nothing, `refine` is where the questions, the modelling
+  and the acceptance criteria happen and the ticket becomes `todo`. That split is what
+  lets a whole backlog be written in one sitting without deciding six designs at once.
+  Tickets are markdown in `docs/backlog/`, so status changes ride along in the branch and
+  the PR that caused them. Open the folder as an Obsidian vault for a board; nothing
+  depends on it. Each step names the agent or skill that owns it, so the reviewers are
+  dispatched rather than suggested.
 - `/onboard` — understand a project and refresh its architecture docs.
 - `/find-duplication` — run the duplication detectors and propose extractions worth making.
+- `/debt` — collect the limits this project chose to live with, from `deferred:` markers in
+  code, ADR *Consequences* and ticket *Notes*, into one ledger. A deferral written down in
+  three places is written down nowhere.
 
 ### Template and archetype
 
 `templates/spring-ddd/` — Spring Boot 4 / Java 25 with hexagonal layering and a typed
 React frontend, containing no business context. This is the readable, buildable source:
-`make ci` and `make fe-check` pass on it directly. Keep it that way, because scaffolding
-that fails on first run gets deleted rather than fixed.
+`make verify` — the whole pipeline — passes on it directly. Keep it that way, because
+scaffolding that fails on first run gets deleted rather than fixed.
 
 `templates/spring-ddd-archetype/` — a Maven archetype **generated from** that template by
 `scripts/build-archetype.sh`. It is what you actually start projects from, because it

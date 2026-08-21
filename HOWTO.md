@@ -91,9 +91,9 @@ declaration, `ArchitectureTest`'s scanned package, the pom coordinates and
 Verify before writing a line of your own:
 
 ```bash
-make doctor     # toolchain
-make ci         # lint, tests, duplication
-make fe-check   # frontend typecheck and tests
+make doctor      # toolchain
+make fe-install  # frontend dependencies, once
+make verify      # everything CI runs, backend and frontend, in CI's order
 ```
 
 All three pass on a fresh copy. If they do not, fix that first — debugging scaffolding
@@ -131,13 +131,25 @@ in the branch and the PR that caused them, so "what state was this in when we me
 a question history answers.
 
 ```
-/ticket                     # the board: what is todo, in progress, in review
-/ticket new <description>   # writes a ticket, forces the context and model questions
+/ticket                     # the board: what is draft, todo, in progress, in review
+/ticket new <description>   # capture only: one draft per line, asks almost nothing
+/ticket refine BILLING-14   # the questions, the model decision, the criteria
 /ticket start BILLING-14    # branch, then implement test-first
-/ticket review BILLING-14   # make ci, architecture review, code review, PR
+/ticket review BILLING-14   # make verify, architecture review, code review, PR
 /ticket respond BILLING-14  # act on PR comments; repeat as often as needed
 /ticket done BILLING-14     # after merge; notes, retro, ADR if warranted
+
+/debt                       # the ledger: limits this project chose to live with
+/find-duplication           # copy-pasted code, and whether it is worth extracting
+/onboard                    # re-read the project and refresh its architecture docs
 ```
+
+`new` and `refine` are deliberately two verbs. `new` captures — one draft per line of the
+argument, in the words they were given in, asking nothing about design. `refine` is where
+the questioning, the model decision and the acceptance criteria happen, one ticket at a
+time, and it is what moves a `draft` to `todo`. `start` refuses a `draft`, so nothing
+skips it. Writing a backlog down and deciding six designs are separate sittings, which is
+the whole point of the split.
 
 `respond` is the one that repeats. Leave comments on the PR — inline on a line is best,
 since the file and line come along with the text — then run it. It collects every comment
@@ -172,8 +184,9 @@ Everything below is a judgement no test can make. The rest of the system is buil
 it fails loudly without you.
 
 **The model decision on every ticket.** New behaviour on an existing aggregate, a new
-aggregate, or a new context? `/ticket start` refuses to run without it. This is the most
-expensive thing to get wrong and the only one nothing can check.
+aggregate, or a new context? `/ticket refine` is where it is made and `/ticket start`
+refuses to run without it. This is the most expensive thing to get wrong and the only one
+nothing can check.
 
 **Which word wins.** Once a term is in `docs/glossary.md` the code follows. Before that,
 two names for one concept quietly split the model in half.
@@ -222,6 +235,23 @@ Glossary first, then code, then the displaced word into the "words we deliberate
 table with the reason. Doing it in that order means the reason survives; doing it in the
 other order means only the diff does.
 
+### Record a limit you chose to live with
+
+A guard covering one column of two, a one-second window left open, a query proved only
+where Docker runs. Mark it where you made it:
+
+```java
+// deferred: the condition names the hashed password only, so a write that moves the floor
+// alone is unguarded — name the floor too once "log out everywhere" exists
+```
+
+Ceiling first, then the trigger. A marker with no trigger is the kind that rots, because
+nothing will ever say it is time. `/debt` sweeps these together with ADR *Consequences* and
+ticket *Notes* into one ledger, and tags the ones with no trigger — those are the rows
+worth reading twice.
+
+A limit nobody decided on is not debt, it is an oversight. Raise it as one.
+
 ### Handle duplication
 
 `/find-duplication`. Not every duplicate should be merged — two blocks that look alike but
@@ -257,7 +287,8 @@ honest surface for you.
 | `@WebMvcTest` will not resolve | Boot 4 moved the MVC slice | Add `spring-boot-webmvc-test` |
 | Tests pass but you do not believe them | Possibly justified | Break the code and watch the test fail |
 | CI says the schema is stale | Backend changed, nobody recaptured | `make run`, `make openapi`, `make openapi-client` |
-| `make ci` green, CI red | `make ci` is three steps; the job runs more, and the schema capture boots the app | Read `.github/workflows/`; give the capture step whatever the app now needs to start |
+| `make ci` green, CI red | `make ci` is the backend job's first step only | `make verify` — it runs the whole pipeline, in the pipeline's order |
+| `make verify` green, CI red | The two have drifted apart | A defect in the `Makefile`, not a step to run by hand. Fix `verify` so it matches the workflow again |
 | A `/ticket` step silently does nothing | It names a skill from `superpowers` that is not installed | `/plugin install superpowers@claude-plugins-official` |
 
 `make doctor` first whenever the build looks wrong before your change should have touched
@@ -274,11 +305,10 @@ types and `make` targets that do not exist. Install it, then delete or rewrite t
 rather than letting it answer confidently and wrongly. `project-retro`,
 `architecture-reviewer` and `codebase-explorer` travel fine.
 
-**`/ticket` leans on `superpowers`, and fails quietly without it.** `new` invokes
+**`/ticket` leans on `superpowers`, and fails quietly without it.** `refine` invokes
 `superpowers:brainstorming`, `respond` invokes `superpowers:receiving-code-review`, and
 `review` invokes `superpowers:verification-before-completion`; the general code review
-goes to `code-review` or
-`pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
+goes to `code-review` or `pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
 named skill that is not installed does not announce itself — the step simply proceeds
 without it, and the result looks like the command being loose rather than a missing
 dependency. Install `superpowers` alongside this, or expect those steps to be advisory.

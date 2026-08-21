@@ -22,13 +22,17 @@ before any code is written.
 | Field | Values | Why it is there |
 |---|---|---|
 | `id` | `CONTEXT-1` | Matches the filename and the branch name. |
-| `status` | `todo`, `in-progress`, `in-review`, `done` | Advanced by `/ticket`, not by hand. |
-| `context` | a bounded context, or `cross-context` | The first question any backend work asks. |
+| `status` | `draft`, `todo`, `in-progress`, `in-review`, `done` | Advanced by `/ticket`, not by hand. |
+| `context` | a bounded context, `cross-context`, or `unassigned` | The first question any backend work asks. |
 | `type` | `feature`, `fix`, `chore`, `spike` | |
 | `created` | `YYYY-MM-DD` | Absolute dates only — "last week" ages badly. |
 
 `cross-context` is deliberately awkward to write. A ticket that genuinely spans contexts
 is a modelling event and deserves a second look before it becomes code.
+
+`unassigned` is what `/ticket new` writes for a line that fits no existing context, since
+capture does not invent one. `refine` settles it — that is the last cheap moment to move a
+ticket, because after it the id is in the filename and the branch name.
 
 ## Board
 
@@ -50,10 +54,17 @@ install a plugin. The frontmatter is the interface either way.
 
 | Status | Means | Set when |
 |---|---|---|
-| `todo` | Understood well enough to start. | `/ticket new` |
+| `draft` | Captured, not yet analysed. Cannot be started. | `/ticket new` |
+| `todo` | Understood well enough to start. | `/ticket refine` |
 | `in-progress` | Branch exists, work underway. | `/ticket start` |
 | `in-review` | Pushed, under review. | `/ticket review` |
 | `done` | Merged. | `/ticket done` |
+
+A `draft` is a record of what someone asked for and nothing more: its analysis sections
+say *not analysed yet* rather than standing empty, so a captured ticket is distinguishable
+from an abandoned one. `refine` fills them in and moves it to `todo`; `start` refuses a
+`draft` outright. `_template.md` shows the shape of a refined ticket, which is what a
+`draft` grows into rather than what one arrives as.
 
 A ticket in `todo` with an empty **Model decision** is not ready to start. That section is
 the point of the whole file — the acceptance criteria come from whoever wrote the ticket,

@@ -16,12 +16,13 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor build test arch docs fmt lint dup run openapi openapi-check ci clean
-.PHONY: fe-install fe-check fe-build openapi-client
+.PHONY: help doctor build test test-one arch docs fmt lint dup config-check adr-check
+.PHONY: no-skipped-tests test-comment-check run openapi openapi-check ci verify clean
+.PHONY: fe-install fe-check fe-ci fe-build openapi-client
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
 doctor: ## Check the toolchain before blaming the build
 	@bash scripts/doctor.sh
@@ -57,6 +58,9 @@ config-check: ## Fail on a config comment that explains the tool rather than the
 adr-check: ## Fail on a duplicate or missing ADR number
 	@python3 scripts/check-adr-numbers.py
 
+test-comment-check: ## Fail on a comment under src/test, where the test name is the explanation
+	@python3 scripts/check-test-comments.py
+
 no-skipped-tests: ## Fail if the last test run skipped anything
 	@python3 scripts/check-no-skipped-tests.py
 
@@ -76,8 +80,11 @@ openapi-check: ## Fail if the committed schema does not match the running app
 fe-install: ## Install frontend dependencies
 	$(MAKE) -C frontend install
 
-fe-check: ## Typecheck and test the frontend
+fe-check: ## The frontend inner loop: typecheck and tests
 	$(MAKE) -C frontend check
+
+fe-ci: ## Everything CI runs for the frontend
+	$(MAKE) -C frontend ci
 
 fe-build: ## Build the frontend bundle
 	$(MAKE) -C frontend build
@@ -85,13 +92,15 @@ fe-build: ## Build the frontend bundle
 openapi-client: ## Regenerate the typed API client from docs/openapi.json
 	$(MAKE) -C frontend openapi-client
 
-ci: lint config-check adr-check test dup ## Everything CI runs for the backend
+ci: lint config-check adr-check test-comment-check test dup ## The backend job's first step, cheapest check first
 
+# CI runs these targets in this order. Adding a step to one without the other is what
+# makes "it passed locally" stop meaning anything.
 verify: ## Everything CI runs, backend and frontend, in the order CI runs it
 	$(MAKE) ci
 	$(MAKE) no-skipped-tests
 	$(MAKE) openapi-check
-	$(MAKE) fe-check
+	$(MAKE) fe-ci
 
 clean: ## Remove build output
 	$(MVN) clean
