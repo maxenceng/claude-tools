@@ -57,5 +57,7 @@ that only handles the happy path is not finished.
 
 ## Verifying
 
-Run `make fe-check` (typecheck and tests) before reporting done. Report what actually
-passed; do not describe a change as working because it compiles.
+Run `make fe-check` (typecheck and tests) while you work — it is the fast loop. Before
+reporting done, run `make fe-ci`, which is what the pipeline runs: it adds the duplication
+scan and the production bundle, and a change can pass the first and fail the second.
+Report what actually passed; do not describe a change as working because it compiles.

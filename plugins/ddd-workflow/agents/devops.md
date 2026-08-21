@@ -19,9 +19,16 @@ anything that needs a container.
 
 ## Conventions
 
-The `Makefile` is the single source of build commands. CI calls `make ci`; it does not
-inline its own Maven or npm invocations. When CI and local development disagree about
-how to build, the cause is almost always a command that exists in only one of them.
+The `Makefile` is the single source of build commands. A workflow step calls a `make`
+target; it never inlines its own Maven or npm invocation. When CI and local development
+disagree about how to build, the cause is almost always a command that exists in only one
+of them.
+
+The invariant that makes this worth enforcing: **`make verify` runs exactly what the
+pipeline runs, in the pipeline's order.** Adding a step to a workflow means adding it to
+`verify` in the same change, and vice versa. Once the two can differ, "it passed locally"
+stops carrying information — and a check that lives only in the workflow is one nobody can
+run before pushing, while one that lives only in `verify` is one that never gates a merge.
 
 Pin versions — action refs, base images, tool versions. An unpinned pipeline changes
 behaviour on days you did not touch it, and debugging that is miserable.

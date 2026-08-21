@@ -13,15 +13,6 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * The zero boundary on every numeric asserter, and the wording of the errors they raise.
- *
- * <p>{@code positive()} accepts zero; {@code strictlyPositive()} does not. Both the
- * ddd-backend skill and every value object guarding a count depend on that distinction,
- * and a javadoc has already contradicted it once. Nothing else in this project exercises
- * the error kernel, so without these tests a change here reaches a domain model before
- * anyone notices.
- */
 class AssertTest {
 
     private static final String FIELD = "quantity";
@@ -86,17 +77,17 @@ class AssertTest {
         assertThrows(NumberValueTooLowException.class, assertion);
     }
 
-    // The error kernel is generic and ships into every generated project. A bulk rename
-    // once left a domain field name across these messages and parameter keys, so a
-    // project with no courses in it reported a courseId. These two pin the vocabulary.
-
     @Test
     void shouldDescribeTheOffendingValueWithoutDomainVocabulary() {
         StringTooShortException error = assertThrows(
             StringTooShortException.class,
             () -> Assert.field(FIELD, "ab").minLength(5));
 
-        assertThat(error.getMessage()).isEqualTo("The value in field \"quantity\" must be at least 5 long but was only 2");
+        assertThat(error.getMessage())
+            .as("the error kernel ships into every generated project, so its wording stays generic - "
+                + "a bulk rename once left a domain field name here and a project with no courses "
+                + "reported a courseId")
+            .isEqualTo("The value in field \"quantity\" must be at least 5 long but was only 2");
     }
 
     @Test
@@ -105,7 +96,10 @@ class AssertTest {
             NumberValueTooHighException.class,
             () -> Assert.field(FIELD, 3).max(2));
 
-        assertThat(error.parameters()).containsOnlyKeys("max", "value");
+        assertThat(error.parameters())
+            .as("parameter keys are part of the kernel's generic vocabulary, and a bulk rename "
+                + "reaches them as readily as it reaches the messages")
+            .containsOnlyKeys("max", "value");
         assertThat(error.field()).isEqualTo(FIELD);
     }
 }

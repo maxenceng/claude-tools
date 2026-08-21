@@ -28,20 +28,15 @@ jobs:
           java-version: '25'
           cache: maven
 
-      # Ordered cheapest first, so an obvious failure does not wait on the slow steps.
-      - name: Formatting
-        run: make lint
-
-      - name: Tests, architecture rules included
-        run: make test
+      # Formatting, config comments, ADR numbering, tests, duplication -- cheapest first,
+      # ordered inside the Makefile so `make verify` runs exactly what this job runs.
+      - name: Lint, tests and duplication
+        run: make ci
 
       # A Testcontainers test skips rather than fails when Docker is missing, so the suite
       # can go green having proved far less than it looks.
       - name: Nothing was skipped
         run: make no-skipped-tests
-
-      - name: Duplication
-        run: make dup
 
       # The frontend's types come from docs/openapi.json. Uncaptured, it typechecks against
       # an API that no longer exists and the bug surfaces as an undefined field at runtime.
@@ -72,16 +67,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install
-        run: npm ci
+        run: make install
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Tests
-        run: npm run test
-
-      - name: Build
-        run: npm run build
-
-      - name: Duplication
-        run: npm run dup
+      # Typecheck, tests, duplication, bundle. Same target `make fe-ci` calls from the
+      # root, so there is one definition of what the frontend has to pass.
+      - name: Typecheck, tests, duplication and bundle
+        run: make ci

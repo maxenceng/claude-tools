@@ -11,12 +11,23 @@ import os
 import re
 import sys
 
-ADRS = "docs/adr/*.md"
+# Anchored to the repo rather than to the working directory. Globbed relative to wherever
+# it was invoked, this found no ADRs and reported success -- a check that passes when it
+# cannot see its input is worse than no check.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+ADR_DIR = os.path.join(ROOT, "docs", "adr")
+
+ADRS = os.path.join(ADR_DIR, "*.md")
 
 NUMBERED = re.compile(r"^(\d{4})-[a-z0-9-]+\.md$")
 
 
 def main():
+    if not os.path.isdir(ADR_DIR):
+        print(f"no ADR directory at {os.path.relpath(ADR_DIR, ROOT)}")
+        return 1
+
     numbers = {}
     unnumbered = []
 

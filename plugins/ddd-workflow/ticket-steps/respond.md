@@ -53,7 +53,7 @@ the conversation does.
    They relate to each other, and a half-understood set implemented in order produces a
    change nobody asked for.
 
-5. Run `make ci`, then commit the whole answer as one change and push it to the same
+5. Run `make verify`, then commit the whole answer as one change and push it to the same
    branch. Subject line and at most a sentence; the threads carry the reasoning. Do not
    close and reopen the PR — the threads are the record of the exchange and do not
    survive it.

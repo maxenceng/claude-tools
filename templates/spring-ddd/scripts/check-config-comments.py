@@ -13,14 +13,19 @@ import sys
 
 MAX_LINES = 2
 
+# Anchored to the repo rather than to the working directory, so this cannot quietly check
+# nothing when invoked from somewhere else.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 TARGETS = [
     "pom.xml",
     "Makefile",
     "frontend/Makefile",
     "src/main/resources/application.properties",
 ]
-TARGETS += sorted(glob.glob(".github/workflows/*.yml"))
-TARGETS += sorted(glob.glob("src/main/resources/db/changelog/**/*.yaml", recursive=True))
+TARGETS += sorted(glob.glob(os.path.join(ROOT, ".github/workflows/*.yml")))
+TARGETS += sorted(glob.glob(os.path.join(ROOT, "src/main/resources/db/changelog/**/*.yaml"), recursive=True))
+TARGETS = [os.path.relpath(os.path.join(ROOT, target), ROOT) for target in TARGETS]
 
 
 def blocks(path, lines):
@@ -56,9 +61,10 @@ def blocks(path, lines):
 def main():
     failures = []
     for path in TARGETS:
-        if not os.path.exists(path):
+        absolute = os.path.join(ROOT, path)
+        if not os.path.exists(absolute):
             continue
-        lines = io.open(path, encoding="utf-8").read().split("\n")
+        lines = io.open(absolute, encoding="utf-8").read().split("\n")
         for block in blocks(path, lines):
             if len(block) > MAX_LINES:
                 failures.append((path, block[0], len(block), lines[block[0] - 1].strip()[:60]))

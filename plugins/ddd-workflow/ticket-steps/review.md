@@ -1,13 +1,17 @@
 # review
 
 1. Set `status: in-review`.
-2. Run `make ci`, and `make fe-check` if the frontend changed. Report what actually
-   passed — not what should pass.
+2. Run `make verify`. Report what actually passed — not what should pass.
 
-   `make ci` is not the pipeline. Read `.github/workflows/` and account for every step
-   the job runs, because the workflow adds steps beyond it — a schema capture that boots
-   the application needs whatever the application needs to start. A criterion that says
-   "`make ci` passes" can be true while the build is red for the whole branch.
+   `make verify` is the pipeline, and `make ci` is not: `ci` is the backend job's first
+   step alone, so a criterion that says "`make ci` passes" can be true while the branch is
+   red on the schema capture, on a skipped Testcontainers test, or on the frontend bundle.
+   `verify` is defined to run the workflow's steps in the workflow's order — if the two
+   ever disagree, that is a defect in the Makefile and not a step to run by hand.
+
+   The capture step boots the application, so it needs whatever the application needs to
+   start. When it fails and `make ci` did not, read `.github/workflows/` before assuming
+   the branch is fine.
 3. Dispatch `architecture-reviewer` for the modelling: does the behaviour sit where the
    ticket said it would, and does the language hold? Hand it the ticket's *Model
    decision* and the diff, so it reviews against what was decided rather than against

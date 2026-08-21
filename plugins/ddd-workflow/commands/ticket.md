@@ -1,6 +1,6 @@
 ---
-description: Work a backlog ticket end to end — create it, start it, review it, close it
-argument-hint: "[new <description> | start <ID> | review <ID> | respond <ID> | done <ID>] (no args: show the board)"
+description: Work a backlog ticket end to end — capture it, refine it, start it, review it, close it
+argument-hint: "[new <description> | refine <ID> | start <ID> | review <ID> | respond <ID> | done <ID>] (no args: show the board)"
 ---
 
 Tickets live in `docs/backlog/` as markdown with YAML frontmatter. Read that folder's
