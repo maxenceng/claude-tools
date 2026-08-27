@@ -37,3 +37,38 @@ report back: its result arrives in the session that dispatched it and nowhere el
 Edit only the frontmatter field that the step owns. Rewriting a whole ticket file to
 change one status loses whatever a human wrote in it, and the human's words are the part
 worth keeping.
+
+## Vikunja
+
+Frontmatter may carry `tracker_id:` once a ticket has been pushed to Vikunja — set by
+whichever step first pushes it, read by every step after. `VIKUNJA_URL`, `VIKUNJA_TOKEN`
+and `VIKUNJA_PROJECT_ID` come from the invoking shell's environment, never from a file in
+this repo; where any of them is unset, every step that mentions Vikunja below proceeds on
+the markdown alone and says so once, rather than failing over a tracker nobody opted into.
+
+Moving a task to a bucket takes two lookups first, both by name rather than a hardcoded
+id — the view and the bucket ids are Vikunja's to assign, not this command's to remember:
+
+```bash
+VIEW_ID=$(curl -sf "$VIKUNJA_URL/api/v1/projects/$VIKUNJA_PROJECT_ID/views" \
+  -H "Authorization: Bearer $VIKUNJA_TOKEN" | jq '.[] | select(.view_kind=="kanban") | .id')
+
+BUCKET_ID=$(curl -sf "$VIKUNJA_URL/api/v1/projects/$VIKUNJA_PROJECT_ID/views/$VIEW_ID/buckets" \
+  -H "Authorization: Bearer $VIKUNJA_TOKEN" | jq --arg t "<bucket title>" '.[] | select(.title==$t) | .id')
+
+curl -sf -X POST "$VIKUNJA_URL/api/v1/projects/$VIKUNJA_PROJECT_ID/views/$VIEW_ID/buckets/$BUCKET_ID/tasks" \
+  -H "Authorization: Bearer $VIKUNJA_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"task_id\": $TRACKER_ID}"
+```
+
+This is the shape of it, not a script to run unread — substitute `jq` for whatever JSON
+handling is available, and re-check the paths against `$VIKUNJA_URL/api/v1/docs` if this
+instance's version has moved on from what these were written against.
+
+Five buckets must exist on the project's Kanban view ahead of time, titled exactly
+`draft`, `todo`, `in-progress`, `in-review`, `done`, with `done` set as that view's
+done-bucket — moving a task in also marks it done. Set this up once, by hand, when the
+Vikunja project is created; this command does not create buckets.
+
+The no-argument board listing above never calls Vikunja: it reads `docs/backlog/`
+directly, exactly as before this section existed.

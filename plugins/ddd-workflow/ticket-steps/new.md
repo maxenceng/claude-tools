@@ -63,6 +63,27 @@ _Not analysed yet._
 <only what was actually said: a constraint mentioned in passing, a doubt about scope>
 ```
 
-Report what you captured as a list of id and title, and say which ones need a context
-decision. Then stop — do not offer to refine one, and do not refine the first because it
-looks easy.
+## Pushing to Vikunja
+
+Write every file in the batch first. Only once all of them exist, and only if
+`VIKUNJA_URL`, `VIKUNJA_TOKEN` and `VIKUNJA_PROJECT_ID` are all set, push each one:
+
+```bash
+curl -sf -X PUT "$VIKUNJA_URL/api/v1/projects/$VIKUNJA_PROJECT_ID/tasks" \
+  -H "Authorization: Bearer $VIKUNJA_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"title\": \"<id>: <title>\"}"
+```
+
+Take the returned task's `id` and write it into that ticket's frontmatter as
+`tracker_id:`. A freshly created task lands wherever this view's default bucket is —
+don't move it here; the next step to touch this ticket's status does that.
+
+A push that fails does not fail the capture — the ticket file already exists and is
+already correct. Say which ids failed to push and why, and leave `tracker_id` off those;
+`refine` creates it on demand for anything that reaches that step still without one.
+
+Skip this whole section, and say so once, when any of the three variables is unset.
+
+Report what you captured as a list of id and title, whether each pushed to Vikunja, and
+say which ones need a context decision. Then stop — do not offer to refine one, and do
+not refine the first because it looks easy.

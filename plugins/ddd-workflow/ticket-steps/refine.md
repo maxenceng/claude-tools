@@ -50,3 +50,15 @@ of the request.
 
 Refine one ticket per invocation. A batch of drafts is exactly the situation where
 answering six sets of questions at once produces six designs nobody separately agreed to.
+
+## Vikunja
+
+Once `status: todo` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
+`VIKUNJA_PROJECT_ID` are all set: if the ticket already has a `tracker_id`, move that
+task to the bucket titled `todo` — see the Vikunja section of `/ticket` itself for the
+lookup shape. If it has none — captured before this existed, or captured while these
+variables were unset — create it now instead, the way `new` does, straight into the
+`todo` bucket, and write the returned id into `tracker_id`. This is the adoption path for
+a backlog that predates tracker sync; there is nothing to migrate ahead of time.
+
+Skip this section, and say so once, when any of the three variables is unset.

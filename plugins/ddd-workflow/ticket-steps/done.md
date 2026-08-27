@@ -20,3 +20,19 @@
    record of what was decided — and write the ADR that supersedes it. A ticket whose
    *Model decision* contradicts the code, with nothing pointing anywhere else, is how a
    settled question gets reopened by someone who thinks they have found a bug.
+
+## Vikunja
+
+Once `status: done` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
+`VIKUNJA_PROJECT_ID` are all set, move the ticket's task to the bucket titled `done` —
+see the Vikunja section of `/ticket` itself for the lookup shape. A correctly configured
+done-bucket marks the task done as a side effect of the move; send one more call anyway,
+since a board that reads done is worth the extra request and costs nothing if redundant:
+
+```bash
+curl -sf -X POST "$VIKUNJA_URL/api/v1/tasks/$TRACKER_ID" \
+  -H "Authorization: Bearer $VIKUNJA_TOKEN" -H "Content-Type: application/json" \
+  -d '{"done": true}'
+```
+
+Skip this section, and say so once, when any of the three variables is unset.

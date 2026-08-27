@@ -27,6 +27,11 @@ is judgement.
 
 The marketplace is `maxence-tools`; the plugin inside it is `ddd-workflow`.
 
+Optionally, if a Vikunja instance is available, set `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
+`VIKUNJA_PROJECT_ID` in your shell profile. `/ticket` mirrors status to Vikunja's Kanban
+board when these are set and runs exactly as before when they are not — nothing here is
+required to use the command.
+
 If you forked, use `<your-owner>/<your-repo>` instead. Everything below works the same
 from a fork, with one thing to change: the archetype's coordinates are `dev.maxenceng`
 in `scripts/build-archetype.sh` and `scripts/new-ddd-project.sh`. Change both together
@@ -337,5 +342,8 @@ a violated boundary. It cannot catch a skill recommending a method that does not
 which had happened here and was found by reading rather than by CI. When a document and
 the code disagree, the code is the one that ran.
 
-**No ticket-tracker integration.** Tickets are pasted in. A Jira or Linear MCP server
-would close that; the ticket format would not change.
+**Ticket-tracker integration is optional and one-directional in authority.** `/ticket`
+mirrors status to a Vikunja board when `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
+`VIKUNJA_PROJECT_ID` are set in the shell; the markdown in `docs/backlog/` stays the
+source of truth, and Vikunja is a live view over it, never a second place to edit from.
+Unset any of the three and every step runs exactly as it did before this existed.

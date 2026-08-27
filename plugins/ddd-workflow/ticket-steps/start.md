@@ -41,3 +41,14 @@ Stay inline when the whole change is a file already read this session. Dispatchi
 cold start and a re-read of context the session already holds. Agents are named here
 because role-specific judgement at implementation is worth that cost — not because
 delegation is better by default.
+
+## Vikunja
+
+Once `status: in-progress` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
+`VIKUNJA_PROJECT_ID` are all set, move the ticket's task to the bucket titled
+`in-progress` — see the Vikunja section of `/ticket` itself for the lookup shape. A
+ticket with no `tracker_id` here is unusual — `refine` should have created one — but if
+it happens, create it the way `refine` does, straight into `in-progress`, rather than
+blocking the start on a sync problem.
+
+Skip this section, and say so once, when any of the three variables is unset.

@@ -62,3 +62,11 @@ reporting that a step passed.
 
 Tick an acceptance criterion only once something demonstrates it. An unticked box is
 information; a ticked one that nothing verifies is a lie the next reader will act on.
+
+## Vikunja
+
+Once `status: in-review` is written — step 1, not after `respond` — and only if
+`VIKUNJA_URL`, `VIKUNJA_TOKEN` and `VIKUNJA_PROJECT_ID` are all set, move the ticket's
+task to the bucket titled `in-review`. See the Vikunja section of `/ticket` itself for
+the lookup shape. Skip this section, and say so once, when any of the three variables is
+unset.
