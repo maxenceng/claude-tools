@@ -11,6 +11,12 @@
       "source": "./plugins/ddd-workflow",
       "description": "Role agents and skills for DDD/hexagonal Spring Boot projects with a typed frontend",
       "category": "workflow"
+    },
+    {
+      "name": "memory-sync",
+      "source": "./plugins/memory-sync",
+      "description": "Mirror ~/.claude/projects/*/memory into a self-hosted Qdrant collection for cross-project semantic search",
+      "category": "workflow"
     }
   ]
 }
