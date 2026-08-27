@@ -8,6 +8,7 @@ templates/spring-ddd-archetype/
 target/
 node_modules/
 dist/
+__pycache__/
 
 ### IDE ###
 .idea/
