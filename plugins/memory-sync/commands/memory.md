@@ -1,6 +1,6 @@
 ---
-description: Mirror project memory into Qdrant, or search it semantically
-argument-hint: "[sync | search <query>]"
+description: Mirror project memory or project docs into Qdrant, or search memory semantically
+argument-hint: "[sync | search <query> | sync-docs <project-path>]"
 ---
 
 Memory lives at `~/.claude/projects/*/memory/*.md` — one directory per project, each
@@ -9,6 +9,12 @@ with a `MEMORY.md` index and individual files carrying frontmatter (`name`,
 this command mirrors them into a Qdrant collection so they're searchable by meaning
 across every project at once, the same way `/ticket` mirrors backlog status to Vikunja
 without the markdown stopping being the source of truth.
+
+A project's own knowledge — glossary, ADRs, context map, CLAUDE.md, backlog — is a
+different kind of thing (domain/architecture knowledge, not "how Claude should
+behave") and lives in the project's own repo, not under `~/.claude/projects/`.
+`sync-docs` mirrors that into a Qdrant collection dedicated to the one project, kept
+separate from `claude_memory` and from every other project's docs.
 
 Requires `QDRANT_URL`, `QDRANT_API_KEY` and `EMBEDDINGS_URL` in the shell environment.
 Where any is unset, say so and stop — there is nothing useful to fall back to for this
@@ -25,13 +31,24 @@ Dispatch on the first word:
   guess. Report what it printed; do not re-describe it.
 
 - **`search <query>`** — run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search.py <query>`.
-  Embeds the query, returns the five nearest memory files by cosine similarity with
-  their project, name, description and path. Read the file at the path before acting
-  on what a result implies — the payload carries the content too, but a search result
-  is a pointer, not a substitute for reading the memory the way any other memory access
-  would.
+  Searches `claude_memory` only, not any project's docs collection — there is no
+  docs-search verb yet. Embeds the query, returns the five nearest memory files by
+  cosine similarity with their project, name, description and path. Read the file at
+  the path before acting on what a result implies — the payload carries the content
+  too, but a search result is a pointer, not a substitute for reading the memory the
+  way any other memory access would.
 
-No arguments: report that `sync` and `search <query>` are the two things this command
-does, and stop. It does not run a sync automatically — memory changes at the pace of a
-conversation, and syncing on every invocation would mean re-embedding files that have
-not changed most of the time.
+- **`sync-docs <project-path>`** — run
+  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sync_docs.py <project-path>`. It globs
+  `CLAUDE.md`, `docs/glossary.md`, `docs/context-map.md`, `docs/adr/*.md` and
+  `docs/backlog/*.md` under the given project path (skipping `_template.md`), embeds
+  each whole, and upserts into a collection named after the project directory with
+  hyphens folded to underscores (`next-suggestions` → `next_suggestions`) — created on
+  first run with whatever vector size the embedding model returns. Point ids are keyed
+  to the file path, so re-running updates a changed file in place; a file deleted from
+  disk is not removed from Qdrant. Report what it printed; do not re-describe it.
+
+No arguments: report that `sync`, `search <query>` and `sync-docs <project-path>` are
+the three things this command does, and stop. It does not run a sync automatically —
+docs and memory change at the pace of a conversation, and syncing on every invocation
+would mean re-embedding files that have not changed most of the time.

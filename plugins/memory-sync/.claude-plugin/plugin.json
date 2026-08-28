@@ -1,7 +1,7 @@
 {
   "name": "memory-sync",
-  "description": "Mirror ~/.claude/projects/*/memory into a self-hosted Qdrant collection for cross-project semantic search",
-  "version": "1.0.0",
+  "description": "Mirror ~/.claude/projects/*/memory, and per-project docs, into self-hosted Qdrant collections for semantic search",
+  "version": "1.1.0",
   "author": {
     "name": "maxenceng"
   }
