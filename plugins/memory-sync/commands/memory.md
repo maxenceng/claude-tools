@@ -1,6 +1,6 @@
 ---
-description: Mirror project memory or project docs into Qdrant, or search memory semantically
-argument-hint: "[sync | search <query> | sync-docs <project-path>]"
+description: Mirror project memory or project docs into Qdrant, or search either semantically
+argument-hint: "[sync | search <query> | sync-docs <project-path> | search-docs <project> <query>]"
 ---
 
 Memory lives at `~/.claude/projects/*/memory/*.md` — one directory per project, each
@@ -31,12 +31,12 @@ Dispatch on the first word:
   guess. Report what it printed; do not re-describe it.
 
 - **`search <query>`** — run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search.py <query>`.
-  Searches `claude_memory` only, not any project's docs collection — there is no
-  docs-search verb yet. Embeds the query, returns the five nearest memory files by
-  cosine similarity with their project, name, description and path. Read the file at
-  the path before acting on what a result implies — the payload carries the content
-  too, but a search result is a pointer, not a substitute for reading the memory the
-  way any other memory access would.
+  Searches `claude_memory` only, not any project's docs collection — use `search-docs`
+  for that. Embeds the query, returns the five nearest memory files by cosine
+  similarity with their project, name, description and path. Read the file at the path
+  before acting on what a result implies — the payload carries the content too, but a
+  search result is a pointer, not a substitute for reading the memory the way any other
+  memory access would.
 
 - **`sync-docs <project-path>`** — run
   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sync_docs.py <project-path>`. It globs
@@ -48,7 +48,22 @@ Dispatch on the first word:
   to the file path, so re-running updates a changed file in place; a file deleted from
   disk is not removed from Qdrant. Report what it printed; do not re-describe it.
 
-No arguments: report that `sync`, `search <query>` and `sync-docs <project-path>` are
-the three things this command does, and stop. It does not run a sync automatically —
-docs and memory change at the pace of a conversation, and syncing on every invocation
-would mean re-embedding files that have not changed most of the time.
+- **`search-docs <project> <query>`** — run
+  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search_docs.py <project> <query>`. `<project>`
+  is folded the same way `sync-docs` names the collection (final path component,
+  hyphens to underscores), so either a bare name like `next-suggestions` or a full
+  project path works. Embeds the query, returns the five nearest docs by cosine
+  similarity with their doc type, path and a short snippet. If the collection doesn't
+  exist yet it says so and stops rather than raising a raw HTTP error — run `sync-docs`
+  for that project first. As with `search`, the snippet is a pointer: read the file
+  before acting on what a result implies. Whole-file embedding caps effective recall at
+  the embedding model's input window (check `$EMBEDDINGS_URL/info` for
+  `max_input_length` and `auto_truncate`) — a long ADR or backlog ticket may rank on
+  its opening section only, since the rest was truncated before embedding, not on the
+  file as a whole.
+
+No arguments: report that `sync`, `search <query>`, `sync-docs <project-path>` and
+`search-docs <project> <query>` are the four things this command does, and stop. It
+does not run a sync automatically — docs and memory change at the pace of a
+conversation, and syncing on every invocation would mean re-embedding files that have
+not changed most of the time.
