@@ -17,6 +17,7 @@ QDRANT_URL = os.environ["QDRANT_URL"].rstrip("/")
 QDRANT_API_KEY = os.environ["QDRANT_API_KEY"]
 EMBEDDINGS_URL = os.environ["EMBEDDINGS_URL"].rstrip("/")
 SNIPPET_LENGTH = 200
+HARD_TOKEN_LIMIT = 512
 
 
 def embed(text):
@@ -27,6 +28,16 @@ def embed(text):
     )
     with urllib.request.urlopen(req) as resp:
         return json.load(resp)[0]
+
+
+def count_tokens(text):
+    req = urllib.request.Request(
+        f"{EMBEDDINGS_URL}/tokenize",
+        data=json.dumps({"inputs": text}).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req) as resp:
+        return len(json.load(resp)[0])
 
 
 def snippet(text):
@@ -43,6 +54,14 @@ def main():
 
     collection = os.path.basename(os.path.normpath(sys.argv[1])).replace("-", "_")
     query = " ".join(sys.argv[2:]).strip()
+
+    query_tokens = count_tokens(query)
+    if query_tokens > HARD_TOKEN_LIMIT:
+        print(
+            f"warning: query is {query_tokens} tokens, over the model's "
+            f"{HARD_TOKEN_LIMIT} cap -- it will be truncated before matching",
+            file=sys.stderr,
+        )
 
     vector = embed(query)
     req = urllib.request.Request(
@@ -66,7 +85,8 @@ def main():
 
     for p in points:
         payload = p["payload"]
-        print(f"{p['score']:.3f}  [{payload['doc_type']}] {payload['path']}")
+        chunk = f" (chunk {payload['chunk_index'] + 1}/{payload['chunk_count']})" if payload.get("chunk_count", 1) > 1 else ""
+        print(f"{p['score']:.3f}  [{payload['doc_type']}] {payload['path']}{chunk}")
         print(f"    {snippet(payload['content'])}")
 
 

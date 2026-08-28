@@ -41,26 +41,28 @@ Dispatch on the first word:
 - **`sync-docs <project-path>`** — run
   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sync_docs.py <project-path>`. It globs
   `CLAUDE.md`, `docs/glossary.md`, `docs/context-map.md`, `docs/adr/*.md` and
-  `docs/backlog/*.md` under the given project path (skipping `_template.md`), embeds
-  each whole, and upserts into a collection named after the project directory with
-  hyphens folded to underscores (`next-suggestions` → `next_suggestions`) — created on
-  first run with whatever vector size the embedding model returns. Point ids are keyed
-  to the file path, so re-running updates a changed file in place; a file deleted from
-  disk is not removed from Qdrant. Report what it printed; do not re-describe it.
+  `docs/backlog/*.md` under the given project path (skipping `_template.md`), splits
+  each into markdown-aware chunks (heading/paragraph/table/code-fence boundaries) sized
+  against the embedding model's real tokenizer so no chunk exceeds its input window,
+  and upserts into a collection named after the project directory with hyphens folded
+  to underscores (`next-suggestions` → `next_suggestions`) — created on first run with
+  whatever vector size the embedding model returns. Each chunk carries the nearest
+  heading(s) it fell under, so it reads on its own in a search result. The collection
+  is dropped and rebuilt from scratch on every run rather than upserted in place, since
+  every file is re-embedded unconditionally each time anyway and a fixed chunk count
+  would otherwise leave stale chunks behind whenever a file shrinks. Report what it
+  printed; do not re-describe it.
 
 - **`search-docs <project> <query>`** — run
   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/search_docs.py <project> <query>`. `<project>`
   is folded the same way `sync-docs` names the collection (final path component,
   hyphens to underscores), so either a bare name like `next-suggestions` or a full
-  project path works. Embeds the query, returns the five nearest docs by cosine
-  similarity with their doc type, path and a short snippet. If the collection doesn't
-  exist yet it says so and stops rather than raising a raw HTTP error — run `sync-docs`
-  for that project first. As with `search`, the snippet is a pointer: read the file
-  before acting on what a result implies. Whole-file embedding caps effective recall at
-  the embedding model's input window (check `$EMBEDDINGS_URL/info` for
-  `max_input_length` and `auto_truncate`) — a long ADR or backlog ticket may rank on
-  its opening section only, since the rest was truncated before embedding, not on the
-  file as a whole.
+  project path works. Embeds the query, returns the five nearest chunks by cosine
+  similarity with their doc type, path and a snippet. If the collection doesn't exist
+  yet it says so and stops rather than raising a raw HTTP error — run `sync-docs` for
+  that project first. As with `search`, the snippet is a pointer: read the file before
+  acting on what a result implies, and expect several hits from the same file at
+  different chunks rather than one hit per file.
 
 No arguments: report that `sync`, `search <query>`, `sync-docs <project-path>` and
 `search-docs <project> <query>` are the four things this command does, and stop. It
