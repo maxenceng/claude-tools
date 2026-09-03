@@ -252,6 +252,16 @@ edit fails validation at boot on every database that already applied it — incl
 developer's, whose data survives `db-down`. Add a new changeset; `addDefaultValue` and
 friends exist for exactly this.
 
+An outbound client to a vendor's API is a secondary adapter too, just not persistence's shape:
+it lives in `infrastructure.secondary.client`, with the wire shapes it maps named
+`*Response`/`*Request` beside it (ADR 0052; `ArchitectureTest` places both). Everything in
+that package defaults to package-private, the same as an entity — only the client interface,
+the response its caller maps, and a checked failure it can raise are public, and
+`ArchitectureTest` holds the line on the rest. When a helper in there needs a type from the
+package next door, that need is telling you where the helper belongs; move it in rather than
+widening the type to reach it. A class made public for one caller across a package boundary is
+a class in the wrong package.
+
 ## Errors
 
 One `@RestControllerAdvice` for the whole application, in
