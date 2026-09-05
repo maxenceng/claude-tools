@@ -145,8 +145,8 @@ object, where the next aggregate cannot reuse it.
 shapes. Where one field on an otherwise-unchanged type is simply not supplied by every
 source — a score no catalogue always has, a duration only one source provides — make the
 field nullable and answer it through an `Optional<T>` accessor; everything else about the
-type stays as it was, and the value-object rule above still holds because the field is a
-domain type, just possibly unset.
+type stays as it was, and `composite_domain_types_hold_value_objects` still holds because the
+field is a domain type, just possibly unset.
 
 Reach past that for a sealed type the moment more than one thing varies together. A result
 that either carries several fields or carries none of them — never one without the others —
