@@ -141,6 +141,22 @@ whose javadoc and whose assertion disagree is worse than one with no javadoc.
 do not express, add it there with a test rather than open-coding the check in a value
 object, where the next aggregate cannot reuse it.
 
+**A value that is sometimes absent** is two different problems, and they take different
+shapes. Where one field on an otherwise-unchanged type is simply not supplied by every
+source — a score no catalogue always has, a duration only one source provides — make the
+field nullable and answer it through an `Optional<T>` accessor; everything else about the
+type stays as it was, and the value-object rule above still holds because the field is a
+domain type, just possibly unset.
+
+Reach past that for a sealed type the moment more than one thing varies together. A result
+that either carries several fields or carries none of them — never one without the others —
+is not "one field missing," it is two shapes, and a nullable field only documents that as a
+comment the next caller can forget to read. Split it: a `sealed interface` with one record
+variant per shape puts the invariant where the compiler enforces it, and a caller pattern-matches
+instead of reading past a null check that may or may not be there. Default to the first
+shape — it costs one field and an `Optional` — and reach for the second only once a nullable
+field would need a comment explaining which other fields it drags with it.
+
 **Identities** are records wrapping a `UUID`, one per aggregate. Distinct `CourseId`
 and `StudentId` types make it impossible to pass one where the other is expected —
 a mistake `UUID` everywhere invites.
@@ -251,6 +267,15 @@ Never edit a changeset that has run. Liquibase identifies it by checksum, so an 
 edit fails validation at boot on every database that already applied it — including a
 developer's, whose data survives `db-down`. Add a new changeset; `addDefaultValue` and
 friends exist for exactly this.
+
+**An outbound client to a vendor's API is a secondary adapter too**, just not persistence's
+shape. Read `references/outbound-clients.md` before writing one — it covers the package
+placement, the declarative client shape, and the factories every vendor client reuses so the
+second one is smaller than the first.
+
+Where the trigger is a schedule rather than a request — a nightly re-sync, a batch lookup —
+the driving side is a Temporal workflow, not a controller. Read
+`references/workflows.md` before writing one.
 
 ## Errors
 
@@ -426,8 +451,11 @@ for the invalidity.
 the bottom of `CourseTest` is a fixture that only one class can reach, so the moment a second
 test needs the same value it gets retyped with a different literal and the two drift. Put it
 in the fixture, name it for the state — `fullCourse()`, `courseWithOneSeatLeft()` — and the
-manager test, the controller test and the request test all pin the same boundary. Worth an
-ArchUnit rule of its own rather than leaving it to review.
+manager test, the controller test and the request test all pin the same boundary.
+`TestConventionsTest.unit_tests_hold_only_tests` enforces this directly — a private method in
+any `*Test` class fails the build, exempted only for the Spring-slice tests it cannot see
+inside (`@WebMvcTest`, `@DataJpaTest`, `@SpringBootTest`, …) and the files that hold
+`ArchitectureTest`-style rules, whose private methods are conditions, not fixtures.
 
 Tests that boot a Spring context are out of scope, and the rule exempts them by annotation.
 A `@WebMvcTest` building a `RequestBuilder`, or a `@DataJpaTest` arranging a context, is

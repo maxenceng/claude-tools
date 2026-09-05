@@ -295,6 +295,7 @@ honest surface for you.
 | `make ci` green, CI red | `make ci` is the backend job's first step only | `make verify` — it runs the whole pipeline, in the pipeline's order |
 | `make verify` green, CI red | The two have drifted apart | A defect in the `Makefile`, not a step to run by hand. Fix `verify` so it matches the workflow again |
 | A `/ticket` step silently does nothing | It names a skill from `superpowers` that is not installed | `/plugin install superpowers@claude-plugins-official` |
+| `ddd-backend`'s advice contradicts a project's own ADR | The repo and the installed copy have drifted, or the repo itself never absorbed what the project just learned | Diff `plugins/ddd-workflow/skills/` against `~/.claude/plugins/cache/maxence-tools/ddd-workflow/<version>/skills/`; fix the repo, never the cache, then bump `plugin.json` |
 
 `make doctor` first whenever the build looks wrong before your change should have touched
 it. It checks the toolchain, which is the usual culprit.
@@ -341,6 +342,15 @@ generates again through the wrapper. CI runs both, plus the template's own suite
 a violated boundary. It cannot catch a skill recommending a method that does not exist,
 which had happened here and was found by reading rather than by CI. When a document and
 the code disagree, the code is the one that ran.
+
+**A cache edit outlives the session and fools nobody but you.** `/plugin install`/`update`
+unpacks the plugin into `~/.claude/plugins/cache/maxence-tools/ddd-workflow/<version>/`, and
+nothing stops an edit landing there directly instead of in the repo. It works immediately in
+that session, which is exactly what makes it easy to do and forget — the fix never reaches
+the repo, never reaches any other project using the plugin, and is gone the next update. Edit
+`plugins/ddd-workflow/` here, bump `plugin.json`'s version, and let install or update do the
+copying. This had already happened once — see the ticket-close step's own reminder to carry a
+project's learning back here rather than into the cache.
 
 **Ticket-tracker integration is optional and one-directional in authority.** `/ticket`
 mirrors status to a Vikunja board when `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
