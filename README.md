@@ -83,7 +83,8 @@ the change fits the domain model.
 ### Template and archetype
 
 `templates/spring-ddd/` — Spring Boot 4 / Java 25 with hexagonal layering and a typed
-React frontend, containing no business context. This is the readable, buildable source:
+React frontend, containing one minimal worked-example context (`training`, ADR 0008 in the
+template) and no other business logic. This is the readable, buildable source:
 `make verify` — the whole pipeline — passes on it directly. Keep it that way, because
 scaffolding that fails on first run gets deleted rather than fixed.
 

@@ -20,6 +20,14 @@
    record of what was decided — and write the ADR that supersedes it. A ticket whose
    *Model decision* contradicts the code, with nothing pointing anywhere else, is how a
    settled question gets reopened by someone who thinks they have found a bug.
+6. Ask whether this ticket taught `ddd-backend`, another shared skill, or an agent's
+   instructions something worth keeping — a convention this project only discovered under
+   review, a pattern an ADR here now documents generally rather than for this project alone.
+   If so, carry it back into the `claude-tools` repo, in its own change: edit the plugin
+   source and bump its `plugin.json` version, never the installed copy under
+   `~/.claude/plugins/cache/`. A cache edit is invisible to every other project using the
+   plugin and is overwritten by the next update or reinstall, which is exactly how a shared
+   skill silently falls behind the projects it is meant to guide.
 
 ## Vikunja
 

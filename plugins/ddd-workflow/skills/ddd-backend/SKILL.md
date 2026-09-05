@@ -146,7 +146,7 @@ shapes. Where one field on an otherwise-unchanged type is simply not supplied by
 source — a score no catalogue always has, a duration only one source provides — make the
 field nullable and answer it through an `Optional<T>` accessor; everything else about the
 type stays as it was, and `composite_domain_types_hold_value_objects` still holds because the
-field is a domain type, just possibly unset (ADR 0048).
+field is a domain type, just possibly unset.
 
 Reach past that for a sealed type the moment more than one thing varies together. A result
 that either carries several fields or carries none of them — never one without the others —
@@ -268,52 +268,14 @@ edit fails validation at boot on every database that already applied it — incl
 developer's, whose data survives `db-down`. Add a new changeset; `addDefaultValue` and
 friends exist for exactly this.
 
-An outbound client to a vendor's API is a secondary adapter too, just not persistence's shape:
-it lives in `infrastructure.secondary.client`, with the wire shapes it maps named
-`*Response`/`*Request` beside it (ADR 0052; `ArchitectureTest` places both). Build it
-declaratively, with Spring's own `@HttpExchange` and `HttpServiceProxyFactory` rather than
-Feign: it is already in `spring-web`, so it costs no new dependency, and an interface with one
-method per endpoint fits a vendor client with one or two endpoints better than Feign's model of
-a resource with several. Wire it as a `@Bean` from a `@Configuration(proxyBeanMethods = false)`
-class, the same shape any other bean gets — a client built by hand inside the adapter that calls
-it is a dependency the adapter is hiding from Spring and from its own test.
+**An outbound client to a vendor's API is a secondary adapter too**, just not persistence's
+shape. Read `references/outbound-clients.md` before writing one — it covers the package
+placement, the declarative client shape, and the factories every vendor client reuses so the
+second one is smaller than the first.
 
-Everything in that package defaults to package-private, the same as an entity — only the client interface,
-the response its caller maps, and a checked failure it can raise are public, and
-`ArchitectureTest` holds the line on the rest. When a helper in there needs a type from the
-package next door, that need is telling you where the helper belongs; move it in rather than
-widening the type to reach it. A class made public for one caller across a package boundary is
-a class in the wrong package.
-
-## Workflows
-
-A Temporal workflow and its activities are driving adapters, the same as a controller — ADR
-0051. Both the interface and the `@WorkflowImpl`/`@ActivityImpl` implementation live in the
-owning context's `infrastructure.primary`, beside the controllers; `ArchitectureTest` places
-them (`temporal_implementations_live_in_primary_adapters`) and reserves the `Impl` suffix for
-exactly this Temporal pairing (`only_temporal_pairings_are_named_impl`) — nothing else in the
-codebase is named `*Impl`.
-
-An activity interface's methods take and return domain value types, never the primitives
-underneath them. What crosses there is serialised into a Temporal history that outlives the
-code that wrote it, so a later shape change to one of those types would need
-`Workflow.getVersion` to keep an in-flight run replaying against it — a real cost, taken
-deliberately in exchange for a readable signature, and worth revisiting only where a shape
-change and a long-running run are likely to collide.
-
-That package otherwise defaults the way any adapter package does, but a type an activity
-interface returns is one exception that must be `public`: Temporal proxies the interface
-dynamically at runtime, from a different JDK module than the one declaring it, and a
-package-private return type is invisible to that proxy — every call then fails with an
-`IllegalAccessError` indistinguishable from a transient one, so the activity's retry policy
-just retries forever instead of failing the run.
-
-A workflow implementation sequences calls; it does not decide. Business rules stay where they
-already are — a domain manager — and the workflow method only asks for them in order, even
-where the loop looks busy. Where an activity answers with a value that may be absent (no prior
-watermark, an empty page), wrap it into an `Optional` the moment it crosses from the activity
-call, and write the rest of the method against the `Optional` — a workflow juggling raw nulls
-inline is doing the manager's job with none of its guarantees.
+Where the trigger is a schedule rather than a request — a nightly re-sync, a batch lookup —
+the driving side is a Temporal workflow, not a controller. Read
+`references/workflows.md` before writing one.
 
 ## Errors
 
