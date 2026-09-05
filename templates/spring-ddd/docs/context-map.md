@@ -10,10 +10,11 @@ while the test enforces it.
 |---|---|---|
 | `shared` | Shared kernel: types genuinely common to all contexts. | Open — nested packages stay visible. |
 | `error` | Error kernel: `DomainException`, `Assert`, the global handler. | Open — nested packages stay visible. |
+| `training` | Worked example only (ADR 0008): a `Course` whose `popularity` a vendor's catalogue fills. Delete it, or rename it into your own first context, whichever comes first. | Standard — internal packages hidden. |
 
-No business context exists yet. Add the first one and record it here in the same
-sentence — a context map written a week later describes what someone remembers rather
-than what was built.
+Delete the `training` row above once you do, and add your own first context in its place in
+the same change that adds the code — a context map written a week later describes what
+someone remembers rather than what was built.
 
 ## Relationships
 
@@ -23,6 +24,7 @@ graph TD
         shared[shared kernel<br/><i>open</i>]
         error[error kernel<br/><i>open</i>]
     end
+    training[training<br/><i>example</i>] --> shared
 ```
 
 Both kernels are the most expensive relationship to maintain, because every context is

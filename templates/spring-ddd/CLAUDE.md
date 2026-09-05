@@ -39,8 +39,9 @@ Use `make`, never `mvn` directly — the Makefile selects the Java 25 toolchain.
 com.example.app.<context>.{domain, application, infrastructure.{primary, secondary}}
 ```
 
-One bounded context per direct subpackage of the root. No business context exists yet;
-`shared` and `error` are kernels, not contexts.
+One bounded context per direct subpackage of the root. `training` is a worked example —
+delete it or rename it into your own domain, whichever comes first (ADR 0008); `shared` and
+`error` are kernels, not contexts.
 
 The shape of a context is enforced by the rules below rather than copied from an
 example, so `make arch` will tell you when a new one is wrong.

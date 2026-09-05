@@ -16,6 +16,16 @@ words mean.
 |---|---|---|
 | | | |
 
+## training
+
+Worked example only — see ADR 0008. Delete this section along with the context.
+
+| Term | Meaning | Where it lives |
+|---|---|---|
+| Course | A course someone can take. Identity and a title; the one thing it doesn't have until a vendor supplies it is `Popularity`. | `training.domain.Course` |
+| Popularity | How well-regarded a course is, per the training catalogue vendor — absent until that vendor supplies it, never computed here. | `training.domain.Popularity` |
+| Training catalogue | The external vendor whose one field this system consumes, never the other way around. | `training.infrastructure.secondary.client.CourseCatalogueClient` |
+
 ## Words we deliberately avoid
 
 | Avoid | Use instead | Why |

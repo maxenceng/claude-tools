@@ -104,9 +104,13 @@ make verify      # everything CI runs, backend and frontend, in CI's order
 All three pass on a fresh copy. If they do not, fix that first — debugging scaffolding
 and a new domain model at the same time is how people end up abandoning the scaffolding.
 
-Then delete `src/test/resources/archunit.properties`. It exists only so the architecture
-rules tolerate a project with no bounded context; once you have one, you want the strict
-default back, because a rule that suddenly matches nothing is telling you something.
+`training` ships as a worked example (ADR 0008 in the template) — delete it, or rename it
+into your own first context, whichever comes first; either way it demonstrates the
+outbound-client pattern, not persistence or an HTTP endpoint. Once your own context uses
+`@Service`, `@Repository` and a controller, delete `src/test/resources/archunit.properties`:
+it exists only so the architecture rules tolerate a project where nothing does yet, and
+`training` alone doesn't retire it. Once something does, you want the strict default back,
+because a rule that suddenly matches nothing is telling you something.
 
 And write the `## What this is` brief at the top of `CLAUDE.md`, replacing the four
 prompts it ships with. Everything else in a generated project describes how to build;

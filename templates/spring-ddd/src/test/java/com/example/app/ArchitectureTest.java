@@ -162,8 +162,31 @@ class ArchitectureTest {
 			.or()
 			.haveSimpleNameEndingWith("Response")
 			.should()
-			.resideInAPackage("..infrastructure.primary..")
-			.because("a request or response is the shape of a protocol, not of the domain");
+			.resideInAnyPackage("..infrastructure.primary..", "..infrastructure.secondary.client..")
+			.because("a request or response is the shape of a protocol, not of the domain — this system's own, "
+					+ "answered beside the controller, or a vendor's, answered beside the client that speaks it "
+					+ "- ADR 0009");
+
+	@ArchTest
+	static final ArchRule outbound_client_helpers_stay_package_private = classes()
+			.that()
+			.resideInAPackage("..infrastructure.secondary.client..")
+			.and()
+			.haveSimpleNameNotEndingWith("Client")
+			.and()
+			.haveSimpleNameNotEndingWith("Request")
+			.and()
+			.haveSimpleNameNotEndingWith("Response")
+			.and()
+			.haveSimpleNameNotEndingWith("Builder")
+			.and()
+			.areNotAssignableTo(Throwable.class)
+			.should()
+			.bePackagePrivate()
+			.because("a client interface, the wire shapes it maps and the failure it raises are the "
+					+ "package's contract with its caller; anything else in there - Lombok's generated "
+					+ "builder included - is a helper that belongs beside them, not made public to reach "
+					+ "it from outside");
 
 	@ArchTest
 	static final ArchRule business_failures_extend_domain_exception = classes()
