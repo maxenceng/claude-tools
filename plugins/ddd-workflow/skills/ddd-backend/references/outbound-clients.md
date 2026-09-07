@@ -84,6 +84,28 @@ so matching them costs more than the distinction is worth: either the vendor's o
 type ends up coupled to Feign's, or every call gets wrapped in a reflective proxy just to
 re-catch what Feign already caught once.
 
+## Skip one bad record by checking first, not by catching what building it throws
+
+A page or batch read from a catalogue almost always has to skip a record that cannot be built
+rather than fail the whole page over it — one vendor omitting a field, or sending a number outside
+a bounded value type's own range, is that vendor's ordinary answer, not a bug in this system's own
+state. The tempting shortcut is to let the domain's own constructor say so: build the record and
+catch whatever `AssertionException` it throws.
+
+Don't. Give the response type its own predicate instead — `hasMissingFields()`, or narrower if the
+reasons differ — that checks every mandatory or bounded field before construction is attempted, and
+have the mapping call the predicate first: skip on a `false`, build only once it has answered
+`true`. Restate a bound the domain's own constructor already enforces (a score's own 0–100, say)
+rather than relying on that constructor to enforce it here too. The two checks fail for different
+reasons: a predicate answering `false` is the vendor's ordinary gap, and a constructor throwing
+afterwards is a bug in this mapping, which is exactly the case where the exception should still
+surface rather than be swallowed.
+
+A `try`/`catch` around the call that builds the record is usually the sign this move wasn't made.
+It also tends to catch less than it means to: `AssertionException` has several siblings (a missing
+value and an out-of-range one raise different subclasses), and a catch narrowed to whichever one
+was seen first lets the others escape uncaught and fail the batch they sit in.
+
 ## When not to reach for Feign
 
 Feign's model is one fixed base URL with templated paths. A call to an arbitrary,
