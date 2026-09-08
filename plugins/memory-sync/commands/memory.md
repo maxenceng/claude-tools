@@ -20,6 +20,14 @@ Requires `QDRANT_URL`, `QDRANT_API_KEY` and `EMBEDDINGS_URL` in the shell enviro
 Where any is unset, say so and stop — there is nothing useful to fall back to for this
 command, unlike `/ticket`'s sync, since mirroring is the entire point.
 
+`sync` and `search` are also available as MCP tools (`memory_sync`, `memory_search`) —
+call those directly rather than shelling out through this command when the MCP server
+is connected; both read the same collection and require the same three environment
+variables. `sync-docs`/`search-docs` are slash-command only. A `SessionEnd` hook also
+runs `sync.py` automatically at the end of every session, so the shared collection is
+never more than one session behind without anyone remembering to run this by hand — the
+"no automatic sync" rule below is about this command's own invocations, not that hook.
+
 Dispatch on the first word:
 
 - **`sync`** — run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sync.py`. It walks every memory
