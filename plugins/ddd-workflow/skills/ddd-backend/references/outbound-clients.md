@@ -106,6 +106,27 @@ It also tends to catch less than it means to: `AssertionException` has several s
 value and an out-of-range one raise different subclasses), and a catch narrowed to whichever one
 was seen first lets the others escape uncaught and fail the batch they sit in.
 
+### When the predicate doesn't fit: a dedicated vendor exception
+
+A boolean predicate needs somewhere to run before the value it's guarding is touched. That's not
+always possible — unboxing a vendor's `Integer` into a domain value object wrapping a primitive
+`int` throws `NullPointerException` on the unboxing itself, before any `hasMissingFields()` call
+gets a chance to answer `false` first. For a field like that, guard it explicitly at the point of
+use — an `Optional`-returning helper with `.orElseThrow(...)`, or an equivalent inline check — and
+throw the response type's own exception, not the domain's.
+
+Give the response type a vendor-and-field-named exception extending
+`error.infrastructure.secondary.MissingFieldException`, the way `TmdbMovieResponse` throws
+`TmdbMovieMissingFieldException` via its own `missingField(String)` helper. Do not reach for
+`error.domain.Assert`/`MissingMandatoryValueException` from infrastructure code to plug the gap,
+even when it's more convenient or a downstream `catch` already expects that type — widen the catch
+to the new type instead. `MissingMandatoryValueException` is for a domain constructor's own
+precondition; a vendor response refusing a field it never supplied is a different fact; and the two
+staying separate is what lets each mean one thing. This holds even where the surrounding code has
+no `hasMissingFields()` pre-check at all: the predicate and the dedicated exception are two answers
+to the same question — "the vendor didn't supply this" — for the two shapes that question shows up
+in, not two competing conventions to pick one of.
+
 ## When not to reach for Feign
 
 Feign's model is one fixed base URL with templated paths. A call to an arbitrary,

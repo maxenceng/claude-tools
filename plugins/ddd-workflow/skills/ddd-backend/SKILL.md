@@ -102,8 +102,28 @@ worth more than every downstream check for a negative count.
 One attribute is the rule, not a guideline. A domain record holding several holds *value
 objects*, never raw values — so a `String`, a `UUID` or a `Duration` appears in exactly one
 place, the type that gives it a name and a rule. `boolean` is the only exception: there is
-nothing to validate and no name worth inventing. A type composing several value objects
-gets a builder.
+nothing to validate and no name worth inventing.
+
+**Every domain type with more than a couple of fields gets a builder** — not only the ones
+with an optional field. Use it everywhere the type is constructed: production factory
+methods, entity `toDomain()` conversions, and test fixtures, in place of the positional
+canonical constructor. The exception is a genuine value object — it stays constructed
+directly, since one or two arguments read fine positionally and a builder would only add
+ceremony. A named-setter call reads clearly regardless of argument count or order, and
+survives a field being added, reordered, or made optional later without every call site
+changing; that payoff exists whether or not the type happens to have an optional field
+today, which is why the bar is "is this a value object", not "does this have one". Where a
+type also needs a `minimal<Type>Builder` for the fixture problem below, that is additional
+to this, not instead of it.
+
+The builder is hand-written, in the shape `Price` and `CastMember` already use — a nested
+`<Type>Builder` with fluent setters and a `build()` that calls the existing compact
+constructor, so every invariant the constructor already asserts still runs — never Lombok's
+`@Builder`. The domain imports no framework, and `DomainIsFreeOfLombokTest` holds that as an
+executable rule. Lombok's `@Builder` stays correct on JPA entities in
+`infrastructure.secondary`, which is a different layer with no such restriction; the "every
+multi-field type gets a builder" rule applies there too, just with the framework tool rather
+than a hand-written one.
 
 A record written as `(String reference, Duration validFor)` wants to be
 `(EnrolmentReference, ValidityWindow)`. The payoff is not tidiness: every rule belonging to
@@ -226,9 +246,24 @@ domain:
 
 | Type | Role |
 |---|---|
-| `<Aggregate>Entity` | `@Entity`, package-private, mutable, with `create(...)` and `toDomain()` |
+| `<Aggregate>Entity` | `@Entity`, private fields, mutable through setters, with `create(...)` and `toDomain()` |
 | `Jpa<Aggregate>Repository` | `extends JpaRepository`, derived queries only |
 | `<Aggregate>Repository` | `@Repository`, implements the domain port, maps and translates |
+
+Every entity field is `private`, and every post-construction reassignment goes through a
+setter declared on the class that owns the field — never a bare `field = value` from
+outside it. Package-private access and direct mutation look free because Hibernate's
+field-based access strategy reads and writes either one by reflection just as happily,
+but neither was ever a deliberate trade, and a codebase that lets one entity do it stops
+being able to tell a considered exception from a habit nobody checked. The one exception
+is `TABLE_PER_CLASS` inheritance: a field a subclass must read or write directly is
+`protected`, because Java's `private` is not visible to a subclass even in the same
+package — and that is the only case, so `protected` should not appear anywhere else in a
+persistence package. A same-package class that is not a subclass (a test fixture
+populating a `@OneToMany` list, say) gets a package-private accessor instead of relaxed
+field visibility. A field set once, during construction — a `create()` factory, a Lombok
+`@Builder` — needs neither a setter nor special access: it is same-class access to a
+private field, legal in Java regardless of when in the object's life it runs.
 
 The adapter takes the unprefixed name because it is the one the context deals with; the
 generated Spring Data interface is the implementation detail and carries the `Jpa` prefix.
@@ -511,6 +546,16 @@ Where a rule moved out of a value object into the manager, its test moves with i
 `shouldNotBuildBelowThePublishingMinimum` in `SeatsTest` after the constructor stopped checking
 gives a test that passes for the wrong reason or fails for the right one; either way the
 rule is now the manager's and belongs in its test.
+
+`@InjectMocks` assumes every non-mocked constructor argument can be defaulted or is absent.
+A constructor mixing `@Mock`-able ports with `@Value`-injected primitive config (a batch size,
+a threshold) can defeat it outright — Mockito may refuse to construct the subject at all rather
+than leave the primitives at their default. Worse, a `@Value` field the domain validates as
+`strictlyPositive()` or similar throws on construction before `ReflectionTestUtils.setField`
+ever gets a chance to run, so that combination can't rescue it either. Check by running the test
+before assuming either pattern is available: where neither works, manual construction —
+`new Service(mockA, mockB, BATCH_SIZE, THRESHOLD)` in a `@BeforeEach` — is the correct answer for
+that class, not a shortcut to replace once the "real" pattern is found.
 
 **Secondary adapters.** `@Mock` the `Jpa*` repository, `@InjectMocks` the adapter, and
 assert on what comes back through the port — including the exception translation, which is
