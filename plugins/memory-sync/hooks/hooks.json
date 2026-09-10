@@ -28,8 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/sync.py\" >/dev/null 2>&1 || true",
-            "timeout": 60
+            "command": "setsid python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/sync.py\" >/dev/null 2>&1 </dev/null &",
+            "timeout": 5
           }
         ]
       }
