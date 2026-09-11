@@ -678,6 +678,14 @@ gives none is worse than no rule, because the next reader stops looking. Break t
 it forbids, watch the build go red, then put it back. This takes a minute and is the only
 evidence that the rule works.
 
+Guarding a vendor field against a value the vendor has never actually been observed to
+send — an out-of-range percentage, a malformed shape — because a neighbouring field
+genuinely needs the guard. The neighbour's guard earned its place with evidence; this one
+borrows the shape without the evidence and reads as equally justified. If a bounded domain
+type already refuses the value on construction, let it: failing loud is a legitimate
+answer, and a silent-skip guard built for a case nobody has seen is speculative surface
+area, not a fix.
+
 Documenting an intention rather than the code. A comment that states a rule the code
 does not enforce is worse than silence: it is believed, and it stops the reader from
 checking. If the invariant is real, enforce it; if it is not enforced yet, say exactly

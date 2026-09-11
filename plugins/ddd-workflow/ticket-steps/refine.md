@@ -44,6 +44,16 @@ questioning.
 Write the criterion that fails, not only the one that passes. Every rule has a case that
 breaks it and that is the one that gets forgotten.
 
+That is not licence to invent one. A criterion guarding against malformed or out-of-range
+*external* data — a vendor field outside its documented scale, a response shape nobody has
+seen — needs the same evidence a bug report would: has this integration actually been
+observed to send it? Check this project's git history and ADRs before writing the
+criterion, not after a review round questions it. Where a domain type already refuses the
+value on its own (a bounded value object's constructor), failing loud through that refusal
+is itself a valid answer, and does not need a silent-skip guard invented in front of it —
+an unobserved case is not the same finding as an observed one, even when a genuinely
+observed sibling case nearby makes the invented one look like it belongs beside it.
+
 Leave the title alone unless the questioning changed what the ticket is about. It is the
 sentence someone actually said, and quietly improving it loses the only unmediated record
 of the request.
