@@ -686,6 +686,18 @@ type already refuses the value on construction, let it: failing loud is a legiti
 answer, and a silent-skip guard built for a case nobody has seen is speculative surface
 area, not a fix.
 
+Removing every such guard on "unevidenced" alone, without checking what removal does to
+the failure. Two shapes don't fit the pattern above, and look identical to it until
+checked: a guard whose own effect is already to fail loud rather than skip or narrow
+silently — one protecting a cached value from being read back as valid, say — where
+removing it trades one clear, attributable failure for a quieter or misattributed one, not
+for a louder one; and a guard over a field the domain already treats as optional, where the
+malformed case collapses to the same accepted absent-value outcome an ordinary missing one
+already produces — removing it turns an accepted outcome into a new exception, the reverse
+of the fix. "No evidence this happens" is the trigger for asking whether a guard earns its
+keep, never the answer by itself — ask what removing it does to the failure before removing
+it.
+
 Documenting an intention rather than the code. A comment that states a rule the code
 does not enforce is worse than silence: it is believed, and it stops the reader from
 checking. If the invariant is real, enforce it; if it is not enforced yet, say exactly
