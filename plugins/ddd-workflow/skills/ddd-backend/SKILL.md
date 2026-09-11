@@ -116,6 +116,14 @@ today, which is why the bar is "is this a value object", not "does this have one
 type also needs a `minimal<Type>Builder` for the fixture problem below, that is additional
 to this, not instead of it.
 
+A second exception: a domain service whose fields are wired collaborators — ports, other
+domain services — assembled once by the application layer that constructs it, named
+`<Aggregate>Manager`. Its fields are not domain data a reordered positional argument could
+silently corrupt, which is the risk the builder rule exists to prevent, so it stays
+constructed positionally. A `Manager` whose fields have drifted toward carried data rather
+than wiring has outgrown the exception and the name at the same time — see *Frequent
+mistakes* below.
+
 The builder is hand-written, in the shape `Price` and `CastMember` already use — a nested
 `<Type>Builder` with fluent setters and a `build()` that calls the existing compact
 constructor, so every invariant the constructor already asserts still runs — never Lombok's
