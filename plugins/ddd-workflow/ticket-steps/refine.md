@@ -54,6 +54,14 @@ is itself a valid answer, and does not need a silent-skip guard invented in fron
 an unobserved case is not the same finding as an observed one, even when a genuinely
 observed sibling case nearby makes the invented one look like it belongs beside it.
 
+The same evidence question runs the other way on an audit ticket — one whose criteria
+decide the fate of guards that already exist, rather than proposing new ones. "No evidence
+this happens" is the trigger for asking whether each one earns its keep, not a rule that
+every unevidenced guard found gets a "removed" criterion: one whose own effect already
+fails loud, or one guarding data the domain already treats as optional, can be evidence-free
+and still correct to keep. `ddd-backend`'s *Frequent mistakes* has the carve-outs; write the
+criterion — remove, or keep with the reasoning going to an ADR — per guard, not by template.
+
 Leave the title alone unless the questioning changed what the ticket is about. It is the
 sentence someone actually said, and quietly improving it loses the only unmediated record
 of the request.
