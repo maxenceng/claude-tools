@@ -632,6 +632,16 @@ removes that thing.
 Do not add a test for a getter, a builder setter, or a record accessor. They have no
 behaviour, and a suite padded with them takes longer to run and trains people to skim.
 
+Do not re-pin a value object's own construction-time validation from one of its callers.
+Once `QuarantineThresholdTest` (or whichever value object's own test) covers "a
+non-positive value throws," an application-service or manager test that feeds the same
+value object the same bad primitive and asserts the same exception exercises nothing
+about the service — it reaches the value object's compact constructor through a longer
+path and proves the same thing twice. This holds even where the failure moved, such as
+a value object now built lazily at its call site instead of eagerly in a constructor:
+the new *timing* of the failure is worth an ADR, not a test in every caller that now
+triggers it.
+
 ## Comments
 
 Comment the decision, not the mechanics. `enroll()` returning a new `Course` needs no
