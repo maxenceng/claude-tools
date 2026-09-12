@@ -61,6 +61,37 @@ so one left in a shared parent context is applied to every client — this vendo
 another vendor's calls, or worse, a client authenticating its own token exchange with a
 token it does not have yet.
 
+## A client with no JSON body still gets a `Decoder`
+
+A client returning `byte[]` (an image, a binary blob) has no vendor JSON shape to bind a
+`Decoder` to, so it's tempting to configure none and assume Feign's own `Decoder.Default`
+handles the rest, answering a real — possibly zero-length — `byte[]` for every response.
+Spring Cloud OpenFeign doesn't leave that slot empty: an unconfigured `@FeignClient` gets
+`OptionalDecoder` wrapping `SpringDecoder` by default, and that pair answers `null` for an
+empty body, not a zero-length `byte[]`, whatever the target type. If a guard depends on
+telling "the vendor sent nothing" from "the vendor sent zero bytes on purpose," don't infer
+which decoder is wired from the fact that none was configured — pin `Decoder.Default`
+explicitly, and pin which one is wired under a test, so a later change to the configuration
+can't silently swap it back to Spring Cloud's own default.
+
+## A `Decoder` cannot raise the client's own translated exception
+
+Feign's decode step doesn't let a custom exception through undisturbed: whatever a
+`Decoder` throws, other than a `feign.FeignException` itself, is rewrapped into
+`feign.codec.DecodeException` by Feign's own `InvocationContext.decode`. A `Decoder` that
+tries to translate "this response's body isn't usable" into the vendor's own unreachable
+exception never delivers it to the caller as that type — the caller sees a
+`DecodeException` instead, one layer removed from what was actually thrown.
+
+Translate that case in the `Client`, not the `Decoder`. Wrap the real transport the same
+way the `Client` already does for a connection failure, and on a successful response read
+the body fully right there — underneath where Feign's decode-time rewrapping applies —
+raising the vendor's own exception directly for a body that turns out empty or unreadable.
+That's the same layer that already turns "no response at all" into that exception;
+extending it to cover "a response whose body couldn't be used" keeps both failures raised
+from one place, instead of splitting the translation across a `Client` and a `Decoder`
+that behave differently under Feign's own exception handling.
+
 ## What the failure means depends on who's asking
 
 The vendor's own exception — the one the `Client`/`ErrorDecoder` pair raises — is not
