@@ -155,6 +155,18 @@ it later must not make rows already in the database unreadable. Write the rule a
 the value object — `assertEnoughToPublish()` — and call it from the manager. The type stays
 constructible; the rule stays in one place and is enforced where the use case runs.
 
+**A value object built from external config** (a threshold, a batch size read via
+`@Value`) is constructed at its call site, not cached as a field built once at startup.
+Caching turns Spring context startup into implicit validation of that config — appealing,
+but a stronger guarantee than the same type gives anywhere else it is used, and one that
+buys eager failure by coupling the value object's construction to the application's boot
+sequence rather than to the work it is about to do. Build it inline in every method that
+hands it to a manager, the same way a timestamp value object usually already is there
+instead of cached: a misconfigured property then throws from the value object's own
+assertion the first time it is actually needed, not at boot. Record that as a deliberate
+trade (an ADR) rather than guarding against it with an eager pre-validation call — the
+lazy failure is the intended result, not a regression to catch.
+
 A value object never takes a port. `Course.enrol(studentId, waitingListPort)` looks
 convenient and is the wrong shape: it drags the outside world into a type whose whole value
 is that it is inert, and it makes one type responsible for both creating and reconstituting.
@@ -560,10 +572,25 @@ A constructor mixing `@Mock`-able ports with `@Value`-injected primitive config 
 a threshold) can defeat it outright — Mockito may refuse to construct the subject at all rather
 than leave the primitives at their default. Worse, a `@Value` field the domain validates as
 `strictlyPositive()` or similar throws on construction before `ReflectionTestUtils.setField`
-ever gets a chance to run, so that combination can't rescue it either. Check by running the test
-before assuming either pattern is available: where neither works, manual construction —
-`new Service(mockA, mockB, BATCH_SIZE, THRESHOLD)` in a `@BeforeEach` — is the correct answer for
-that class, not a shortcut to replace once the "real" pattern is found.
+ever gets a chance to run, so that combination can't rescue it either.
+
+Where that config belongs to the service alone — nothing else reads it, and the constructor
+does not need it to precompute anything — take it out of the constructor entirely and
+field-inject the `@Value` directly instead. That is a narrow, explicit carve-out of "nothing
+is field-injected" (worth its own ADR the first time a project adopts it), not a general
+escape hatch: every other collaborator — ports, managers — stays a `final`,
+constructor-injected field. It restores `@InjectMocks` outright, because the constructor now
+takes only mockable ports, and lets `ReflectionTestUtils.setField` set the config directly in
+`@BeforeEach`. Anything the constructor used to precompute from that config — a cached
+`Duration`, a cached value object — has to move to the call site too: a field-injected
+`@Value` is not set until after the constructor returns, so the constructor cannot read it at
+all, not merely "should not" to stay buildable.
+
+Check by running the test before assuming a pattern is available. Manual construction —
+`new Service(mockA, mockB, BATCH_SIZE, THRESHOLD)` in a `@BeforeEach` — is still the right
+answer wherever the config is a genuine constructor concern: shared by more than one
+collaborator, or needed to build something else at construction time. It is not a shortcut
+to reach for by default where field injection would resolve the same class more directly.
 
 **Secondary adapters.** `@Mock` the `Jpa*` repository, `@InjectMocks` the adapter, and
 assert on what comes back through the port — including the exception translation, which is
