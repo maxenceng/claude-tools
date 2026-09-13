@@ -23,11 +23,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # check-plugin-version-bump.sh diffs against the PR's base branch, which a
+          # shallow (depth-1) checkout does not have history for.
+          fetch-depth: 0
 
       - name: Validate manifests, frontmatter and cross-references
         run: |
           pip install --quiet --break-system-packages pyyaml
           ./scripts/verify-plugin.sh
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # A second gate on the manifest, maintained by Anthropic rather than by this repo.
+      - name: Validate with the official plugin CLI
+        run: |
+          npm install --global @anthropic-ai/claude-code@latest
+          claude plugin validate .
+
+      # PR-only: nothing to diff a version bump against on a plain push. BASE_REF goes
+      # through env, not inline, so a branch name can't be read as shell syntax.
+      - name: Require a version bump when a plugin's files change
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch origin "$BASE_REF" --depth=1
+          ./scripts/check-plugin-version-bump.sh "origin/$BASE_REF"
 
   # The template is the readable, buildable source. If it does not build, nothing
   # downstream can.
