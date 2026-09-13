@@ -65,7 +65,10 @@ do not weaken the rule without an ADR.
 7. A context keeps its shape: `@Service` is an `*ApplicationService` in `application`,
    `@Repository` lives in `infrastructure.secondary`, `*Request`/`*Response` live in
    `infrastructure.primary`, domain exceptions extend `DomainException`, domain fields
-   are final, and nothing is injected into a field.
+   are final, and nothing is injected into a field — except an `*ApplicationService`'s
+   own `@Value`-sourced scalar config, which is. Record that exception with an ADR the
+   day this project first adopts it; every other collaborator (ports, managers) stays a
+   `final`, constructor-injected field.
 
 ## Conventions
 
