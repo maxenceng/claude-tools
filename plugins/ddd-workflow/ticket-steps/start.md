@@ -14,10 +14,11 @@ Then:
 2. Create a branch named `<id>-<slug>`, matching the filename. Use a worktree if the
    current one has uncommitted work worth keeping.
 3. Dispatch the agent for what the ticket touches, from the Delegation table below, and
-   tell it to work test-first, domain outwards, running `make test` as it goes — the
-   architecture rules fail on a misplaced class immediately, which is cheaper than
-   finding it in review. `backend-ddd` loads the `ddd-backend` skill itself; invoke that
-   skill directly only when the work is small enough to stay inline.
+   tell it to invoke the `superpowers:test-driven-development` skill and work domain
+   outwards, running `make test` as it goes — the architecture rules fail on a misplaced
+   class immediately, which is cheaper than finding it in review. `backend-ddd` loads the
+   `ddd-backend` skill itself for the shape each test takes; invoke either skill directly
+   only when the work is small enough to stay inline.
 4. Write the boundary case first where the ticket has one. A rule tested only in the
    middle of its range passes with an off-by-one in it.
 5. If the API surface changed, recapture the schema: `make run`, `make openapi`,

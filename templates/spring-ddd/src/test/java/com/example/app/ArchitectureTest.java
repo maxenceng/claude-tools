@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.app.error.domain.DomainException;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnitAccess;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.domain.JavaParameterizedType;
@@ -274,6 +275,27 @@ class ArchitectureTest {
 			.should(holdOnlyDomainTypesWhenTheyHoldMoreThanOne())
 			.because("a raw value belongs in the value object that names it, not spread across the types that use it");
 
+	@ArchTest
+	static final ArchRule composite_domain_types_are_built_through_their_own_builder = classes()
+			.that()
+			.resideInAPackage("..domain..")
+			.and()
+			.resideOutsideOfPackage("..error..")
+			.and()
+			.areNotEnums()
+			.and()
+			.areNotAssignableTo(Throwable.class)
+			.and()
+			.haveSimpleNameNotEndingWith("Builder")
+			.and()
+			.haveSimpleNameNotEndingWith("Manager")
+			.should(beBuiltOnlyByTheirOwnBuilderWhenTheyHoldMoreThanOne())
+			.because("a builder is worth having only where it is the way the type is built - ADR 0068; a "
+					+ "constructor taking nothing but its own builder is already that, which is how a sealed base "
+					+ "is reached from its subclasses, and a manager is excluded because its fields are the ports "
+					+ "and managers the application layer wires into it once, not data a reordered argument could "
+					+ "silently corrupt");
+
 	/**
 	 * The three carriers a composite may hold raw, because naming them names nothing: a list, a map
 	 * and a pair are shapes rather than values, and what they carry is already a domain type. Pair
@@ -281,14 +303,18 @@ class ArchitectureTest {
 	 */
 	private static final Set<String> CARRIERS_WITH_NOTHING_TO_NAME = Set.of(List.class.getName(), Map.class.getName());
 
+	private static List<JavaField> nonStaticFields(JavaClass type) {
+		return type.getFields().stream()
+				.filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
+				.toList();
+	}
+
 	private static ArchCondition<JavaClass> holdOnlyDomainTypesWhenTheyHoldMoreThanOne() {
 		return new ArchCondition<>("hold only domain types when they hold more than one") {
 
 			@Override
 			public void check(JavaClass record, ConditionEvents events) {
-				List<JavaField> components = record.getFields().stream()
-						.filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
-						.toList();
+				List<JavaField> components = nonStaticFields(record);
 				if (components.size() < 2) {
 					return;
 				}
@@ -332,6 +358,54 @@ class ArchitectureTest {
 				}
 
 				return type.isPrimitive() || type.getPackageName().startsWith("java.");
+			}
+		};
+	}
+
+	private static ArchCondition<JavaClass> beBuiltOnlyByTheirOwnBuilderWhenTheyHoldMoreThanOne() {
+		return new ArchCondition<>("be built only by their own builder when they hold more than one field") {
+
+			@Override
+			public void check(JavaClass type, ConditionEvents events) {
+				if (nonStaticFields(type).size() < 2) {
+					return;
+				}
+
+				Stream.<JavaCodeUnitAccess<?>>concat(
+								type.getConstructorCallsToSelf().stream(), type.getConstructorReferencesToSelf().stream())
+						.filter(construction -> !isBuiltThroughABuilder(type, construction))
+						.forEach(construction -> events.add(SimpleConditionEvent.violated(
+								construction,
+								"%s constructs %s directly at %s; build it through %sBuilder - ADR 0068".formatted(
+										construction.getOriginOwner().getSimpleName(),
+										type.getSimpleName(),
+										construction.getSourceCodeLocation(),
+										type.getSimpleName()))));
+			}
+
+			private static boolean isBuiltThroughABuilder(JavaClass type, JavaCodeUnitAccess<?> construction) {
+				JavaClass origin = construction.getOriginOwner();
+				if (origin.equals(type) || isOwnBuilderOf(type, origin)) {
+					return true;
+				}
+
+				return takesNothingButItsOwnBuilder(type, construction);
+			}
+
+			private static boolean isOwnBuilderOf(JavaClass type, JavaClass origin) {
+				return origin.getSimpleName().equals(type.getSimpleName() + "Builder")
+						&& origin.getEnclosingClass().filter(type::equals).isPresent();
+			}
+
+			private static boolean takesNothingButItsOwnBuilder(JavaClass type, JavaCodeUnitAccess<?> construction) {
+				List<JavaClass> parameters = construction.getTarget().getRawParameterTypes();
+				if (parameters.size() != 1) {
+					return false;
+				}
+
+				JavaClass parameterType = parameters.getFirst();
+				return parameterType.getSimpleName().equals(type.getSimpleName() + "Builder")
+						&& parameterType.getEnclosingClass().filter(type::equals).isPresent();
 			}
 		};
 	}

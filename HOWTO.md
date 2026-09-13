@@ -300,6 +300,7 @@ honest surface for you.
 | `make verify` green, CI red | The two have drifted apart | A defect in the `Makefile`, not a step to run by hand. Fix `verify` so it matches the workflow again |
 | A `/ticket` step silently does nothing | It names a skill from `superpowers` that is not installed | `/plugin install superpowers@claude-plugins-official` |
 | `ddd-backend`'s advice contradicts a project's own ADR | The repo and the installed copy have drifted, or the repo itself never absorbed what the project just learned | Diff `plugins/ddd-workflow/skills/` against `~/.claude/plugins/cache/maxence-tools/ddd-workflow/<version>/skills/`; fix the repo, never the cache, then bump `plugin.json` |
+| CI fails: a plugin changed but its version didn't | `check-plugin-version-bump.sh` compares against the PR's base branch | Bump the changed plugin's `plugin.json` version |
 
 `make doctor` first whenever the build looks wrong before your change should have touched
 it. It checks the toolchain, which is the usual culprit.
@@ -316,9 +317,10 @@ rather than letting it answer confidently and wrongly. `project-retro`,
 `architecture-reviewer` and `codebase-explorer` travel fine.
 
 **`/ticket` leans on `superpowers`, and fails quietly without it.** `refine` invokes
-`superpowers:brainstorming`, `respond` invokes `superpowers:receiving-code-review`, and
-`review` invokes `superpowers:verification-before-completion`; the general code review
-goes to `code-review` or `pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
+`superpowers:brainstorming`, `start` invokes `superpowers:test-driven-development`,
+`respond` invokes `superpowers:receiving-code-review`, and `review` invokes
+`superpowers:verification-before-completion`; the general code review goes to
+`code-review` or `pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
 named skill that is not installed does not announce itself — the step simply proceeds
 without it, and the result looks like the command being loose rather than a missing
 dependency. Install `superpowers` alongside this, or expect those steps to be advisory.
@@ -338,9 +340,13 @@ the fix, and this toolkit does not do it for you.
 frontend toolchain at the versions it was written against, with no Dependabot or Renovate
 configuration. A project generated a year from now starts a year behind.
 
-**Verify before pushing.** `./scripts/verify-plugin.sh` checks the manifests and
-frontmatter; `./scripts/verify-archetype.sh` generates a project, builds both halves, and
-generates again through the wrapper. CI runs both, plus the template's own suite.
+**Verify before pushing.** `./scripts/verify-plugin.sh` checks every plugin's manifests
+and frontmatter; `claude plugin validate .` is a second, independently maintained gate on
+the marketplace manifest; `./scripts/check-plugin-version-bump.sh <base-ref>` fails when a
+plugin's files changed without its `plugin.json` version moving — required because `claude
+plugin update` only refreshes a client's cache when the version does; `./scripts/verify-archetype.sh`
+generates a project, builds both halves, and generates again through the wrapper. CI runs
+all four, plus the template's own suite.
 
 **Prose is the part that rots.** The build catches a broken archetype, a stale schema and
 a violated boundary. It cannot catch a skill recommending a method that does not exist,

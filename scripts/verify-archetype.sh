@@ -53,6 +53,16 @@ step "Check what the archetype format cannot express"
 [[ ! -e HELP.md ]] || { echo "FAIL: HELP.md is git-ignored in the template but shipped anyway" >&2; exit 1; }
 echo "ok: both .gitignore files, mvnw +x, no git-ignored file leaked"
 
+step "Check every scripts/*.sh survived the post-generate chmod, not only the ones it names"
+# archetype-post-generate.groovy chmods a hand-typed list of paths, not a scan of what
+# exists — the same "hand-kept list drifts from what exists" shape next-suggestions'
+# own SHARED-3 ticket found three times. This checks the outcome the list exists to
+# produce, so it stays true even if a fourth .sh file is added without updating it.
+while IFS= read -r f; do
+	[[ -x "$f" ]] || { echo "FAIL: $f is not executable — add it to archetype-post-generate.groovy's chmod list" >&2; exit 1; }
+done < <(find scripts -name '*.sh')
+echo "ok: every scripts/*.sh is executable"
+
 step "Check Velocity filtering did not eat the markdown"
 # "##" opens a comment in Velocity, so every heading below H1 was being deleted during
 # generation — the ticket template arrived with no sections at all. A build cannot see
