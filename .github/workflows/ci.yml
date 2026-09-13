@@ -37,22 +37,14 @@ jobs:
         with:
           node-version: '22'
 
-      # A second, independent gate on the marketplace manifest, maintained by Anthropic
-      # rather than by this repo — catches a manifest-schema change verify-plugin.sh
-      # does not yet know to check for. Needs no login.
+      # A second gate on the manifest, maintained by Anthropic rather than by this repo.
       - name: Validate with the official plugin CLI
         run: |
           npm install --global @anthropic-ai/claude-code@latest
           claude plugin validate .
 
-      # A plugin's files can change with no version bump, which ships silently stale:
-      # `claude plugin update` only refreshes a client's cache when the version moves.
-      # Only meaningful with something to diff against, so PR-only.
-      #
-      # BASE_REF goes through env rather than directly into the script, per this repo's
-      # own security-review convention: an interpolated ${{ }} value lands in the shell
-      # before the shell parses it, so a branch name containing shell metacharacters
-      # would be interpreted rather than treated as a literal string.
+      # PR-only: nothing to diff a version bump against on a plain push. BASE_REF goes
+      # through env, not inline, so a branch name can't be read as shell syntax.
       - name: Require a version bump when a plugin's files change
         if: github.event_name == 'pull_request'
         env:

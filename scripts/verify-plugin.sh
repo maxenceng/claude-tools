@@ -46,10 +46,7 @@ for key in ("name", "plugins"):
     if key not in market:
         fail(market_path, f"missing required key '{key}'")
 
-# Every plugin this marketplace lists, resolved to its directory — built here so the
-# checks below run for all of them instead of one hardcoded plugin. A plugin added to
-# marketplace.json and never added here would go unchecked exactly the way this whole
-# script exists to prevent for the marketplace entry itself.
+# Resolved here so every check below runs per plugin, not against one hardcoded path.
 plugin_dirs = []
 for entry in market.get("plugins", []):
     checked += 1
@@ -104,9 +101,7 @@ def check_steps(path, stem, steps_dir, data):
 
 
 def check_plugin_root_paths(config_path, plugin_root):
-    """Every ${CLAUDE_PLUGIN_ROOT}/... path a hooks.json or .mcp.json points at must exist —
-    a script renamed or moved without updating the config that invokes it would otherwise
-    stay silent until the hook or MCP server actually runs in someone's session."""
+    """Validate JSON, then check every ${CLAUDE_PLUGIN_ROOT}/... path it references exists."""
     try:
         text = open(config_path, encoding="utf-8").read()
         json.loads(text)

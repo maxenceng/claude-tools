@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Fail when a plugin's files changed on this branch but its own version did not move.
-#
-# `claude plugin update` only refreshes what a client has cached when a plugin's version
-# changes — a content-only edit with no version bump ships silently stale until someone
-# remembers to bump it by hand in a follow-up commit. That is not hypothetical: 920be91 in
-# this repo's own history exists solely because 1f4dfda's fix did not take until a second
-# commit bumped memory-sync's version.
+# Fail when a plugin's files changed but its version didn't -- claude plugin update only
+# refreshes a cached plugin when the version moves (see 920be91/1f4dfda in this repo).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
