@@ -317,9 +317,10 @@ rather than letting it answer confidently and wrongly. `project-retro`,
 `architecture-reviewer` and `codebase-explorer` travel fine.
 
 **`/ticket` leans on `superpowers`, and fails quietly without it.** `refine` invokes
-`superpowers:brainstorming`, `respond` invokes `superpowers:receiving-code-review`, and
-`review` invokes `superpowers:verification-before-completion`; the general code review
-goes to `code-review` or `pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
+`superpowers:brainstorming`, `start` invokes `superpowers:test-driven-development`,
+`respond` invokes `superpowers:receiving-code-review`, and `review` invokes
+`superpowers:verification-before-completion`; the general code review goes to
+`code-review` or `pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
 named skill that is not installed does not announce itself — the step simply proceeds
 without it, and the result looks like the command being loose rather than a missing
 dependency. Install `superpowers` alongside this, or expect those steps to be advisory.
