@@ -437,6 +437,13 @@ Docker publishes a port reads as a prompt rather than as code. A dependency that
 to get wrong earns one line naming the trap. Everything else earns silence — including,
 especially, the reasoning you found interesting while working it out.
 
+Class- and method-level javadoc runs longer, but the ceiling still applies to what it is
+allowed to restate. State what the type is once. Where an ADR already carries the
+decision's reasoning, name its number and stop — `CapturedAt` citing "ADR 0028" needs no
+second sentence re-arguing what 0028 already argues. A paragraph earns its place only for
+a decision the ADR does not cover, such as `CapturedAt` living on the listing rather than
+inside `Price`.
+
 Check a comment against the code before trusting it, especially one that sounds precise.
 `Seats` was documented as rejecting zero while its assertion accepted zero, and zero is
 what every new course is created with — the comment had been wrong for as long as it had
