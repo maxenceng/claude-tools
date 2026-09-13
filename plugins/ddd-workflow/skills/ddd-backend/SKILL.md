@@ -116,13 +116,15 @@ today, which is why the bar is "is this a value object", not "does this have one
 type also needs a `minimal<Type>Builder` for the fixture problem below, that is additional
 to this, not instead of it.
 
-A second exception: a domain service whose fields are wired collaborators — ports, other
-domain services — assembled once by the application layer that constructs it, named
+A second exception: a domain service whose fields are wired collaborators — ports, and
+ports alone — assembled once by the application layer that constructs it, named
 `<Aggregate>Manager`. Its fields are not domain data a reordered positional argument could
 silently corrupt, which is the risk the builder rule exists to prevent, so it stays
 constructed positionally. A `Manager` whose fields have drifted toward carried data rather
 than wiring has outgrown the exception and the name at the same time — see *Frequent
-mistakes* below.
+mistakes* below. So has one that has drifted toward wiring in another `Manager` instead of
+a port — see *Domain services* below for what to do when a use case needs another
+manager's decision.
 
 The builder is hand-written, in the shape `Price` and `CastMember` already use — a nested
 `<Type>Builder` with fluent setters and a `build()` that calls the existing compact
@@ -228,6 +230,17 @@ the manager stops being the only entry to the use case. Nor may a driven adapter
 the application layer — that inverts the direction everything else points. When an adapter
 genuinely needs a row, it uses the Spring Data interface beside it in `secondary`. A port
 method no manager calls should not be on the port at all.
+
+**A manager depends on ports only, and never on another manager** — the same rule as the
+adapter's, one layer up. `EnrolmentManager(CoursePort, WaitingListManager)` looks like reuse
+and is the wrong shape: it makes `EnrolmentManager` a second place deciding what
+`WaitingListManager`'s use case means, the same borrowed authority a port-holding adapter
+would have. Where a manager's own use case genuinely needs a decision another manager makes,
+take that manager's port directly and re-implement the small decision inline — cheap
+duplication is the price, not a reason to nest — or, where the decision is large enough that
+duplicating it would itself be the bug, wire both managers into the `*ApplicationService`
+instead and have it call one, then the other, passing the first's result to the second. The
+call is per case, not a blanket preference for either shape.
 
 **Exceptions** extend `DomainException`, are named after the rule (`CourseFullException`),
 and pass a `DomainErrorStatus` to `super`. See *Errors* below.
@@ -490,6 +503,14 @@ has not been found yet, and they persist long after it has. `<Aggregate>Manager`
 one exception and only in its narrow sense above — a domain service holding a required
 ordering. A `Manager` that has grown methods unrelated to that ordering has stopped
 being one and is hiding a concept that still needs a name.
+
+Wiring one manager into another because both are already there and the second one already
+does most of what the first needs. It reads as reuse and costs little to write, which is
+exactly why it recurs: a manager needing another manager's decision is a real, common shape,
+not a one-off. Take the other manager's port directly and re-implement the small decision
+instead — a few duplicated lines is cheaper than a manager whose own correctness now depends
+on a sibling's. Reach for the `*ApplicationService` composition only once that duplication
+would itself be worth avoiding.
 
 Adding a rule to `ArchitectureTest` for something ArchUnit cannot see. It reads bytecode,
 so anything the compiler erases is invisible to it: imports, generic type arguments, and
