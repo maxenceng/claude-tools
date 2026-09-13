@@ -6,6 +6,7 @@ files are skipped -- they're an index over the other files, not memory content
 themselves. Re-running is safe: point ids are derived from the file path, so an
 unchanged file re-embeds to the same id and a changed one updates it in place.
 """
+import datetime
 import glob
 import json
 import os
@@ -16,11 +17,25 @@ import uuid
 
 import yaml
 
-QDRANT_URL = os.environ["QDRANT_URL"].rstrip("/")
-QDRANT_API_KEY = os.environ["QDRANT_API_KEY"]
-EMBEDDINGS_URL = os.environ["EMBEDDINGS_URL"].rstrip("/")
 COLLECTION = "claude_memory"
 NAMESPACE = uuid.UUID("6c7e6b1a-6b0b-4c9a-9f3e-6a2f8c1d9b4e")
+# The SessionEnd hook backgrounds this script with every stream sent to /dev/null, so an
+# unhandled exception here is otherwise invisible forever -- this is the only trace of it.
+LOG_PATH = os.path.expanduser("~/.claude/memory-sync.log")
+
+
+def log_failure(message):
+    with open(LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(f"{datetime.datetime.now(datetime.timezone.utc).isoformat()} {message}\n")
+
+
+try:
+    QDRANT_URL = os.environ["QDRANT_URL"].rstrip("/")
+    QDRANT_API_KEY = os.environ["QDRANT_API_KEY"]
+    EMBEDDINGS_URL = os.environ["EMBEDDINGS_URL"].rstrip("/")
+except KeyError as e:
+    log_failure(f"sync skipped: missing environment variable {e}")
+    sys.exit(0)
 
 
 def embed(text):
@@ -109,5 +124,10 @@ if __name__ == "__main__":
     try:
         main()
     except urllib.error.HTTPError as e:
-        print(f"HTTP {e.code}: {e.read().decode()}", file=sys.stderr)
+        detail = f"HTTP {e.code}: {e.read().decode()}"
+        log_failure(f"sync failed: {detail}")
+        print(detail, file=sys.stderr)
         sys.exit(1)
+    except Exception as e:
+        log_failure(f"sync failed: {type(e).__name__}: {e}")
+        raise
