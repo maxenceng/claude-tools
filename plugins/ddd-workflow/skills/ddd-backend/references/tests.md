@@ -226,3 +226,12 @@ path and proves the same thing twice. This holds even where the failure moved, s
 a value object now built lazily at its call site instead of eagerly in a constructor:
 the new *timing* of the failure is worth an ADR, not a test in every caller that now
 triggers it.
+
+The same failure shows up when a manager method stops doing anything but delegate. A
+test that stubs a one-line call to a port or a collaborator and asserts the stub's
+return value comes back unchanged is not covering the manager — it is covering
+Mockito. This is the common aftermath of moving real behaviour out of a manager (into
+another collaborator, or up into the `*ApplicationService`): the method that used to
+justify the test is now a pass-through, and the test that used to exercise it still
+compiles and still passes, having stopped proving anything. Delete it rather than
+reshape it; the behaviour that used to live there is tested where it moved to.
