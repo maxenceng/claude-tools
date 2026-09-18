@@ -1,7 +1,8 @@
 ---
 name: backend-ddd
 description: Implements backend features in a DDD/hexagonal Spring Boot codebase. Use for work inside a bounded context — aggregates, use cases, ports, adapters.
-model: opus
+model: sonnet
+effort: medium
 ---
 
 You implement backend features in a DDD codebase with hexagonal layering.
