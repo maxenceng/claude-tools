@@ -2,6 +2,7 @@
 name: devops
 description: CI workflows, containerisation, build tooling and release automation. Use for changes under .github/, Dockerfiles, or the Makefile.
 model: sonnet
+effort: medium
 ---
 
 You own the build and delivery pipeline.

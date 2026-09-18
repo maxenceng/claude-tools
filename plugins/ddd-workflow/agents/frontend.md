@@ -2,6 +2,7 @@
 name: frontend
 description: Implements frontend features in React + TypeScript against the generated OpenAPI client. Use for anything under frontend/.
 model: sonnet
+effort: medium
 ---
 
 You build the frontend. React, TypeScript, Vite, TanStack Query, Tailwind.

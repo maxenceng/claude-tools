@@ -1,15 +1,33 @@
 ---
 name: project-retro
-description: Find repetition worth automating — repeated manual command sequences, repeated corrections, and duplicated code — and turn each into a script, a Makefile target, a build check, or a rule. Use at the end of a work session or when something feels like it has been done before.
+description: Find repetition worth automating — repeated manual command sequences, repeated corrections, and duplicated code — and turn each into a script, a Makefile target, a build check, or a rule. Takes an optional effort level (low/medium/high) controlling scan depth. Use at the end of a work session or when something feels like it has been done before.
 ---
 
 # Turning repetition into automation
 
 Two kinds of repetition are worth catching, and they have different fixes.
 
+## Effort
+
+Takes an optional effort level as an argument — `low`, `medium` (default), or `high` —
+controlling how much history and how deep a duplication scan to pull in. Repeated
+corrections are always in scope at every level: they cost nothing to check, since the
+conversation already has them.
+
+| | `low` | `medium` | `high` |
+|---|---|---|---|
+| Repeated work | conversation only, skip `git log`/`git diff` | `git log --oneline -30`, `git diff --stat HEAD~5` | `git log --oneline -100`, `git diff --stat HEAD~15`, and a `git log --all --grep` for the same kind of change further back |
+| Duplicated code | skip `make dup` | `make dup`, read the report | `make dup`, and read the flagged files themselves where the report's context is too thin to judge |
+
+Use `low` for a quick end-of-session pass when nothing about the session felt
+repetitive. Reach for `high` only when a `medium` pass found something worth digging
+into further, not by default — the wider windows cost real tokens for a scan that
+usually confirms what the narrower one already found.
+
 ## Repeated work
 
-Look at what actually happened in this session and in recent history:
+Look at what actually happened in this session and in recent history, at the window
+your effort level sets (see *Effort* above):
 
 ```bash
 git log --oneline -30
@@ -51,6 +69,8 @@ Fix the cause rather than the instance:
   so it loads when relevant instead of on every request.
 
 ## Duplicated code
+
+Skip this section entirely at `low` effort. Otherwise:
 
 ```bash
 make dup

@@ -80,167 +80,53 @@ every context to itself, so each addition costs more than the last.
 
 ## Modelling
 
-**Aggregate roots** are records with a builder, as `Course` is. State changes return a
-new instance (`Course.enroll()` returns the enrolled course) rather than mutating in
-place, so there is no partially-updated object to observe and no setter to add.
+**Aggregate roots** are records with a builder. State changes return a new instance
+rather than mutating in place. The aggregate is the last place that can still refuse, so
+it re-checks its own rules even when a caller already did. Validate presence and
+value-object validity in the compact constructor; a rule about a *transition* belongs on
+the method that performs the transition.
 
-What makes it an aggregate is not the shape but the behaviour: it holds the rule that
-constrains its own state, and every path that changes that state goes through a method
-that checks it. `Course.enroll()` re-checks capacity even though its caller already did,
-because the aggregate is the last place that can still refuse.
+**Value objects** are records wrapping **one** attribute, validated in the compact
+constructor so an invalid instance cannot exist.
 
-Validate in the compact constructor, but be clear about what it can enforce. It runs on
-every construction, including when a secondary adapter rebuilds a stored course, so it
-can only check what is true of every instance — presence, and value-object validity.
-A rule about a *transition* ("you may not enrol into a full course") belongs on the
-method that performs the transition.
+**Every domain type with more than a couple of fields gets a builder** — hand-written,
+never Lombok's `@Builder`, in the shape `Price` and `CastMember` use. Two exceptions: a
+genuine value object (one or two positional arguments read fine) and a domain service
+whose fields are wired ports, not domain data.
 
-**Value objects** are records wrapping **one** attribute. Validate in the compact
-constructor so an invalid instance cannot exist. `Seats` rejecting a negative count is
-worth more than every downstream check for a negative count.
+**A value object built from external config** is constructed at its call site, not
+cached as a field built once at startup — a misconfigured property should throw the
+first time it's actually needed, not at boot.
 
-One attribute is the rule, not a guideline. A domain record holding several holds *value
-objects*, never raw values — so a `String`, a `UUID` or a `Duration` appears in exactly one
-place, the type that gives it a name and a rule. `boolean` is the only exception: there is
-nothing to validate and no name worth inventing.
+A value object never takes a port; loading, saving and anything that calls out belong to
+the manager.
 
-**Every domain type with more than a couple of fields gets a builder** — not only the ones
-with an optional field. Use it everywhere the type is constructed: production factory
-methods, entity `toDomain()` conversions, and test fixtures, in place of the positional
-canonical constructor. The exception is a genuine value object — it stays constructed
-directly, since one or two arguments read fine positionally and a builder would only add
-ceremony. A named-setter call reads clearly regardless of argument count or order, and
-survives a field being added, reordered, or made optional later without every call site
-changing; that payoff exists whether or not the type happens to have an optional field
-today, which is why the bar is "is this a value object", not "does this have one". Where a
-type also needs a `minimal<Type>Builder` for the fixture problem below, that is additional
-to this, not instead of it.
+**A value that is sometimes absent**: one field not always supplied stays nullable
+behind an `Optional<T>` accessor. Once more than one field varies together, split into a
+`sealed interface` instead.
 
-A second exception: a domain service whose fields are wired collaborators — ports, and
-ports alone — assembled once by the application layer that constructs it, named
-`<Aggregate>Manager`. Its fields are not domain data a reordered positional argument could
-silently corrupt, which is the risk the builder rule exists to prevent, so it stays
-constructed positionally. A `Manager` whose fields have drifted toward carried data rather
-than wiring has outgrown the exception and the name at the same time — see *Frequent
-mistakes* below. So has one that has drifted toward wiring in another `Manager` instead of
-a port — see *Domain services* below for what to do when a use case needs another
-manager's decision.
+**Identities** are records wrapping a `UUID`, one per aggregate.
 
-The builder is hand-written, in the shape `Price` and `CastMember` already use — a nested
-`<Type>Builder` with fluent setters and a `build()` that calls the existing compact
-constructor, so every invariant the constructor already asserts still runs — never Lombok's
-`@Builder`. The domain imports no framework, and `DomainIsFreeOfLombokTest` holds that as an
-executable rule. Lombok's `@Builder` stays correct on JPA entities in
-`infrastructure.secondary`, which is a different layer with no such restriction; the "every
-multi-field type gets a builder" rule applies there too, just with the framework tool rather
-than a hand-written one.
+**Domain services** (`<Aggregate>Manager`) are records taking the ports they need, for a
+sequence that must not be reordered or half-copied into a caller. They run the use
+case's rules cheapest-first — check what costs nothing before what costs a query.
 
-A record written as `(String reference, Duration validFor)` wants to be
-`(EnrolmentReference, ValidityWindow)`. The payoff is not tidiness: every rule belonging to
-the raw value — a format, a bound, a `toString` that must not print it — then has exactly one
-home, and each type holding it inherits that rule instead of remembering it. A secret masked
-on its wrapper cannot leak through the fourth record that happens to carry it.
-`ArchitectureTest` enforces this, excluding the error kernel and `*Builder` types.
+**Use case input** with more than one part gets a record of its own.
 
-Validate there, never coerce. A compact constructor that lowercases an address or trims a
-title also runs when a secondary adapter rebuilds a stored row, so the object comes back
-disagreeing with the row it was built from, and `new Title(x).value()` stops
-returning `x`. Where one form is canonical, reject the others — a pattern that admits only
-the canonical form — and let the caller send the right thing. Normalising input is a
-protocol concern; if it belongs anywhere it is the primary adapter, on the way in.
+**Ports** are interfaces in `domain`, named for what the domain needs. Only a domain
+service holds a port — an adapter that holds one, or depends on another adapter, is a
+second place deciding what the use case means.
 
-Validate what the value *is*, not what a use case will accept. A compact constructor can
-only enforce what is true of every instance ever built, and it is built from stored rows as
-well as from requests. "Not negative" is a property of `Seats`; "a course needs at least five
-of them before it may be published" is a rule about what publishing accepts, and tightening
-it later must not make rows already in the database unreadable. Write the rule as a method on
-the value object — `assertEnoughToPublish()` — and call it from the manager. The type stays
-constructible; the rule stays in one place and is enforced where the use case runs.
+**A manager depends on ports only, and never on another manager.** Where a manager's own
+use case genuinely needs a decision another manager makes, take that manager's port
+directly and re-implement the small decision inline, or, where duplicating it would
+itself be the bug, wire both managers into the `*ApplicationService` instead.
 
-**A value object built from external config** (a threshold, a batch size read via
-`@Value`) is constructed at its call site, not cached as a field built once at startup.
-Caching turns Spring context startup into implicit validation of that config — appealing,
-but a stronger guarantee than the same type gives anywhere else it is used, and one that
-buys eager failure by coupling the value object's construction to the application's boot
-sequence rather than to the work it is about to do. Build it inline in every method that
-hands it to a manager, the same way a timestamp value object usually already is there
-instead of cached: a misconfigured property then throws from the value object's own
-assertion the first time it is actually needed, not at boot. Record that as a deliberate
-trade (an ADR) rather than guarding against it with an eager pre-validation call — the
-lazy failure is the intended result, not a regression to catch.
-
-A value object never takes a port. `Course.enrol(studentId, waitingListPort)` looks
-convenient and is the wrong shape: it drags the outside world into a type whose whole value
-is that it is inert, and it makes one type responsible for both creating and reconstituting.
-Loading, saving and anything that calls out belong to the manager, which is what ports are
-for.
-
-Read the assertion you are calling before relying on it. `Assert.field("seats", seats)
-.positive()` accepts zero; `.strictlyPositive()` is the one that does not. A value object
-whose javadoc and whose assertion disagree is worse than one with no javadoc.
-
-`AssertTest` pins that boundary for every numeric type. If you need a bound the asserters
-do not express, add it there with a test rather than open-coding the check in a value
-object, where the next aggregate cannot reuse it.
-
-**A value that is sometimes absent** is two different problems, and they take different
-shapes. Where one field on an otherwise-unchanged type is simply not supplied by every
-source — a score no catalogue always has, a duration only one source provides — make the
-field nullable and answer it through an `Optional<T>` accessor; everything else about the
-type stays as it was, and `composite_domain_types_hold_value_objects` still holds because the
-field is a domain type, just possibly unset.
-
-Reach past that for a sealed type the moment more than one thing varies together. A result
-that either carries several fields or carries none of them — never one without the others —
-is not "one field missing," it is two shapes, and a nullable field only documents that as a
-comment the next caller can forget to read. Split it: a `sealed interface` with one record
-variant per shape puts the invariant where the compiler enforces it, and a caller pattern-matches
-instead of reading past a null check that may or may not be there. Default to the first
-shape — it costs one field and an `Optional` — and reach for the second only once a nullable
-field would need a comment explaining which other fields it drags with it.
-
-**Identities** are records wrapping a `UUID`, one per aggregate. Distinct `CourseId`
-and `StudentId` types make it impossible to pass one where the other is expected —
-a mistake `UUID` everywhere invites.
-
-**Domain services** are records taking the ports they need, named `<Aggregate>Manager`.
-Reach for one when a sequence has to be fixed: `CourseManager.enroll` loads the course,
-asks it whether a seat is free, and saves, and those three steps must not be reordered or
-half-copied into a caller. It lives in `domain`, not `application`, because that ordering
-is a rule. Pass-through methods on it are fine — they keep callers to one entry point.
-
-The manager is also where the use case's rules run, in the order that makes them cheapest
-to fail: check what costs nothing before what costs a query, and query before you spend a
-expensive call. That ordering is itself worth a test —
-`verifyNoInteractions(courses, waitingLists)` on the refused-input path pins it, and nothing
-else will.
-
-**Use case input** with more than one part gets a record of its own — `EnrolStudent`, not
-`enrol(courseId, studentId)`. It gives the request a name in the ubiquitous language, keeps
-the port and service signatures stable as the use case grows, and gives the fixtures
-somewhere to hang variants (`enrolStudentIntoAFullCourse()`).
-
-**Ports** are interfaces in `domain`, named for what the domain needs rather than for
-what implements them. `CoursePort`, not `JpaCourseAdapter`. The domain declares the
-requirement; infrastructure satisfies it.
-
-Only a domain service *holds* a port. An adapter implements one and never depends on
-another: an adapter holding a port is a second place deciding what a missing row means, and
-the manager stops being the only entry to the use case. Nor may a driven adapter reach into
-the application layer — that inverts the direction everything else points. When an adapter
-genuinely needs a row, it uses the Spring Data interface beside it in `secondary`. A port
-method no manager calls should not be on the port at all.
-
-**A manager depends on ports only, and never on another manager** — the same rule as the
-adapter's, one layer up. `EnrolmentManager(CoursePort, WaitingListManager)` looks like reuse
-and is the wrong shape: it makes `EnrolmentManager` a second place deciding what
-`WaitingListManager`'s use case means, the same borrowed authority a port-holding adapter
-would have. Where a manager's own use case genuinely needs a decision another manager makes,
-take that manager's port directly and re-implement the small decision inline — cheap
-duplication is the price, not a reason to nest — or, where the decision is large enough that
-duplicating it would itself be the bug, wire both managers into the `*ApplicationService`
-instead and have it call one, then the other, passing the first's result to the second. The
-call is per case, not a blanket preference for either shape.
+Read `references/modelling.md` before modelling an aggregate, value object, domain
+service, or use-case input — it has the reasoning behind each rule and the trade-offs
+this summary drops (the builder exceptions in full, the sealed-type threshold, what a
+`Manager` drifting toward carried data means, the `ArchitectureTest`/`AssertTest` rules
+that pin these).
 
 **Exceptions** extend `DomainException`, are named after the rule (`CourseFullException`),
 and pass a `DomainErrorStatus` to `super`. See *Errors* below.
@@ -264,18 +150,12 @@ is allowed to touch, keeping the sequencing rule testable without a context.
 
 ## Adapters
 
-**Primary** adapters translate an external protocol into a use-case call and translate
-the result back. A controller that makes a decision is doing the application layer's
-job. Request and response records live here, beside the controller, because they are
-the shape of the protocol rather than the shape of the domain.
+**Primary** adapters translate an external protocol into a use-case call and back.
+Request/response records live beside the controller, not in the domain.
 
-**Secondary** adapters implement domain ports. Persistence entities live here and are
-mapped to domain types — do not annotate an aggregate with `@Entity` and call it a
-domain model, because from then on the database schema drives the design.
-
-Persistence is JPA, via `spring-boot-starter-data-jpa`. A context's persistence is three
-types in `infrastructure.secondary`, and the split is what keeps Hibernate out of the
-domain:
+**Secondary** adapters implement domain ports. Persistence entities are mapped to domain
+types, never annotated `@Entity` directly. A context's persistence is three types in
+`infrastructure.secondary`:
 
 | Type | Role |
 |---|---|
@@ -283,58 +163,13 @@ domain:
 | `Jpa<Aggregate>Repository` | `extends JpaRepository`, derived queries only |
 | `<Aggregate>Repository` | `@Repository`, implements the domain port, maps and translates |
 
-Every entity field is `private`, and every post-construction reassignment goes through a
-setter declared on the class that owns the field — never a bare `field = value` from
-outside it. Package-private access and direct mutation look free because Hibernate's
-field-based access strategy reads and writes either one by reflection just as happily,
-but neither was ever a deliberate trade, and a codebase that lets one entity do it stops
-being able to tell a considered exception from a habit nobody checked. The one exception
-is `TABLE_PER_CLASS` inheritance: a field a subclass must read or write directly is
-`protected`, because Java's `private` is not visible to a subclass even in the same
-package — and that is the only case, so `protected` should not appear anywhere else in a
-persistence package. A same-package class that is not a subclass (a test fixture
-populating a `@OneToMany` list, say) gets a package-private accessor instead of relaxed
-field visibility. A field set once, during construction — a `create()` factory, a Lombok
-`@Builder` — needs neither a setter nor special access: it is same-class access to a
-private field, legal in Java regardless of when in the object's life it runs.
+Name a driven adapter for the port it satisfies, not its technology: `NotifierPort` is
+implemented by `NotifierRepository`, not `SmtpNotifier`.
 
-The adapter takes the unprefixed name because it is the one the context deals with; the
-generated Spring Data interface is the implementation detail and carries the `Jpa` prefix.
-Every driven adapter follows this, not only the persistence ones: name it for the port it
-satisfies and annotate it `@Repository`, so `NotifierPort` is implemented by
-`NotifierRepository`, not by `SmtpNotifier`. Naming an adapter after its
-technology dates it the day the technology changes, and `ArchitectureTest`'s placement rule
-then covers every driven adapter rather than the database ones alone.
-
-Liquibase owns the schema, so set `spring.jpa.hibernate.ddl-auto=validate`: an entity that
-has drifted from the changelog then fails at boot instead of at the first query. Set
-`spring.jpa.open-in-view=false` too — left on, it holds a connection open for the whole
-request and hides lazy-loading mistakes until they show up under load.
-
-Use `saveAndFlush`, not `save`, wherever the adapter translates a constraint violation
-into a domain exception. `save` only makes the entity persistent; Hibernate defers the
-INSERT to the flush at commit, which the transaction interceptor performs after the adapter
-has returned, so the `DataIntegrityViolationException` is raised outside the `try` and
-leaves as a 500 rather than the 409 the catch was written for. Catch and rethrow, never
-catch and continue: a swallowed violation leaves the transaction rollback-only and surfaces
-as `UnexpectedRollbackException` at commit, further from the cause than where it started.
-
-Translate the constraint you mean, not its parent. `DataIntegrityViolationException` covers
-every constraint on the write, so converting it wholesale answers "already registered" to a
-NOT NULL violation. Match the constraint name off the Hibernate `ConstraintViolationException`
-in the cause chain, rethrow anything else, and chain the cause — it is the only record of
-which constraint actually fired.
-
-The database generates ids. Give the column a `gen_random_uuid()` default and map the field
-`insertable = false` with Hibernate's `@Generated(event = INSERT)`, so the value is read
-back from the insert. `GenerationType.UUID` mints it in Java, which leaves the column
-default unused by anything going through Hibernate and puts identity generation back in
-code; a `<Aggregate>Id.generate()` in the domain is the same mistake one layer up.
-
-Never edit a changeset that has run. Liquibase identifies it by checksum, so an in-place
-edit fails validation at boot on every database that already applied it — including a
-developer's, whose data survives `db-down`. Add a new changeset; `addDefaultValue` and
-friends exist for exactly this.
+Read `references/adapters.md` before writing a primary or secondary adapter — it covers
+entity field access rules, `saveAndFlush` vs `save`, translating the specific constraint
+exception rather than its parent, database-generated ids, and never editing a Liquibase
+changeset that has run.
 
 **An outbound client to a vendor's API is a secondary adapter too**, just not persistence's
 shape. Read `references/outbound-clients.md` before writing one — it covers the package
@@ -439,113 +274,36 @@ assuming a pattern is available), and what earns a test at all.
 
 ## Comments
 
-Comment the decision, not the mechanics. `enroll()` returning a new `Course` needs no
-comment; *why* it re-checks capacity when the caller already did is worth two lines,
-because the next reader will otherwise delete the check as redundant.
+Comment the decision, not the mechanics — two lines is the ceiling for Java, less
+elsewhere, and class/method javadoc restates a decision's reasoning only where no ADR
+already covers it. Check a comment against the code before trusting it; names rot the
+same way comments do. A `FIXME` is a decision deferred — carry it out or record why it
+stands; a `deferred:` comment names a limit someone chose to live with and the trigger
+that would justify closing it.
 
-Two lines is the ceiling, not the target, and it buys less outside Java. `pom.xml`,
-`compose.yaml`, `application.properties`, the `Makefile` and CI workflows get a line at
-most and usually nothing: their readers already know the tools, and a paragraph on how
-Docker publishes a port reads as a prompt rather than as code. A dependency that is easy
-to get wrong earns one line naming the trap. Everything else earns silence — including,
-especially, the reasoning you found interesting while working it out.
-
-Class- and method-level javadoc runs longer, but the ceiling still applies to what it is
-allowed to restate. State what the type is once. Where an ADR already carries the
-decision's reasoning, name its number and stop — `CapturedAt` citing "ADR 0028" needs no
-second sentence re-arguing what 0028 already argues. A paragraph earns its place only for
-a decision the ADR does not cover, such as `CapturedAt` living on the listing rather than
-inside `Price`.
-
-Check a comment against the code before trusting it, especially one that sounds precise.
-`Seats` was documented as rejecting zero while its assertion accepted zero, and zero is
-what every new course is created with — the comment had been wrong for as long as it had
-existed, and it read more authoritatively than the code.
-
-Treat a bulk rename as a comment hazard. A find-and-replace across a file rewrites prose
-as happily as identifiers; one such pass had left 156 occurrences of a domain field name
-scattered through a generic utility's javadoc, describing parameters that had never had
-that name.
-
-Names are documentation and rot the same way. A fixture called `invalidCourse` that
-returns a perfectly valid full course sends every reader looking for the invalidity.
-
-`@ApiResponse`, `@Schema` and the like are documentation that ships to another codebase.
-Check the codes against the handler that actually produces them.
-
-A `FIXME` is a decision someone deferred. Either carry it out or record why it still
-stands — reviewing comments and leaving the `FIXME` untouched is how it survives another
-year. When you do act on one, delete it in the same change; a `FIXME` describing work
-already done is worse than one describing work outstanding.
-
-A `deferred:` comment is the other case: not work outstanding but a limit someone chose to
-live with. It names the ceiling and what would justify closing it — `// deferred: <what it
-cannot do> — <what would make it worth fixing>` — and `/debt` collects those across code,
-ADR *Consequences* and ticket *Notes*. Write the trigger even when it is "when a second
-caller exists"; a marker without one is how a decision becomes an accident. Nothing under
-`src/test` carries one: tests hold no comments, and a limit of the code is not a property
-of the test that covers it.
+Read `references/comments.md` for the worked examples — a stale assertion doc, a bulk
+rename that corrupted javadoc, and the `FIXME` vs `deferred:` distinction in full.
 
 ## Frequent mistakes
 
-Anaemic aggregates — fields and accessors with the logic in a service. This is the
-default failure mode of this architecture and no test catches it.
+- Anaemic aggregates — logic living in a service instead of the aggregate. The default
+  failure mode of this architecture, and no test catches it.
+- An interface with exactly one implementation, reached for out of habit rather than to
+  invert a real dependency across a boundary.
+- Adding to the shared kernel because a type is needed in two places, without asking
+  whether it's genuinely one concept or two that happen to share a name.
+- Naming things `Helper`, `Processor`, or `Util` — signs the real concept hasn't been
+  found yet.
+- Wiring one manager into another because both are already there and the second does
+  most of what the first needs.
+- Adding a rule to `ArchitectureTest` for something ArchUnit cannot see — it reads
+  bytecode, so imports, generics, and Lombok annotations are invisible to it.
+- Trusting a rule that has never been seen to fail. Break the thing it forbids, watch
+  the build go red, then put it back — that's the only evidence the rule works.
+- Guarding a vendor field against a value the vendor has never been observed to send,
+  because a neighbouring field's guard earned its place with evidence and this one
+  borrows the shape without it.
+- Documenting an intention the code does not enforce.
 
-Reaching for an interface with exactly one implementation because it feels like good
-practice. Ports exist to invert a dependency across a boundary. An interface that
-crosses no boundary is indirection with no benefit.
-
-Adding to the shared kernel because a type is needed in two places. Ask whether it is
-genuinely one concept or two that happen to share a name today.
-
-Naming things `Helper`, `Processor`, or `Util`. These names appear when the real concept
-has not been found yet, and they persist long after it has. `<Aggregate>Manager` is the
-one exception and only in its narrow sense above — a domain service holding a required
-ordering. A `Manager` that has grown methods unrelated to that ordering has stopped
-being one and is hiding a concept that still needs a name.
-
-Wiring one manager into another because both are already there and the second one already
-does most of what the first needs. It reads as reuse and costs little to write, which is
-exactly why it recurs: a manager needing another manager's decision is a real, common shape,
-not a one-off. Take the other manager's port directly and re-implement the small decision
-instead — a few duplicated lines is cheaper than a manager whose own correctness now depends
-on a sibling's. Reach for the `*ApplicationService` composition only once that duplication
-would itself be worth avoiding.
-
-Adding a rule to `ArchitectureTest` for something ArchUnit cannot see. It reads bytecode,
-so anything the compiler erases is invisible to it: imports, generic type arguments, and
-`SOURCE`-retention annotations — which is every Lombok annotation. Naming `lombok..` in a
-package-based rule passes on a domain built entirely of `@Getter`, because the annotation
-is gone by the time ArchUnit looks. Rules about those need a test that reads source. The
-bar for writing one is not "ArchUnit made this awkward" but "ArchUnit cannot observe this
-at all".
-
-Trusting a rule that has never been seen to fail. A rule that reads as protection and
-gives none is worse than no rule, because the next reader stops looking. Break the thing
-it forbids, watch the build go red, then put it back. This takes a minute and is the only
-evidence that the rule works.
-
-Guarding a vendor field against a value the vendor has never actually been observed to
-send — an out-of-range percentage, a malformed shape — because a neighbouring field
-genuinely needs the guard. The neighbour's guard earned its place with evidence; this one
-borrows the shape without the evidence and reads as equally justified. If a bounded domain
-type already refuses the value on construction, let it: failing loud is a legitimate
-answer, and a silent-skip guard built for a case nobody has seen is speculative surface
-area, not a fix.
-
-Removing every such guard on "unevidenced" alone, without checking what removal does to
-the failure. Two shapes don't fit the pattern above, and look identical to it until
-checked: a guard whose own effect is already to fail loud rather than skip or narrow
-silently — one protecting a cached value from being read back as valid, say — where
-removing it trades one clear, attributable failure for a quieter or misattributed one, not
-for a louder one; and a guard over a field the domain already treats as optional, where the
-malformed case collapses to the same accepted absent-value outcome an ordinary missing one
-already produces — removing it turns an accepted outcome into a new exception, the reverse
-of the fix. "No evidence this happens" is the trigger for asking whether a guard earns its
-keep, never the answer by itself — ask what removing it does to the failure before removing
-it.
-
-Documenting an intention rather than the code. A comment that states a rule the code
-does not enforce is worse than silence: it is believed, and it stops the reader from
-checking. If the invariant is real, enforce it; if it is not enforced yet, say exactly
-where it is and is not.
+Read `references/frequent-mistakes.md` before a self-review — each has a worked example,
+and the guard-removal item has two look-alike cases that resolve oppositely once checked.
