@@ -171,6 +171,11 @@ takes only mockable ports, and lets `ReflectionTestUtils.setField` set the confi
 `@Value` is not set until after the constructor returns, so the constructor cannot read it at
 all, not merely "should not" to stay buildable.
 
+A list of scalars — `@Value("${x.countries}") List<String>` — is a scalar for this purpose: Boot
+splits and trims the comma-separated property itself, and a `String` split by hand at the call
+site only repeats a literal the framework already knows. A map, a nested object or a group of
+values bound together is not, and stays with `@ConfigurationProperties`.
+
 Check by running the test before assuming a pattern is available. Manual construction —
 `new Service(mockA, mockB, BATCH_SIZE, THRESHOLD)` in a `@BeforeEach` — is still the right
 answer wherever the config is a genuine constructor concern: shared by more than one
