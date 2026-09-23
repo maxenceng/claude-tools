@@ -24,8 +24,9 @@ before any code is written.
 | `id` | `CONTEXT-1` | Matches the filename and the branch name. |
 | `status` | `draft`, `todo`, `in-progress`, `in-review`, `done` | Advanced by `/ticket`, not by hand. |
 | `context` | a bounded context, `cross-context`, or `unassigned` | The first question any backend work asks. |
-| `type` | `feature`, `fix`, `chore`, `spike` | |
+| `type` | `feature`, `fix`, `chore`, `spike`, `map`, `decision` | |
 | `created` | `YYYY-MM-DD` | Absolute dates only — "last week" ages badly. |
+| `blocked_by` | `[CONTEXT-1, CONTEXT-2]`, `map`-and-`decision` tickets only | Native blocking has no tracker to live in here, so it's this field instead. |
 
 `cross-context` is deliberately awkward to write. A ticket that genuinely spans contexts
 is a modelling event and deserves a second look before it becomes code.
@@ -33,6 +34,10 @@ is a modelling event and deserves a second look before it becomes code.
 `unassigned` is what `/ticket new` writes for a line that fits no existing context, since
 capture does not invent one. `refine` settles it — that is the last cheap moment to move a
 ticket, because after it the id is in the filename and the branch name.
+
+`map` and `decision` are `/wayfinder`'s, not `/ticket`'s — a fuzzy effort too big for one
+session gets charted as a `map` ticket, worked one `decision` ticket at a time. See the
+`wayfinder` command for the shape of both.
 
 ## Board
 
@@ -70,3 +75,11 @@ A ticket in `todo` with an empty **Model decision** is not ready to start. That 
 the point of the whole file — the acceptance criteria come from whoever wrote the ticket,
 but where the behaviour belongs is a decision this project makes, and it is the one most
 expensive to get wrong.
+
+`map` and `decision` tickets use a shorter path: `todo` → `in-progress` → `done`, no
+`draft` and no `in-review`. There is no cheap, unanalysed capture step to preserve —
+charting a map *is* the analysis, so a decision ticket is written already understood, and
+it never goes through code review since resolving it produces a decision, not a diff. A
+map ticket starts `in-progress` the moment it's charted (there's no queue of maps waiting
+to be picked up) and moves to `done` once its destination is reached and no decision
+tickets remain open.
