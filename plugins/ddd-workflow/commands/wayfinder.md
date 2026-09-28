@@ -166,12 +166,30 @@ Never resolve more than one decision ticket per session, except research tickets
    answer made specifiable, removing it from **Not yet specified** so it lives only as
    its new ticket. If the answer reveals a ticket sits beyond the destination, rule it
    **out of scope** rather than resolving it. Update or delete map parts the decision
-   invalidates.
+   invalidates. Push any newly-surfaced ticket that belongs to `/ticket`'s own vocabulary
+   — see Vikunja below.
 
 Other sessions may be working unblocked tickets concurrently — expect the tracker to
 move under you between reads.
 
+## Vikunja
+
+A `map` or `decision` ticket is this skill's own bookkeeping and never reaches
+Vikunja — the tracker has buckets for work, not for questions. A newly-surfaced ticket
+can be different: when its `type` is one of `/ticket`'s own vocabulary (`feature`,
+`fix`, `chore`, `spike` — `docs/backlog/README.md`), it is a real backlog item that
+`/ticket start` will pick up next, not a wayfinder artifact, so push it the way `new`
+does. Wayfinder tickets skip `draft`, so push straight into the `todo` bucket instead —
+see the Vikunja section of `/ticket` itself for the lookup shape — and write the
+returned id into that ticket's `tracker_id`.
+
+Only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and `VIKUNJA_PROJECT_ID` are all set; skip this,
+and say so once, when any of the three is unset. A push that fails does not fail the
+step — say which ids failed and leave `tracker_id` off them; `/ticket refine` cannot
+adopt them later because they are already past `draft`, so retry the push by hand.
+
 Adapted from [mattpocock/skills](https://github.com/mattpocock/skills)'s `wayfinder`
 (MIT), retargeted at `docs/backlog/` instead of a general issue-tracker abstraction; the
-upstream skill's optional real-tracker native-blocking path was dropped for now — this
-version is local-markdown only.
+upstream skill's optional real-tracker native-blocking path was dropped for now —
+decision and map tickets stay local-markdown only, and only a graduated backlog ticket
+reaches Vikunja, as above.
