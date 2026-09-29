@@ -71,7 +71,7 @@ Most of the shape is enforced, not advised. `ArchitectureTest` checks that `@Ser
 classes are `*ApplicationService` in `application`, that `@Repository` is in
 `infrastructure.secondary`, that `*Request`/`*Response` live in `infrastructure.primary`,
 that domain exceptions extend `DomainException`, that domain fields are final, and that
-nothing is field-injected. Run it and read the failures rather than checking this list by
+nothing is field-injected but a bean's own `@Value` config. Run it and read the failures rather than checking this list by
 eye — and if a rule reports it "failed to check any classes", something was renamed out
 from under it.
 
@@ -269,8 +269,8 @@ diagnostic rather than a hurdle.
 
 Read `references/tests.md` before writing one — it covers placement and naming, why
 `src/test` carries no comments, fixture conventions, assertion style, what each layer's
-test looks like (including the `@InjectMocks`/field-injection interaction to check before
-assuming a pattern is available), and what earns a test at all.
+test looks like (including why a bean's `@Value` config is a field, so that `@InjectMocks` can
+always build the subject), and what earns a test at all.
 
 ## Comments
 

@@ -152,35 +152,29 @@ Where a rule moved out of a value object into the manager, its test moves with i
 gives a test that passes for the wrong reason or fails for the right one; either way the
 rule is now the manager's and belongs in its test.
 
-`@InjectMocks` assumes every non-mocked constructor argument can be defaulted or is absent.
-A constructor mixing `@Mock`-able ports with `@Value`-injected primitive config (a batch size,
-a threshold) can defeat it outright — Mockito may refuse to construct the subject at all rather
-than leave the primitives at their default. Worse, a `@Value` field the domain validates as
-`strictlyPositive()` or similar throws on construction before `ReflectionTestUtils.setField`
-ever gets a chance to run, so that combination can't rescue it either.
+`@InjectMocks` assumes every constructor argument can be mocked. A constructor mixing
+`@Mock`-able collaborators with `@Value`-injected config (a batch size, a threshold, a URL)
+defeats it outright: Mockito may refuse to construct the subject at all rather than leave the
+config at its default, and a value the domain validates as `strictlyPositive()` or similar
+throws on construction before `ReflectionTestUtils.setField` ever gets a chance to run.
 
-Where that config belongs to the service alone — nothing else reads it, and the constructor
-does not need it to precompute anything — take it out of the constructor entirely and
-field-inject the `@Value` directly instead. That is a narrow, explicit carve-out of "nothing
-is field-injected" (worth its own ADR the first time a project adopts it), not a general
-escape hatch: every other collaborator — ports, managers — stays a `final`,
-constructor-injected field. It restores `@InjectMocks` outright, because the constructor now
-takes only mockable ports, and lets `ReflectionTestUtils.setField` set the config directly in
-`@BeforeEach`. Anything the constructor used to precompute from that config — a cached
-`Duration`, a cached value object — has to move to the call site too: a field-injected
-`@Value` is not set until after the constructor returns, so the constructor cannot read it at
-all, not merely "should not" to stay buildable.
+So a bean's own `@Value` config never goes through a constructor. On any stereotype (service,
+adapter, schedule, client) and on a `@Configuration` that reads a property for a `@Bean`
+method, it is a private, non-`final` field with `@Value` on it, never a constructor or `@Bean`
+method parameter. This is the one exception to "nothing is field-injected", and it is worth
+an ADR the first time a project adopts it. Every collaborator (ports, managers, clients) stays
+a `final`, constructor-injected field. The constructor then takes collaborators only, so every
+unit test builds its subject with `@InjectMocks` and sets the config with
+`ReflectionTestUtils.setField` in `@BeforeEach`. A reviewer who has seen
+`new Adapter(mock, URL, TIMEOUT)` in a `@BeforeEach` once will not accept it twice. Anything
+the constructor used to precompute from that config, such as a cached `Duration` or a cached
+value object, moves to the call site: a field-injected `@Value` is not set until after the
+constructor returns, so the constructor cannot read it at all.
 
-A list of scalars — `@Value("${x.countries}") List<String>` — is a scalar for this purpose: Boot
+A list of scalars, `@Value("${x.countries}") List<String>`, is a scalar for this purpose: Boot
 splits and trims the comma-separated property itself, and a `String` split by hand at the call
 site only repeats a literal the framework already knows. A map, a nested object or a group of
 values bound together is not, and stays with `@ConfigurationProperties`.
-
-Check by running the test before assuming a pattern is available. Manual construction —
-`new Service(mockA, mockB, BATCH_SIZE, THRESHOLD)` in a `@BeforeEach` — is still the right
-answer wherever the config is a genuine constructor concern: shared by more than one
-collaborator, or needed to build something else at construction time. It is not a shortcut
-to reach for by default where field injection would resolve the same class more directly.
 
 **Secondary adapters.** `@Mock` the `Jpa*` repository, `@InjectMocks` the adapter, and
 assert on what comes back through the port — including the exception translation, which is
