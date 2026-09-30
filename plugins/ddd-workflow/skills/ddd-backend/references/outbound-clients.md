@@ -13,8 +13,8 @@ allows both `infrastructure.primary` (this system's own protocol) and
 `infrastructure.secondary.client` (a vendor's) for exactly this reason.
 
 Everything else in that package defaults to package-private, the same as a persistence
-entity does — only the client interface, the response its caller maps, and the failure it
-can raise are public. When a helper in there needs a type from the package next door, that
+entity does — only the client interface, the request its caller builds, the response its
+caller maps, and the failure it can raise are public. When a helper in there needs a type from the package next door, that
 need is telling you where the helper belongs; move it in rather than widening the type to
 reach it. A class made public for one caller across a package boundary is a class in the
 wrong package.
@@ -60,6 +60,26 @@ Cloud collects a bean of that type from a client's own context *and every ancest
 so one left in a shared parent context is applied to every client — this vendor's key on
 another vendor's calls, or worse, a client authenticating its own token exchange with a
 token it does not have yet.
+
+## A client declares the call and nothing else
+
+A `@FeignClient` interface holds abstract methods only — no `default` method that writes a
+body, fills in parameters or maps the answer. It is tempting because the interface is right
+there and the shaping reads like part of the call. But then some of the adapter's logic sits on
+a proxy that no repository test stubs, and it runs before the one seam where a test can see the
+request. Shaping the arguments and mapping the answer belong to the calling repository. Where the
+shaping needs a type of its own, it is a `*Request` beside the client, built by one factory
+(`ItadGamePricesRequest.from(gameIds)`), which the repository builds and passes in. That keeps
+the repository test stubbing and verifying the client's single method with the exact request,
+so a repository that sends the wrong one fails it. Enforce it with an `ArchitectureTest` rule
+that a `@FeignClient` interface declares no default method.
+
+A query that never varies is not shaping: it is part of declaring the call. Put it on the
+mapping, `@GetMapping(params = {"json=1", "language=all"})`, which `SpringMvcContract` copies
+onto the request template. Don't put it in a `@SpringQueryMap` record as constants. A record
+constant is a field, and `FieldQueryMapEncoder` sends it as a parameter. A holder class next to
+the record exists only to get around that. `@SpringQueryMap` also encodes from a `HashMap`, so
+a test on the wire should check parameters without pinning their order.
 
 ## A client with no JSON body still gets a `Decoder`
 
