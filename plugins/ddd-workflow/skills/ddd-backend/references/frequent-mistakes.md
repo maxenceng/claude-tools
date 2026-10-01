@@ -57,6 +57,14 @@ of the fix. "No evidence this happens" is the trigger for asking whether a guard
 keep, never the answer by itself — ask what removing it does to the failure before removing
 it.
 
+Reading a member with no modifier as public. A request such as "make every public member
+explicit" or "no public static string" is about members that really are public. Taken
+literally against every member that has no written modifier, it becomes a codebase-wide
+rewrite: interface methods gain `public`, package-private fields gain a modifier nobody
+asked for, and the review discards the work. A member with no modifier in a class is
+package-private. Only an interface member is implicitly public. Before scoping the
+change, list the members that really are public and confirm the ask against that list.
+
 Documenting an intention rather than the code. A comment that states a rule the code
 does not enforce is worse than silence: it is believed, and it stops the reader from
 checking. If the invariant is real, enforce it; if it is not enforced yet, say exactly
