@@ -102,10 +102,12 @@ A `@WebMvcTest` building a `RequestBuilder`, or a `@DataJpaTest` arranging a con
 constructing a call to a running application rather than a domain value — that belongs in
 the test that makes the call, not in a fixture beside a type it does not describe.
 
-Values the constructor *refuses* still belong in the fixture, returned as the raw type: a
-fixture cannot hand back a `Seats` that cannot be built, so `negativeSeats()` returns an
-`int`. That is not a leak — it is the fixture saying which side of the boundary
-the value sits on.
+Values the constructor *refuses* still belong in the fixture, and the fixture still builds the
+value object: `negativeSeats()` returns `new Seats(-1)`, and the test asserts on the fixture
+itself, `assertThatThrownBy(SeatsFixture::negativeSeats)`. A fixture that returns the raw `int`
+leaves every test to call the constructor itself, which repeats the construction the fixture
+exists to hold. Name the fixture after the case (`negativeSeats`, `seatsAboveTheRange`), not
+after the raw value.
 
 ## Assertions
 
