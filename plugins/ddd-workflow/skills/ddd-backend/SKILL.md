@@ -148,6 +148,33 @@ Where a domain service exists, the application service delegates to it and adds 
 Spring wiring. That looks like duplication and is not: it is the one place the framework
 is allowed to touch, keeping the sequencing rule testable without a context.
 
+## Visibility
+
+A member with no modifier is package-private, not public. Before acting on a request to
+make public members "explicit", or to narrow them, check which members are actually
+public. Reading "no modifier" as public turns a narrow rule into a codebase-wide rewrite
+of modifiers.
+
+**A static `String` field is `private`**, in `src/main` and `src/test`. A string constant
+reachable from outside its class becomes part of that class's surface without anyone
+deciding it should. A `String` constant declared in an interface counts too, because the
+language makes it `public static` without the words being written. A `static String`
+*method* is not a field and stays allowed.
+
+There is one exception, a **constants holder**: a `final` class with only `static final
+String` constants and a private constructor, whose constants are package-private and
+never `public`. It exists because an annotation attribute accepts only a compile-time
+constant (`@WorkflowImpl(taskQueues = …)`, Feign's `@Param`), so a method or enum cannot
+replace it when several classes of one package share the value. Keep the holder in the
+package that reads it. A business class never gets the exception. A test that needs one
+of its string values declares its own copy, and the stub it sets up still pins what
+production sends. A fixture exposes its values through methods, not `public static`
+fields.
+
+Enforce it with a test that reads source. Bytecode does not record whether an interface
+constant's modifiers were written, and a holder can only be recognised by the shape of
+its source.
+
 ## Adapters
 
 **Primary** adapters translate an external protocol into a use-case call and back.
@@ -304,6 +331,8 @@ rename that corrupted javadoc, and the `FIXME` vs `deferred:` distinction in ful
   because a neighbouring field's guard earned its place with evidence and this one
   borrows the shape without it.
 - Documenting an intention the code does not enforce.
+- Reading a member with no modifier as public, which turns a narrow visibility rule into a
+  rewrite of every modifier in the codebase.
 
 Read `references/frequent-mistakes.md` before a self-review — each has a worked example,
 and the guard-removal item has two look-alike cases that resolve oppositely once checked.
