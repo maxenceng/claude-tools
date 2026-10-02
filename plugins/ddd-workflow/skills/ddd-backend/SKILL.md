@@ -61,7 +61,7 @@ that belongs to one context belongs in that context.
 
 1. Create the package and a `package-info.java` with `@ApplicationModule`.
 2. Add `domain`, `application`, `infrastructure.primary`, `infrastructure.secondary`.
-3. Expose to other contexts only from the context root package.
+3. Expose to other contexts only through the packages *Reaching another context* names.
 4. Record the context and its relationships in `docs/context-map.md`, and its terms in
    `docs/glossary.md`, in the same change. Written later, both describe what someone
    remembers rather than what was built.
@@ -77,6 +77,36 @@ from under it.
 
 Do not add to the shared kernel to avoid the exposure step. The shared kernel couples
 every context to itself, so each addition costs more than the last.
+
+**A context holds only its core.** Before putting a feature in the context whose aggregate
+it ends up writing, count how much of it touches that aggregate. When the answer is one
+call — a run, its history, a workflow per vendor, a client, a record of what failed, and
+then a single write of the result — the feature is a context of its own that calls the host,
+not a growth on the host. Propose the split while the ticket is being refined; found in
+review, it moves dozens of files.
+
+## Reaching another context
+
+A context exposes three kinds of package, each `@NamedInterface`, and nothing else:
+
+| Package | Holds | Used for |
+|---|---|---|
+| `published` | ids and value types both sides name | naming the other context's things |
+| `infrastructure.query` | a plain bean that answers | reading what the other context holds |
+| `infrastructure.command` | a plain bean that writes, and what it is asked with | changing what the other context holds |
+
+A bean that writes goes in `command`, never in `query`: a `query` package that changes
+state makes its name a lie. The command's argument is a `*Payload` — not `*Request`, which
+is kept for what HTTP sends, and not `*Command`, which names the bean. Each payload has a
+`toDomain()` into the owning context's internal change type, the way a route's `*Request`
+does, and the command calls the same `*ApplicationService` a route does, so there is one
+write path and one set of rules. Build every kind the payload will plausibly need now, as a
+sealed type with one record per kind, so a later caller adds nothing to the owner.
+
+The calling context never imports `query` or `command` from its domain. It declares its own
+port, in its own words — its own model of what it writes — and a driven adapter in
+`infrastructure.secondary` implements that port by calling the bean and translating with an
+exhaustive switch.
 
 ## Modelling
 
