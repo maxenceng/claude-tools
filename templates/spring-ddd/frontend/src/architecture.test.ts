@@ -3,8 +3,11 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const src = import.meta.dirname
-const generated = path.join(src, 'api', 'generated')
-const sharedFolders = new Set(['api', 'test']) // not bounded contexts
+const api = path.join(src, 'api')
+const generated = path.join(api, 'generated')
+const designSystem = path.join(src, 'design-system')
+const i18n = path.join(src, 'i18n')
+const sharedFolders = new Set(['api', 'design-system', 'i18n', 'test']) // not bounded contexts
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -28,6 +31,8 @@ const folderOf = (file: string) => {
   const parts = path.relative(src, file).split(path.sep)
   return parts.length > 1 ? (parts[0] ?? '') : ''
 }
+/** A bounded context: a top-level folder of src/ that is not shared. */
+const isContext = (folder: string): boolean => folder !== '' && !sharedFolders.has(folder)
 const show = (file: string, target: string) => `${path.relative(src, file)} → ${path.relative(src, target)}`
 
 function violations(offends: (file: string, target: string) => boolean): string[] {
@@ -47,7 +52,7 @@ describe('frontend architecture', () => {
     const found = violations((file, target) => {
       const own = folderOf(file)
       const other = folderOf(target)
-      return !sharedFolders.has(own) && own !== '' && other !== '' && other !== own && !sharedFolders.has(other)
+      return isContext(own) && isContext(other) && other !== own
     })
 
     expect(found).toEqual([])
@@ -55,8 +60,26 @@ describe('frontend architecture', () => {
 
   it('only src/api imports from the generated client', () => {
     const found = violations(
-      (file, target) => within(target, generated) && !within(file, path.join(src, 'api')),
+      (file, target) => within(target, generated) && !within(file, api),
     )
+
+    expect(found).toEqual([])
+  })
+
+  it('the design system imports no bounded context', () => {
+    const found = violations((file, target) => within(file, designSystem) && isContext(folderOf(target)))
+
+    expect(found).toEqual([])
+  })
+
+  it('the design system does not talk to the API', () => {
+    const found = violations((file, target) => within(file, designSystem) && within(target, api))
+
+    expect(found).toEqual([])
+  })
+
+  it('i18n imports no bounded context', () => {
+    const found = violations((file, target) => within(file, i18n) && isContext(folderOf(target)))
 
     expect(found).toEqual([])
   })
