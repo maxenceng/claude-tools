@@ -19,7 +19,7 @@
 - Slug rule: path without leading `/`, `/` → `-`, `{` and `}` removed. `POST /api/orders/{id}/lines` → `POST-api-orders-id-lines`.
 - Endpoint `.md` frontmatter: `endpoint`, `context`, `traced_at` (full commit sha), `tickets` (list of ids).
 - Edit the template, never `templates/spring-ddd-archetype/` directly; rebuild with `./scripts/build-archetype.sh`.
-- `ddd-workflow` version bumps once, in the last task, `1.6.5` → `1.7.0`.
+- `ddd-workflow` version bumps once, in the last task, `1.6.5` → `2.0.0`.
 - Write prose in the repository's existing voice: second person imperative, reasons given inline, no emoji, no bullet soup where a sentence works.
 
 ---
@@ -548,7 +548,7 @@ same vault as the backlog.
 
 - [ ] **Step 3: Version bump**
 
-In `plugins/ddd-workflow/.claude-plugin/plugin.json`, change `"version": "1.6.5"` to `"version": "1.7.0"`.
+In `plugins/ddd-workflow/.claude-plugin/plugin.json`, change `"version": "1.6.5"` to `"version": "2.0.0"`.
 
 - [ ] **Step 4: Run every check**
 
@@ -565,5 +565,5 @@ Expected: all pass. `make verify` boots the application for the schema capture; 
 
 ```bash
 git add README.md HOWTO.md plugins/ddd-workflow/.claude-plugin/plugin.json
-git commit -m "ddd-workflow 1.7.0: document the design loop and the endpoint atlas"
+git commit -m "ddd-workflow 2.0.0: document the design loop and the endpoint atlas"
 ```
