@@ -131,7 +131,8 @@ declared dependency and lists it, and rejects a bare name this plugin does not d
 because unqualified there is no way to tell deliberate reuse from a typo.
 
 Two dependencies are new with the design loop and the atlas. Impeccable is a plugin and
-is declared like the others: `/plugin marketplace add pbakaus/impeccable`. Archify is a
+is declared like the others: `/plugin marketplace add pbakaus/impeccable`, then
+`/plugin install impeccable@impeccable`. Archify is a
 skill, not a plugin — `npx skills add tt-a1i/archify -g` — so `verify-plugin.sh` names it
 in an explicit allow-list, and `/trace-endpoint` checks for it and stops with the install
 line when it is missing.

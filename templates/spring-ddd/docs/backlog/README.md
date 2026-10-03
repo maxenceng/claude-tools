@@ -76,6 +76,9 @@ the point of the whole file — the acceptance criteria come from whoever wrote 
 but where the behaviour belongs is a decision this project makes, and it is the one most
 expensive to get wrong.
 
+A `todo` frontend ticket whose **Design direction** is missing or still _not analysed yet_
+is refused the same way: tickets refined before the design loop have no such section.
+
 `map` and `decision` tickets use a shorter path: `todo` → `in-progress` → `done`, no
 `draft` and no `in-review`. There is no cheap, unanalysed capture step to preserve —
 charting a map *is* the analysis, so a decision ticket is written already understood, and

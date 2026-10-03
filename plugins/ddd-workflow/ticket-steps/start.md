@@ -8,8 +8,8 @@ Refuse a `todo` whose *Model decision* is still empty for the same reason. The s
 it was analysed; the empty section says it was not, and the section is the one telling the
 truth.
 
-Refuse a ticket touching `frontend/**` whose *Design direction* is still the unanalysed
-marker, for the same reason.
+Refuse a ticket touching `frontend/**` whose *Design direction* is missing or still the
+unanalysed marker, for the same reason. Tickets refined before 2.0.0 have no such section.
 
 Then:
 

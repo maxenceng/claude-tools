@@ -35,3 +35,9 @@ build/
 ### Claude Code ###
 # Personal, machine-specific permission overrides. settings.json is shared; this is not.
 .claude/settings.local.json
+
+### Impeccable ###
+# Critique reports are throwaway (the ticket's Design direction and Notes are the record);
+# config.local.json is per-developer by name.
+.impeccable/critique/
+**/.impeccable/config.local.json

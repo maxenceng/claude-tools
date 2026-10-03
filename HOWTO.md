@@ -31,6 +31,7 @@ For the design loop and the endpoint atlas, add two more:
 
 ```bash
 /plugin marketplace add pbakaus/impeccable
+/plugin install impeccable@impeccable
 npx skills add tt-a1i/archify -g
 ```
 

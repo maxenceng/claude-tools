@@ -14,10 +14,13 @@ ticket changes from its criteria and the diff; ask only if neither says.
 
 ## One round
 
-1. `npx impeccable detect --json http://localhost:5173/<route>`. Fix every finding
+1. `npm --prefix frontend exec -- impeccable detect --json http://localhost:5173/<route>`,
+   run through the frontend so the pinned version and `frontend/.impeccable/config.json`
+   apply. Fix every finding
    straight away and say what you fixed. A detector hit is a rule, not an opinion, so it
    is not put to the human.
-2. Screenshot the route through `claude-in-chrome`.
+2. Screenshot the route through `claude-in-chrome`. If it (or a local Chrome) is
+   unavailable, say so and stop: a critique without a screenshot is guessing.
 3. Invoke the `impeccable:impeccable` skill with `critique`.
 4. Show the human the screenshot and the critique together, and offer the named moves the
    critique points at — `quieter`, `bolder`, `polish`, `distill`, `typeset`, `layout`,
@@ -36,4 +39,7 @@ If the direction itself moved — not a tweak, a different answer to what the sc
 for — update *Design direction* and add one line to *Notes* saying what changed and why.
 That section is what `review` and the next ticket read.
 
-Commit the work. Then `/ticket review`.
+Stop the background `make run` and `dev` servers once the loop ends.
+
+Commit the work. Critique reports under `.impeccable/critique/` are not committed; the
+ticket's *Design direction* and *Notes* are the record. Then `/ticket review`.

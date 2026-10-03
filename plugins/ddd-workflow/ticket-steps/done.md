@@ -24,9 +24,15 @@
    only merged code is worth a diagram — a branch's call flow can still change under
    review, and a diagram of a flow that never landed misleads everyone who finds it.
 
+   Trace from up-to-date main: `git fetch origin`, then check out `origin/main` (or
+   rebase onto it) before branching for the close-out. A squash-merge rewrites the
+   branch's commits, so a trace taken on the feature branch records a `traced_at` that no
+   longer exists once the PR lands.
+
    Find the endpoints the ticket touched: controllers changed in the merged diff, plus
    controllers in the same context whose call path reaches a class the diff changed.
-   Run `/trace-endpoint` on each, passing this ticket's id as the trailing argument so it
+   Invoke the `/trace-endpoint` command (the `ddd-workflow:trace-endpoint` skill, through
+   the Skill tool) on each, passing this ticket's id as the trailing argument so it
    lands in `tickets` — for example, `/trace-endpoint POST /api/orders ORDERING-12`.
    For an endpoint the ticket removed, delete its `.md` and `.html` and its line in
    `docs/endpoints/README.md`.

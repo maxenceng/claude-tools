@@ -48,7 +48,7 @@ both render Mermaid and neither renders the HTML:
 ---
 endpoint: POST /api/orders/{id}/lines
 context: ordering
-traced_at: <output of git rev-parse HEAD>
+traced_at: <output of git rev-parse origin/main>
 tickets: [ORDERING-12]
 ---
 
@@ -65,8 +65,13 @@ sequenceDiagram
 
 | Step | Where |
 |---|---|
-| OrderController → AddLine | `src/main/java/.../OrderController.java:41` |
+| OrderController → AddLine | `src/main/java/com/acme/ordering/adapter/in/web/OrderController.java:41` |
 ````
+
+`traced_at` is `git rev-parse origin/main` after a `git fetch origin`, falling back to
+`HEAD` only when there is no `origin`: a branch commit can vanish on squash-merge, and
+`onboard` needs a sha that still resolves. Write every path in the table as a full
+repo-relative path, never abbreviated with `...`, since `onboard` feeds them to `git log`.
 
 Each error branch is an `alt` block naming the error and its status. Mark the transaction
 with a `rect` around the messages inside it. `tickets` is the endpoint's history, not its
