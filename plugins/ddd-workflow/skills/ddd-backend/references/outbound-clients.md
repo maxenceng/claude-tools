@@ -128,9 +128,10 @@ end of the call:
   that run's attempt. Raising it as a `DomainException` would route it through machinery
   built for a request thread that isn't there.
 
-A diagnostic never carries the request URL's query string or any credential, and the
-transport exception is not chained into it. The key travels in the query string, and a JDK
-transport error can quote the full URL in its message, so either one puts the key in the
+No exception the outbound client raises carries the request URL's query string or any
+credential — not on connect, not on the status, not while the body is read or decoded — and
+the transport exception is not chained into it. The key travels in the query string, and a
+JDK transport error can quote the full URL in its message, so either one puts the key in the
 log line the 503 writes. Build the diagnostic from safe parts:
 
 - the HTTP method;
@@ -140,13 +141,23 @@ log line the 503 writes. Build the diagnostic from safe parts:
 
 `OutboundClientSupport` does this.
 
-A decode failure — a 2xx response whose body won't parse — is a different fact from either
-of those, and is best left as Feign's own `DecodeException` rather than folded into the
-vendor's unreachable exception. Nothing downstream usually branches on the difference
-between "the vendor sent nothing usable" and "the vendor sent something this couldn't read,"
-so matching them costs more than the distinction is worth: either the vendor's own exception
-type ends up coupled to Feign's, or every call gets wrapped in a reflective proxy just to
-re-catch what Feign already caught once.
+Reading the body is where Feign leaks it on its own. An `IOException` while Feign reads a 2xx
+body — a connection reset midway — becomes `FeignException.errorReading`, whose message is
+`"<cause> reading GET <full URL>"`, and nothing catches it before the container logs it. So
+the `Client` reads the whole body itself, under the same `try` as the call, and a body that
+breaks off raises the vendor's unreachable exception: the answer never arrived, which is what
+`UNAVAILABLE` says, and a retry is the right advice. Catching `FeignException` in each
+repository instead would hold only for vendors whose repository remembers to.
+
+A decode failure — a whole 2xx body that won't parse — is a different fact, and is best
+left as Feign's own `DecodeException` rather than folded into the vendor's unreachable
+exception. Nothing downstream usually branches on the difference between "the vendor sent
+nothing usable" and "the vendor sent something this couldn't read," so matching them costs
+more than the distinction is worth: either the vendor's own exception type ends up coupled to
+Feign's, or every call gets wrapped in a reflective proxy just to re-catch what Feign already
+caught once. It is safe to leave because of what its message is: Feign builds it from the
+decoder's own exception message (`InvocationContext.decode`), and the converter's parse error
+never names the request. Check that again before relying on it with a different decoder.
 
 ## Skip one bad record by checking first, not by catching what building it throws
 

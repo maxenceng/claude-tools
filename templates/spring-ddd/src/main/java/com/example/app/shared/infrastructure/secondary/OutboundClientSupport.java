@@ -8,24 +8,31 @@ import org.springframework.http.converter.HttpMessageConverter;
 
 import feign.Client;
 import feign.Request;
+import feign.Response;
+import feign.Util;
 import feign.codec.Decoder;
 import feign.codec.ErrorDecoder;
 
 /**
  * What every vendor's Feign configuration needs, built once here instead of once per vendor: a
  * decoder bound to that vendor's own JSON shape, and the two places a call gives back nothing
- * usable at all — a transport that never got a response, and a response whose status refused it —
- * brought back into the one exception each vendor's repository would otherwise have to catch for.
- * Whichever raises it, the caller is given no way to tell the two apart, because it never could.
+ * usable at all — a transport that never got a whole response, and a response whose status refused
+ * it — brought back into the one exception each vendor's repository would otherwise have to catch
+ * for. Whichever raises it, the caller is given no way to tell them apart, because it never could.
  *
  * <p>Lives here rather than beside a vendor's own configuration classes: nothing in it names a
  * vendor, and a second context writing its own {@code @FeignClient} would otherwise have to reach
  * into another context's package or duplicate these three factories (ADR 0009).
  *
- * <p>A body {@link #decoder} cannot parse is a different fact and stays Feign's own {@code
- * DecodeException}: the vendor answered, the answer just was not one this system could read,
- * which is not the same claim as the vendor being unreachable, and nothing here or in an adapter
- * branches on the difference — see ADR 0009.
+ * <p>{@link #transportFailures} reads the whole body before Feign sees the response. A body that
+ * breaks off midway is an answer that never arrived, so it raises the vendor's unreachable
+ * exception like a connection that never opened. Left to Feign, the read would fail as its {@code
+ * FeignException.errorReading}, whose message is the full request URL, key included.
+ *
+ * <p>A whole body {@link #decoder} cannot parse is a different fact and stays Feign's own {@code
+ * DecodeException}: the vendor answered, the answer just was not one this system could read, and
+ * nothing here or in an adapter branches on the difference — see ADR 0009. Its message is the
+ * converter's parse error, which never names the request, so it is safe to log as it is.
  *
  * <p>A diagnostic is built from safe parts only — the HTTP method, the URL without its query
  * string, the transport exception's type, the status — and the transport exception itself is not
@@ -47,16 +54,31 @@ public final class OutboundClientSupport {
 
     public static Client transportFailures(Client delegate, Function<String, RuntimeException> unreachable) {
         return (request, options) -> {
+            Response response;
             try {
-                return delegate.execute(request, options);
+                response = delegate.execute(request, options);
             } catch (IOException e) {
                 throw unreachable.apply("%s could not be reached: %s".formatted(target(request), e.getClass().getSimpleName()));
+            }
+            try {
+                return whole(response);
+            } catch (IOException e) {
+                throw unreachable.apply("%s broke off mid-answer: %s".formatted(target(request), e.getClass().getSimpleName()));
             }
         };
     }
 
     public static ErrorDecoder errorDecoder(Function<String, RuntimeException> unreachable) {
         return (methodKey, response) -> unreachable.apply("%s refused: HTTP %d".formatted(target(response.request()), response.status()));
+    }
+
+    private static Response whole(Response response) throws IOException {
+        if (response.body() == null) {
+            return response;
+        }
+        try (Response.Body body = response.body()) {
+            return response.toBuilder().body(Util.toByteArray(body.asInputStream())).build();
+        }
     }
 
     private static String target(Request request) {

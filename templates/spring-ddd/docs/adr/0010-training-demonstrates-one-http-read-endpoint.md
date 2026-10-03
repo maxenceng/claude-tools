@@ -40,4 +40,9 @@ The generated client and `docs/openapi.json` gain `/api/courses/popularity` with
 Every context's outbound client that a controller can reach should now raise a
 `DomainException` with `UNAVAILABLE` rather than a bare runtime exception.
 
+A 2xx body that breaks off while it is read is now that `UNAVAILABLE` failure too, raised by
+`OutboundClientSupport`'s `Client` after reading the whole body, because Feign's own read
+error quotes the full URL with its key; ADR 9's `DecodeException` is left for a whole body
+that will not parse.
+
 Anything beyond this one read (a list, a write, persistence) is still a separate decision.

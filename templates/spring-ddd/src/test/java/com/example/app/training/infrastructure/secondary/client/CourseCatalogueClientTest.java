@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,6 +102,39 @@ class CourseCatalogueClientTest {
     }
 
     @Test
+    void shouldKeepTheQueryStringOutOfABodyThatBreaksOffBeforeItsDeclaredLength() {
+        CourseCatalogueClient client = client(respondingWithABodyThatBreaksOff(64));
+
+        Throwable failure = catchThrowable(() -> client.search("secret"));
+
+        assertThat(failure).isInstanceOf(CourseCatalogueUnreachableException.class);
+        assertThat(messagesOf(failure)).noneMatch(message -> message.contains("secret") || message.contains("?"))
+                .anyMatch(message -> message.contains("GET " + CATALOGUE_URL) && message.contains("IOException"));
+    }
+
+    @Test
+    void shouldKeepTheQueryStringOutOfABodyOfUnknownLengthThatBreaksOff() {
+        CourseCatalogueClient client = client(respondingWithABodyThatBreaksOff(null));
+
+        Throwable failure = catchThrowable(() -> client.search("secret"));
+
+        assertThat(failure).isInstanceOf(CourseCatalogueUnreachableException.class);
+        assertThat(messagesOf(failure)).noneMatch(message -> message.contains("secret") || message.contains("?"));
+    }
+
+    @Test
+    void shouldKeepTheQueryStringOutOfABodyThisCannotRead() {
+        CourseCatalogueClient client = client(respondingWith(new AtomicReference<>(), 200, """
+                {"title": "Introduction to Hexagonal Architecture", "popularity": "not-a-number"}
+                """));
+
+        Throwable failure = catchThrowable(() -> client.search("secret"));
+
+        assertThat(failure).isInstanceOf(DecodeException.class);
+        assertThat(messagesOf(failure)).noneMatch(message -> message.contains("secret") || message.contains("?"));
+    }
+
+    @Test
     void shouldRefuseToAnswerWhenTheCatalogueRefusesTheSearch() {
         CourseCatalogueClient client = client(respondingWith(new AtomicReference<>(), 500, "server error"));
 
@@ -123,6 +160,43 @@ class CourseCatalogueClientTest {
                 .errorDecoder(OutboundClientSupport.errorDecoder(UNREACHABLE))
                 .client(OutboundClientSupport.transportFailures(fake, UNREACHABLE))
                 .target(CourseCatalogueClient.class, CATALOGUE_URL);
+    }
+
+    static Client respondingWithABodyThatBreaksOff(Integer declaredLength) {
+        return (request, options) -> Response.builder()
+                .status(200)
+                .reason("OK")
+                .request(request)
+                .headers(Map.of("Content-Type", List.of("application/json")))
+                .body(new BreakingBody(declaredLength))
+                .build();
+    }
+
+    record BreakingBody(Integer length) implements Response.Body {
+
+        @Override
+        public boolean isRepeatable() {
+            return false;
+        }
+
+        @Override
+        public InputStream asInputStream() {
+            return new InputStream() {
+                @Override
+                public int read() throws IOException {
+                    throw new IOException("Connection reset");
+                }
+            };
+        }
+
+        @Override
+        public Reader asReader(Charset charset) {
+            return new InputStreamReader(asInputStream(), charset);
+        }
+
+        @Override
+        public void close() {
+        }
     }
 
     static Client respondingWith(AtomicReference<Request> sent, int status, String body) {
