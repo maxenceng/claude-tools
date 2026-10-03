@@ -27,8 +27,8 @@ export interface components {
     schemas: {
         CoursePopularityResponse: {
             /** Format: int32 */
-            popularity?: number;
-            title?: string;
+            popularity: number;
+            title: string;
         };
         ProblemDetail: {
             detail?: string;

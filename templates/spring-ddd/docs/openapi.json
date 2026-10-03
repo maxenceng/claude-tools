@@ -89,7 +89,11 @@
           "title": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "popularity",
+          "title"
+        ]
       },
       "ProblemDetail": {
         "type": "object",

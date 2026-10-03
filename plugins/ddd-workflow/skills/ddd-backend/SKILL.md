@@ -287,6 +287,9 @@ client is generated from them, so a wrong code there becomes a wrong type in the
 frontend. Every failure code a route can produce comes from the global handler — read
 it before writing them, and do not document a code no handler emits.
 
+Mark each response record component `@Schema(requiredMode = RequiredMode.REQUIRED)`, or
+the generated client types every field optional.
+
 The generated client goes stale silently, because regenerating is two steps and only the
 second is obvious:
 
