@@ -222,7 +222,7 @@ def check_plugin(plugin_root):
                 continue
             path = os.path.join(dirpath, name)
             text = open(path, encoding="utf-8").read()
-            for ns, ref in re.findall(r"`(?:([a-z][a-z0-9-]+):)?([a-z][a-z0-9-]+)` (?:skill|agent)", text):
+            for ns, ref in re.findall(r"`(?:([a-z][a-z0-9-]+):)?([a-z][a-z0-9-]+)`\s+(?:skill|agent)", text):
                 if ns:
                     external.add(f"{ns}:{ref}")
                 elif ref in NON_PLUGIN_SKILLS:

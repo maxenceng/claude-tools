@@ -126,11 +126,11 @@ everything interactive is reachable by keyboard.
 
 ## General React advice
 
-For React advice this document does not cover, invoke
-the `vercel-react-best-practices` skill and the `vercel-composition-patterns` skill
-when they are installed; if they are not, say so once and continue. Their Next.js, React Server Component and server-side fetching
-rules do not apply: this is a Vite single-page app, and data is fetched in the browser
-through TanStack Query.
+For React advice this document does not cover, invoke the `vercel-react-best-practices`
+skill and the `vercel-composition-patterns` skill when they are installed; if they are
+not, say so once and continue. Their Next.js, React Server Component and server-side
+fetching rules do not apply: this is a Vite single-page app, and data is fetched in the
+browser through TanStack Query.
 
 ## Frequent mistakes
 
