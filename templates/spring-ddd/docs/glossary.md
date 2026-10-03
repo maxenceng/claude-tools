@@ -18,7 +18,8 @@ words mean.
 
 ## training
 
-Worked example only — see ADR 0008 and ADR 0010 (one HTTP read endpoint). Delete this section along with the context.
+Worked example only — see ADR 0008 and ADR 0010 (one HTTP read endpoint). Delete this
+section along with the context.
 
 | Term | Meaning | Where it lives |
 |---|---|---|
