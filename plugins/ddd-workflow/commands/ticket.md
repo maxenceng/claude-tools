@@ -1,6 +1,6 @@
 ---
 description: Work a backlog ticket end to end — capture it, refine it, start it, review it, close it
-argument-hint: "[new <description> | refine <ID> | start <ID> | review <ID> | respond <ID> | done <ID>] (no args: show the board)"
+argument-hint: "[new <description> | refine <ID> | start <ID> | design <ID> | review <ID> | respond <ID> | done <ID>] (no args: show the board)"
 ---
 
 Tickets live in `docs/backlog/` as markdown with YAML frontmatter. Read that folder's
@@ -12,10 +12,10 @@ If no arguments were given, list every ticket that is not `done`, grouped by sta
 id, title and context. Say which one is in progress, and say plainly that anything in
 `draft` cannot be started until it has been through `refine`. Stop there.
 
-Otherwise dispatch on the first word — one of `new`, `refine`, `start`, `review`,
+Otherwise dispatch on the first word — one of `new`, `refine`, `start`, `design`, `review`,
 `respond`, `done` — by reading `${CLAUDE_PLUGIN_ROOT}/ticket-steps/<word>.md` and following
 it. Read that one file and no others: the steps do not share instructions at runtime, and
-loading the five that are not running is most of what this command used to cost.
+loading the six that are not running is most of what this command used to cost.
 
 A ticket is captured cheaply and analysed later. `new` writes down what someone said and
 asks almost nothing; `refine` is where the questions, the modelling and the acceptance

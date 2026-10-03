@@ -32,6 +32,13 @@ Then compare what the explorer found against what the project claims:
 - `docs/glossary.md` — does the code use these words? Add terms that appear in code
   but not here; flag synonyms that have crept in.
 - `docs/adr/` — are there decisions visible in the code with no recorded reasoning?
+- `docs/endpoints/` — a diagram is traced at `done`, so a change made outside a ticket
+  leaves it describing code that has moved. For each `.md`, run
+  `git log --oneline <traced_at>..HEAD -- <files in its evidence table>`, stripping the
+  `:line` suffix from each path first. A `traced_at` that `git cat-file -e <sha>` cannot
+  resolve is stale too, not an error: the commit was orphaned, so re-trace it. List every
+  stale diagram, and offer to run `/trace-endpoint` on them. Report; do not
+  re-trace unasked — a dozen re-traces is a cost the human should choose.
 
 Update the files where the code is clearly right and the document is stale. Where they
 disagree in a way that suggests the code is wrong, do not edit either — report it.

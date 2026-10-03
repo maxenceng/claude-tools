@@ -8,6 +8,9 @@ Refuse a `todo` whose *Model decision* is still empty for the same reason. The s
 it was analysed; the empty section says it was not, and the section is the one telling the
 truth.
 
+Refuse a ticket touching `frontend/**` whose *Design direction* is missing or still the
+unanalysed marker, for the same reason. Tickets refined before 2.0.0 have no such section.
+
 Then:
 
 1. Set `status: in-progress`.
@@ -19,6 +22,7 @@ Then:
    class immediately, which is cheaper than finding it in review. `backend-ddd` loads the
    `ddd-backend` skill itself for the shape each test takes; invoke either skill directly
    only when the work is small enough to stay inline.
+   Hand the `frontend` agent the ticket's *Design direction* along with its criteria.
 4. Write the boundary case first where the ticket has one. A rule tested only in the
    middle of its range passes with an off-by-one in it.
 5. If the API surface changed, recapture the schema: `make run`, `make openapi`,

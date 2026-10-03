@@ -65,8 +65,10 @@ the change fits the domain model.
 
 ### Commands
 
-- `/ticket` — work a backlog ticket end to end: capture, refine, start, review, respond
-  to feedback, close. Capture and analysis are separate verbs on purpose: `new` writes a
+- `/ticket` — work a backlog ticket end to end: capture, refine, start, design,
+  review, respond to feedback, close. `design` is the frontend loop between `start` and
+  `review`: screenshot, impeccable critique, a named move you pick, repeat until you call
+  it done. Capture and analysis are separate verbs on purpose: `new` writes a
   `draft` per line and asks almost nothing, `refine` is where the questions, the modelling
   and the acceptance criteria happen and the ticket becomes `todo`. That split is what
   lets a whole backlog be written in one sitting without deciding six designs at once.
@@ -74,6 +76,11 @@ the change fits the domain model.
   the PR that caused them. Open the folder as an Obsidian vault for a board; nothing
   depends on it. Each step names the agent or skill that owns it, so the reviewers are
   dispatched rather than suggested.
+- `/trace-endpoint` — trace one endpoint from controller to adapter and write its sequence
+  diagram to `docs/endpoints/`: Mermaid in Markdown for GitHub and Obsidian, and an
+  interactive archify HTML beside it. `/ticket done` runs it on every endpoint the ticket
+  touched, so the atlas grows with the work; `/onboard` reports diagrams whose code has
+  moved since.
 - `/onboard` — understand a project and refresh its architecture docs.
 - `/find-duplication` — run the duplication detectors and propose extractions worth making.
 - `/debt` — collect the limits this project chose to live with, from `deferred:` markers in
@@ -122,3 +129,10 @@ those steps do nothing if the plugin is absent, and nothing reports it at runtim
 an outside reference with its plugin: `verify-plugin.sh` accepts a `plugin:` prefix as a
 declared dependency and lists it, and rejects a bare name this plugin does not define,
 because unqualified there is no way to tell deliberate reuse from a typo.
+
+Two dependencies are new with the design loop and the atlas. Impeccable is a plugin and
+is declared like the others: `/plugin marketplace add pbakaus/impeccable`, then
+`/plugin install impeccable@impeccable`. Archify is a
+skill, not a plugin — `npx skills add tt-a1i/archify -g` — so `verify-plugin.sh` names it
+in an explicit allow-list, and `/trace-endpoint` checks for it and stops with the install
+line when it is missing.

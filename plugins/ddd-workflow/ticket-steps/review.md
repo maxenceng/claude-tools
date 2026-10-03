@@ -21,6 +21,10 @@
    are separate reviewers with separate jobs; collapsing them buries the modelling
    findings in style noise.
 
+   For a diff touching `frontend/**`, add a third: invoke the `impeccable:impeccable`
+   skill with `audit`, scoped to the changed frontend files. Design quality is its own
+   axis and neither of the other two reads for it.
+
    Scope both, because a reviewer is a cold start: it re-reads what this session already
    knows, and it costs the running sum of everything it opens rather than the last file.
    Name the files the correctness review should read and tell it not to open the whole

@@ -27,6 +27,14 @@ is judgement.
 
 The marketplace is `maxence-tools`; the plugin inside it is `ddd-workflow`.
 
+For the design loop and the endpoint atlas, add two more:
+
+```bash
+/plugin marketplace add pbakaus/impeccable
+/plugin install impeccable@impeccable
+npx skills add tt-a1i/archify -g
+```
+
 Optionally, if a Vikunja instance is available, set `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
 `VIKUNJA_PROJECT_ID` in your shell profile. `/ticket` mirrors status to Vikunja's Kanban
 board when these are set and runs exactly as before when they are not — nothing here is
@@ -144,6 +152,7 @@ a question history answers.
 /ticket new <description>   # capture only: one draft per line, asks almost nothing
 /ticket refine BILLING-14   # the questions, the model decision, the criteria
 /ticket start BILLING-14    # branch, then implement test-first
+/ticket design BILLING-14   # frontend only: critique, pick a move, repeat until done
 /ticket review BILLING-14   # make verify, architecture review, code review, PR
 /ticket respond BILLING-14  # act on PR comments; repeat as often as needed
 /ticket done BILLING-14     # after merge; notes, retro, ADR if warranted
@@ -151,6 +160,7 @@ a question history answers.
 /debt                       # the ledger: limits this project chose to live with
 /find-duplication           # copy-pasted code, and whether it is worth extracting
 /onboard                    # re-read the project and refresh its architecture docs
+/trace-endpoint POST /api/orders   # one endpoint's call flow into docs/endpoints/
 ```
 
 `new` and `refine` are deliberately two verbs. `new` captures — one draft per line of the
@@ -170,6 +180,15 @@ is a valid outcome and gets written down.
 It pushes before re-verifying on purpose: CI starts services and boots the application, so
 it demonstrates criteria a local shell often cannot, and waiting for it beats unticking a
 box the pipeline is about to prove.
+
+`design` is the frontend's loop and the only verb that never decides it is finished. Each
+round fixes what impeccable's detector flags, then shows you a screenshot with a critique
+and asks you to pick a move. The direction it builds toward was settled at `refine`, from
+`PRODUCT.md` — run `/impeccable init` once per project to write that.
+
+`done` also writes the endpoint atlas: every endpoint the ticket touched gets its sequence
+diagram re-traced into `docs/endpoints/`, from the merged code. Open that folder in the
+same vault as the backlog.
 
 The prefix is the bounded context the work sits in, so a ticket you cannot prefix is
 usually two tickets — or a context you have not named yet. Either is worth discovering
