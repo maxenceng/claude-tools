@@ -1,0 +1,22 @@
+.button {
+  cursor: pointer;
+  border: none;
+
+  &[data-variant='primary'] {
+    align-self: flex-start;
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-sm);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: var(--font-weight-medium);
+  }
+
+  &[data-variant='link'] {
+    align-self: flex-start;
+    padding: 0;
+    background: none;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+}
