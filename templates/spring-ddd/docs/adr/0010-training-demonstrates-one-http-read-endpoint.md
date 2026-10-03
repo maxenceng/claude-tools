@@ -28,6 +28,9 @@ This reopens and extends ADR 8 for HTTP only.
 `DomainErrorStatus` gains `UNAVAILABLE`, mapped to `503`, for something the request depends on
 that did not answer. `CourseCatalogueUnreachableException` now extends `DomainException` with
 that status, keeping its cause, so the global handler covers it without importing `training`.
+This supersedes ADR 9's statement that the exception is not a `DomainException`: ADR 9 itself
+said a controller waiting on the answer would want it to be one, and `ddd-backend`'s
+`references/outbound-clients.md` covers that controller-triggered case.
 
 ## Consequences
 

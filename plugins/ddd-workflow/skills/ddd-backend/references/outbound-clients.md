@@ -118,9 +118,10 @@ The vendor's own exception â€” the one the `Client`/`ErrorDecoder` pair raises â
 automatically a `DomainException`. Whether it should be one depends on what's on the other
 end of the call:
 
-- A controller-triggered lookup wants it to extend `DomainException`, carrying whichever
-  `DomainErrorStatus` fits "an upstream dependency didn't answer," so the one global handler
-  translates it the same way it translates every other business failure.
+- A controller-triggered lookup wants it to extend `DomainException`, carrying
+  `DomainErrorStatus.UNAVAILABLE` ("an upstream dependency didn't answer"), so the one global
+  handler answers `503` the way it answers every other business failure. The template's
+  `CourseCatalogueUnreachableException` is this shape, since `GET /api/courses/popularity` calls it.
 - A workflow-triggered lookup (see `references/workflows.md`) usually wants a plain
   exception instead: no business rule was broken, no HTTP caller is waiting on it, and
   Temporal's own activity retry is what decides whether the failure was a blip or the end of
