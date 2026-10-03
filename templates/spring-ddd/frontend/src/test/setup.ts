@@ -1,5 +1,6 @@
 import { afterAll, afterEach } from 'vitest'
 import { cleanup } from '@testing-library/react'
+import { DEFAULT_LANGUAGE, i18n } from '../i18n/i18n'
 import { server } from './server'
 
 // Node's Request rejects relative URLs, but the client's baseUrl is '/' (same-origin in
@@ -15,8 +16,13 @@ globalThis.Request = class extends NodeRequest {
 // the client module is created, which happens while the test file is imported, before any
 // beforeAll hook runs. Patched late, the client would keep the unpatched fetch.
 server.listen({ onUnhandledFrame: 'error' })
-afterEach(() => {
+
+// Tests assert English copy, whatever language the machine running them speaks.
+await i18n.changeLanguage(DEFAULT_LANGUAGE)
+
+afterEach(async () => {
   server.resetHandlers()
   cleanup()
+  await i18n.changeLanguage(DEFAULT_LANGUAGE)
 })
 afterAll(() => server.close())
