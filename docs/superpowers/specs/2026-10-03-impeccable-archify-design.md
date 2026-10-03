@@ -54,6 +54,12 @@ the unanalysed marker, with the same reasoning as an empty *Model decision*.
 `impeccable:impeccable` with `audit` as a third reviewer, beside `architecture-reviewer`
 and the correctness review, scoped to the changed frontend files.
 
+**`ticket-steps/respond.md`** — on a frontend ticket, translate design feedback on the
+PR into impeccable's named moves before acting ("too loud" → `quieter`, "feels generic"
+→ `bolder`), and invoke `impeccable:impeccable` with that move. A named move is
+repeatable and the reviewer can see which one was applied; a free-form tweak is neither.
+Feedback no move fits is applied as written.
+
 **`commands/ticket.md`** — add `design` to `argument-hint` and the dispatch list.
 
 ### Template changes (`templates/spring-ddd/`)
@@ -148,3 +154,4 @@ re-trace. Report only, never a gate.
 - Generating the whole atlas in `make docs`.
 - Copying impeccable's prose guidance into this plugin (`frontend-design` already
   overlaps it).
+- A `ddd-frontend` conventions skill and the Vercel React skills — the next PR.
