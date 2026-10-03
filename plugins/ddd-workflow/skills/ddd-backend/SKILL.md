@@ -273,9 +273,9 @@ request is wrong however the state changes.
 work, and it is nobody's input error.
 
 A `DomainException`'s message *is* the public `ProblemDetail` `detail` — the handler
-sends it verbatim — so write it for the person reading the response. Diagnostics (a
-vendor's error text, a Feign method key, an HTTP status from upstream) go in the cause,
-and the handler logs the cause of an `UNAVAILABLE` at warn rather than sending it.
+sends it verbatim — so write it for the person reading the response. Diagnostics (the
+request without its query string, the exception type, the upstream status) go in the
+cause, and the handler logs the cause of an `UNAVAILABLE` at warn rather than sending it.
 
 `AssertionException` is a separate hierarchy — it guards types rather than business
 rules — and the same handler answers `400` for it.
