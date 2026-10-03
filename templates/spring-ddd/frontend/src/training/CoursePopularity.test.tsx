@@ -157,5 +157,6 @@ describe('CoursePopularity', () => {
     renderScreen()
 
     expect(screen.getByRole('button', { name: 'Rechercher' })).toBeTruthy()
+    expect(document.documentElement.lang).toBe('fr')
   })
 })

@@ -10,6 +10,12 @@ export interface ButtonProps {
   onClick?: () => void
 }
 
+/**
+ * A button whose type is always explicit.
+ *
+ * `type` is narrowed to a literal in the JSX because react/button-has-type accepts only a
+ * literal there, not a value passed through from a prop.
+ */
 export function Button({ children, type, variant = 'primary', onClick }: ButtonProps): JSX.Element {
   return (
     <button

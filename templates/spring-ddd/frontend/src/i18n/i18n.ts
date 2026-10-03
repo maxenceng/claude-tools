@@ -35,7 +35,7 @@ void i18n.use(initReactI18next).init({
   fallbackLng: DEFAULT_LANGUAGE,
   supportedLngs: SUPPORTED_LANGUAGES,
   defaultNS: 'common',
-  ns: ['common', 'training'],
+  ns: Object.keys(resources.en),
   // Resources are bundled, so initialisation completes before the first render.
   initAsync: false,
   // React escapes what it renders; escaping here too would double-escape.

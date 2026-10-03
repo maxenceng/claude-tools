@@ -1,5 +1,5 @@
 /*
- * The design tokens: every colour, space, radius and type size the UI uses.
+ * The design tokens: every colour, space, radius, border, focus ring and type value the UI uses.
  * Primitives read these; nothing else names a raw value.
  */
 :root {
@@ -11,6 +11,8 @@
   --color-surface: oklch(0.99 0.003 260);
   --color-border: oklch(0.84 0.01 260);
   --color-accent: oklch(0.27 0.02 260);
+  --color-accent-hover: oklch(0.36 0.02 260);
+  --color-accent-active: oklch(0.2 0.02 260);
   --color-on-accent: oklch(0.99 0.003 260);
   --color-focus: oklch(0.55 0.15 250);
 
@@ -22,6 +24,9 @@
   --space-xl: 3rem;
 
   --radius-sm: 0.25rem;
+  --border-width: 1px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-size-sm: 0.875rem;
@@ -34,6 +39,8 @@
   --font-weight-semibold: 600;
   --line-height-tight: 1.2;
   --line-height-body: 1.5;
+  --letter-spacing-tight: -0.01em;
+  --underline-offset: 0.2em;
 
   --measure: 42rem;
 }
@@ -46,6 +53,8 @@
     --color-surface: oklch(0.19 0.01 260);
     --color-border: oklch(0.4 0.01 260);
     --color-accent: oklch(0.93 0.005 260);
+    --color-accent-hover: oklch(0.85 0.005 260);
+    --color-accent-active: oklch(0.97 0.005 260);
     --color-on-accent: oklch(0.19 0.01 260);
     --color-focus: oklch(0.72 0.13 250);
   }

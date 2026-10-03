@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { api, type Schema } from '../api/client'
-import { ApiError, unwrap } from '../api/problem'
+import { isAnswered, unwrap } from '../api/problem'
 
 /** A network failure is retried once, silently, before the screen offers Retry. */
 export const NETWORK_RETRIES = 1
@@ -23,11 +23,11 @@ export function isAskable(title: string): boolean {
 }
 
 /**
- * Retries only a request nobody answered. When the server answered (an ApiError), the
+ * Retries only a request nobody answered. When the server answered, the
  * answer stands and the screen offers Retry instead.
  */
 export function retriesOnlyUnansweredRequests(failureCount: number, error: Error): boolean {
-  return !(error instanceof ApiError) && failureCount < NETWORK_RETRIES
+  return !isAnswered(error) && failureCount < NETWORK_RETRIES
 }
 
 export function useCoursePopularity(title: string): UseQueryResult<Schema<'CoursePopularityResponse'>> {

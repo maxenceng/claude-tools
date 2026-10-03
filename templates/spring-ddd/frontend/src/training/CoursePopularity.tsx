@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent, type JSX } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ApiError } from '../api/problem'
+import { detailOf, isNotFound, isRejected, rejectionOf } from '../api/problem'
 import { Alert, Button, Heading, Stack, Status, Text, TextField } from '../design-system'
 import { useCoursePopularity } from './queries'
 
@@ -20,8 +20,7 @@ export function CoursePopularity(): JSX.Element {
   const [draft, setDraft] = useState('')
   const [submitted, setSubmitted] = useState('')
   const popularity = useCoursePopularity(submitted)
-  const rejected =
-    popularity.error instanceof ApiError && popularity.error.status === 400 ? popularity.error.detail : undefined
+  const rejected = rejectionOf(popularity.error)
 
   function submit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault()
@@ -37,7 +36,9 @@ export function CoursePopularity(): JSX.Element {
         <form onSubmit={submit}>
           <Stack gap="sm">
             <TextField label={t('popularity.titleLabel')} value={draft} onChange={setDraft} error={rejected} />
-            <Button type="submit">{t('popularity.lookUp')}</Button>
+            <Stack direction="horizontal" gap="sm">
+              <Button type="submit">{t('popularity.lookUp')}</Button>
+            </Stack>
           </Stack>
         </form>
         <div aria-live="polite">
@@ -60,13 +61,11 @@ interface OutcomeProps {
 function Outcome({ popularity }: OutcomeProps): JSX.Element | null {
   const { t } = useTranslation('training')
 
-  if (popularity.isPending) {
-    return popularity.fetchStatus === 'fetching' ? <Status>{t('popularity.lookingUp')}</Status> : null
-  }
+  if (popularity.isLoading) return <Status>{t('popularity.lookingUp')}</Status>
+  if (popularity.isPending) return null
   if (popularity.isError) {
-    const answered = popularity.error instanceof ApiError ? popularity.error : null
-    if (answered?.status === 400) return null
-    if (answered?.status === 404) {
+    if (isRejected(popularity.error)) return null
+    if (isNotFound(popularity.error)) {
       return (
         <Text tone="muted" size="sm">
           {t('popularity.notFound')}
@@ -75,7 +74,7 @@ function Outcome({ popularity }: OutcomeProps): JSX.Element | null {
     }
     return (
       <Alert>
-        <Text size="sm">{answered?.detail ?? t('popularity.unreachable')}</Text>
+        <Text>{detailOf(popularity.error) ?? t('popularity.unreachable')}</Text>
         <Button type="button" variant="link" onClick={() => void popularity.refetch()}>
           {t('popularity.retry')}
         </Button>
