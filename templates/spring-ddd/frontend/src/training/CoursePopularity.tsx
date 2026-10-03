@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../api/problem'
 import { useCoursePopularity } from './queries'
 
@@ -8,6 +8,13 @@ export function CoursePopularity() {
   const popularity = useCoursePopularity(submitted)
   const error = popularity.error instanceof ApiError ? popularity.error : null
   const rejected = error?.status === 400 ? error.detail : null
+  const input = useRef<HTMLInputElement>(null)
+
+  // A rejected title is shown on the field, outside the live region; moving focus to the field
+  // is what makes a screen reader announce it, reading the message aria-describedby points at.
+  useEffect(() => {
+    if (error?.status === 400) input.current?.focus()
+  }, [error])
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -25,6 +32,7 @@ export function CoursePopularity() {
             Course title
           </label>
           <input
+            ref={input}
             id="course-title"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -58,14 +66,14 @@ function Outcome({ popularity }: { popularity: ReturnType<typeof useCoursePopula
     ) : null
   }
   if (popularity.isError) {
-    const status = popularity.error instanceof ApiError ? popularity.error.status : undefined
-    if (status === 400) return null
-    if (status === 404) {
+    const answered = popularity.error instanceof ApiError ? popularity.error : null
+    if (answered?.status === 400) return null
+    if (answered?.status === 404) {
       return <p className="mt-4 text-sm text-neutral-600">No popularity yet for this course.</p>
     }
     return (
       <div role="alert" className="mt-4 text-sm text-red-700">
-        <p>{popularity.error.message}</p>
+        <p>{answered?.detail ?? 'The server could not be reached; try again.'}</p>
         <button type="button" onClick={() => popularity.refetch()} className="mt-2 underline">
           Retry
         </button>

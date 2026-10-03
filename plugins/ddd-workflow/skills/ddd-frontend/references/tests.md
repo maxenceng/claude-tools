@@ -14,7 +14,7 @@ export const server = setupServer()
 
 ```tsx
 // src/training/CoursePopularity.test.tsx
-const popularity = (respond: () => Response | Promise<Response>) =>
+const popularity = (respond: (info: { request: Request }) => Response | Promise<Response>) =>
   server.use(http.get('*/api/courses/popularity', respond))
 
 const problem = (status: number, detail: string) => () => HttpResponse.json({ status, detail }, { status })
@@ -40,12 +40,20 @@ user sees:
 | populated | *shows the popularity of a known course* |
 | empty / not found | *says, neutrally, that a course has no popularity yet* |
 | error | *offers a retry when the vendor is unavailable* |
-| rejected input | *ties a rejected title to the input* |
+| error, no answer | *says the server could not be reached when nothing answers, not what fetch threw* |
+| rejected input | *ties a rejected title to the input, without an alert* |
+| rejected input, announced | *announces a rejected title by moving focus to the input* |
 | loading | *shows a busy indicator while the lookup is in flight* |
 | loading again | *shows the busy indicator again, then the new value, on a second lookup* |
 
 A test name says the behaviour, not the mechanism: *says, neutrally, that…* records that a
 404 must not raise an alert, and the test asserts `queryByRole('alert')` is null.
+
+Assert what the name claims, or the test passes for the wrong reason. *asks nothing…* counts
+the handler's calls and asserts `0` after typing a title and waiting — no `status` and no
+`alert` would also be true of a component that asked and had not heard back yet. *shows the
+popularity…* reads `new URL(request.url).searchParams.get('title')` in its handler, so a
+request that dropped the title would fail it even though the handler still answered `73`.
 
 The 400 test submits `'x'`, not a blank title. A blank title never reaches the server — the
 query is disabled while the title is blank — so the test plays a server that rejects a value

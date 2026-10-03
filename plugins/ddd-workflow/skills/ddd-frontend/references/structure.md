@@ -23,6 +23,7 @@ So `architecture.test.ts` enforces it:
 // src/architecture.test.ts
 const sharedFolders = new Set(['api', 'test']) // not bounded contexts
 
+it('scans source files, so the rules below cannot pass on an empty list', () => { ... })
 it('a bounded context never imports from another bounded context', () => { ... })
 it('only src/api imports from the generated client', () => { ... })
 ```

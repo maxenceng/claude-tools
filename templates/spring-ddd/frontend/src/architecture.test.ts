@@ -39,6 +39,10 @@ function violations(offends: (file: string, target: string) => boolean): string[
 }
 
 describe('frontend architecture', () => {
+  it('scans source files, so the rules below cannot pass on an empty list', () => {
+    expect(sourceFiles(src)).not.toEqual([])
+  })
+
   it('a bounded context never imports from another bounded context', () => {
     const found = violations((file, target) => {
       const own = folderOf(file)

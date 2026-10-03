@@ -18,19 +18,23 @@ export class ApiError extends Error {
 
 /** The data of a successful call; a failed one becomes an ApiError carrying the ProblemDetail. */
 export function unwrap<T>({ data, error, response }: Result<T>): T {
-  if (error !== undefined || data === undefined) {
+  if (!response.ok) {
     const detail =
       typeof error === 'object' && error !== null && 'detail' in error && typeof error.detail === 'string'
         ? error.detail
         : response.statusText
     throw new ApiError(response.status, detail)
   }
-  return data
+  // A success with no body (204) has no data, so a no-content route's caller gets undefined.
+  return data as T
 }
 ```
 
-Two things to keep:
+Three things to keep:
 
+- Success is `response.ok`, not "there is data". `openapi-fetch` leaves `data` undefined for
+  a 204 or an empty body, and a no-content route (a `DELETE`, a `PUT` that returns nothing)
+  is still a success; `problem.test.ts` pins it.
 - The error body is typed `unknown` and narrowed, not cast. A proxy or a crashed server can
   answer with HTML or an empty body; narrowing falls back to `statusText`
   (`problem.test.ts` pins both paths) instead of rendering `undefined`.
@@ -57,14 +61,14 @@ The template's endpoint, `GET /api/courses/popularity`, documents 200, 400, 404 
 ```tsx
 // src/training/CoursePopularity.tsx — the Outcome child
 if (popularity.isError) {
-  const status = popularity.error instanceof ApiError ? popularity.error.status : undefined
-  if (status === 400) return null                  // shown on the field instead
-  if (status === 404) {
+  const answered = popularity.error instanceof ApiError ? popularity.error : null
+  if (answered?.status === 400) return null       // shown on the field instead
+  if (answered?.status === 404) {
     return <p className="mt-4 text-sm text-neutral-600">No popularity yet for this course.</p>
   }
   return (
     <div role="alert" className="mt-4 text-sm text-red-700">
-      <p>{popularity.error.message}</p>
+      <p>{answered?.detail ?? 'The server could not be reached; try again.'}</p>
       <button type="button" onClick={() => popularity.refetch()} className="mt-2 underline">
         Retry
       </button>
@@ -75,8 +79,10 @@ if (popularity.isError) {
 
 **400 on the field.** The message belongs where the user will fix it. The input gets
 `aria-invalid` and `aria-describedby` pointing at the message, so a screen reader reads the
-reason with the field. The ProblemDetail names no field; see `queries.md` for forms with
-more than one.
+reason with the field. The message sits outside the `aria-live` region, so nothing would
+announce it on its own: when a 400 arrives, an effect moves focus to the input, and the
+screen reader reads the field, its invalid state and the message together. The
+ProblemDetail names no field; see `queries.md` for forms with more than one.
 
 **404 is not an error screen.** "This course has no popularity yet" is a fact about the
 world, not a failure. Red text and `role="alert"` would tell the user something went wrong
@@ -88,8 +94,11 @@ offer the action that resolves it — reload, choose another — rather than a b
 will conflict again. The template has no 409 route yet, so no example exists in its code.
 
 **5xx and network: alert with Retry.** The user cannot fix it and may want to try again. The
-alert carries `role="alert"` so it is announced, shows the message (`ApiError.message` is
-the `detail`), and offers a Retry that calls `refetch()`.
+alert carries `role="alert"` so it is announced, shows the `detail` of an answered request
+(the backend writes it for a person and keeps diagnostics in its logs), and offers a Retry
+that calls `refetch()`. A network failure has no `detail` — only whatever `fetch` threw,
+written for a developer — so the alert says, in fixed words, that the server could not be
+reached. Never render `error.message` of an error that is not an `ApiError`.
 
 ## Never retry an answered request
 

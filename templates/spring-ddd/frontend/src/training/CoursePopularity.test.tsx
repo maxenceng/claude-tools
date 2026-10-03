@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { server } from '../test/server'
 import { CoursePopularity } from './CoursePopularity'
 
-const popularity = (respond: () => Response | Promise<Response>) =>
+const popularity = (respond: (info: { request: Request }) => Response | Promise<Response>) =>
   server.use(http.get('*/api/courses/popularity', respond))
 
 const problem = (status: number, detail: string) => () => HttpResponse.json({ status, detail }, { status })
@@ -21,23 +21,37 @@ function ask(title: string) {
 }
 
 describe('CoursePopularity', () => {
-  it('asks nothing until a title is submitted', () => {
+  it('asks nothing until a title is submitted', async () => {
+    let calls = 0
+    popularity(() => {
+      calls += 1
+      return HttpResponse.json({ title: 'DDD', popularity: 73 })
+    })
     render(
       <QueryClientProvider client={new QueryClient()}>
         <CoursePopularity />
       </QueryClientProvider>,
     )
 
+    fireEvent.change(screen.getByLabelText('Course title'), { target: { value: 'DDD' } })
+    await delay(50)
+
+    expect(calls).toBe(0)
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('shows the popularity of a known course', async () => {
-    popularity(() => HttpResponse.json({ title: 'DDD', popularity: 73 }))
+    let asked: string | null = null
+    popularity(({ request }) => {
+      asked = new URL(request.url).searchParams.get('title')
+      return HttpResponse.json({ title: 'DDD', popularity: 73 })
+    })
 
     ask('DDD')
 
     expect(await screen.findByText('73')).toBeTruthy()
+    expect(asked).toBe('DDD')
   })
 
   it('says, neutrally, that a course has no popularity yet', async () => {
@@ -67,7 +81,16 @@ describe('CoursePopularity', () => {
     expect(await screen.findByText('41')).toBeTruthy()
   })
 
-  it('ties a rejected title to the input', async () => {
+  it('says the server could not be reached when nothing answers, not what fetch threw', async () => {
+    popularity(() => HttpResponse.error())
+
+    ask('DDD')
+
+    const alert = await screen.findByRole('alert', {}, { timeout: 3000 })
+    expect(alert.textContent).toContain('The server could not be reached; try again.')
+  })
+
+  it('ties a rejected title to the input, without an alert', async () => {
     popularity(problem(400, 'title must not be blank'))
 
     ask('x')
@@ -76,6 +99,16 @@ describe('CoursePopularity', () => {
     const input = screen.getByLabelText('Course title')
     expect(input.getAttribute('aria-describedby')).toBe(message.id)
     expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('announces a rejected title by moving focus to the input', async () => {
+    popularity(problem(400, 'title must not be blank'))
+
+    ask('x')
+
+    await screen.findByText('title must not be blank')
+    expect(document.activeElement).toBe(screen.getByLabelText('Course title'))
   })
 
   it('shows a busy indicator while the lookup is in flight', async () => {

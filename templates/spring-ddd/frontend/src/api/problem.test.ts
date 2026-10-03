@@ -8,6 +8,10 @@ describe('unwrap', () => {
     expect(unwrap({ data, response: new Response(null, { status: 200 }) })).toBe(data)
   })
 
+  it('returns nothing, without throwing, for a successful call with no body', () => {
+    expect(unwrap({ response: new Response(null, { status: 204 }) })).toBeUndefined()
+  })
+
   it('turns a ProblemDetail into an ApiError with its status and detail', () => {
     const response = new Response(null, { status: 400 })
 

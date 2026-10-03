@@ -12,12 +12,13 @@ type Result<T> = { data?: T; error?: unknown; response: Response }
 
 /** The data of a successful call; a failed one becomes an ApiError carrying the ProblemDetail. */
 export function unwrap<T>({ data, error, response }: Result<T>): T {
-  if (error !== undefined || data === undefined) {
+  if (!response.ok) {
     const detail =
       typeof error === 'object' && error !== null && 'detail' in error && typeof error.detail === 'string'
         ? error.detail
         : response.statusText
     throw new ApiError(response.status, detail)
   }
-  return data
+  // A success with no body (204) has no data, so a no-content route's caller gets undefined.
+  return data as T
 }
