@@ -84,3 +84,11 @@ the conversation does.
    Match the reviewer's register. Someone who writes "remove this, I know how Docker
    works" is telling you the explanation was the problem; a paragraph defending the fix
    repeats it.
+
+## Design feedback
+
+On a frontend ticket, translate a design comment into one of impeccable's named moves
+before acting on it — "too loud" is `quieter`, "feels generic" is `bolder`, "cluttered" is
+`distill` — and apply it through the `impeccable:impeccable` skill. Name the move in the
+reply. A named move is something the reviewer can ask for again and recognise when they
+see it; a one-off tweak is neither. Feedback no move fits is applied as written.

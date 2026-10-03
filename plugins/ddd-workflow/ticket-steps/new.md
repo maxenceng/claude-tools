@@ -54,6 +54,10 @@ _Not analysed yet — `/ticket refine CONTEXT-7`._
 
 _Not analysed yet — `/ticket refine CONTEXT-7`._
 
+## Design direction
+
+_Not analysed yet — `/ticket refine CONTEXT-7`._
+
 ## Glossary impact
 
 _Not analysed yet._

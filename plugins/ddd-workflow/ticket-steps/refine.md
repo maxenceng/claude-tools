@@ -31,9 +31,22 @@ keeps in step.
 Dispatch `codebase-explorer` first when the work touches code not already read this
 session. Its written summary is what keeps forty files out of this conversation.
 
+## Frontend tickets
+
+A ticket that touches `frontend/**` has a third question: what it should look like.
+Settle it here for the same reason as the model — decided at the keyboard, it is decided
+by whoever happens to be typing.
+
+If `PRODUCT.md` is missing at the project root, stop and ask for `/impeccable init`
+first. A design direction with no audience and no voice behind it is a guess dressed as
+a decision.
+
+Otherwise invoke the `impeccable:impeccable` skill with `shape` and write what it settles
+into *Design direction*. For a ticket that does not touch the frontend, write `n/a`.
+
 ## What to write
 
-Fill *Acceptance criteria*, *Model decision* and *Glossary impact*, replacing the
+Fill *Acceptance criteria*, *Model decision*, *Design direction* and *Glossary impact*, replacing the
 _not analysed yet_ markers. Then set `status: todo`.
 
 Do not invent detail the request does not contain — an acceptance criterion nobody asked
