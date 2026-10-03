@@ -32,6 +32,11 @@ Then compare what the explorer found against what the project claims:
 - `docs/glossary.md` — does the code use these words? Add terms that appear in code
   but not here; flag synonyms that have crept in.
 - `docs/adr/` — are there decisions visible in the code with no recorded reasoning?
+- `docs/endpoints/` — a diagram is traced at `done`, so a change made outside a ticket
+  leaves it describing code that has moved. For each `.md`, run
+  `git log --oneline <traced_at>..HEAD -- <files in its evidence table>`. List every
+  diagram with output, and offer to run `/trace-endpoint` on them. Report; do not
+  re-trace unasked — a dozen re-traces is a cost the human should choose.
 
 Update the files where the code is clearly right and the document is stale. Where they
 disagree in a way that suggests the code is wrong, do not edit either — report it.

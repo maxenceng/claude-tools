@@ -20,7 +20,22 @@
    record of what was decided — and write the ADR that supersedes it. A ticket whose
    *Model decision* contradicts the code, with nothing pointing anywhere else, is how a
    settled question gets reopened by someone who thinks they have found a bug.
-6. Ask whether this ticket taught `ddd-backend`, another shared skill, or an agent's
+6. Bring the endpoint atlas up to date. This runs here rather than at `review` because
+   only merged code is worth a diagram — a branch's call flow can still change under
+   review, and a diagram of a flow that never landed misleads everyone who finds it.
+
+   Find the endpoints the ticket touched: controllers changed in the merged diff, plus
+   controllers in the same context whose call path reaches a class the diff changed.
+   Run `/trace-endpoint` on each, passing this ticket's id as the trailing argument so it
+   lands in `tickets` — for example, `/trace-endpoint POST /api/orders ORDERING-12`.
+   For an endpoint the ticket removed, delete its `.md` and `.html` and its line in
+   `docs/endpoints/README.md`.
+
+   A frontend-only ticket usually touches no endpoint. Say so and move on rather than
+   tracing something to show the step ran.
+
+   All of it goes in the same branch and PR as `status: done`.
+7. Ask whether this ticket taught `ddd-backend`, another shared skill, or an agent's
    instructions something worth keeping — a convention this project only discovered under
    review, a pattern an ADR here now documents generally rather than for this project alone.
    If so, carry it back into the `claude-tools` repo, in its own change: edit the plugin
