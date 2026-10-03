@@ -211,6 +211,8 @@ def check_plugin(plugin_root):
     # line rather than accepted as any bare name, so a typo still fails.
     NON_PLUGIN_SKILLS = {
         "archify": "npx skills add tt-a1i/archify -g",
+        "vercel-react-best-practices": "npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g",
+        "vercel-composition-patterns": "npx skills add vercel-labs/agent-skills@vercel-composition-patterns -g",
     }
     known = skills | agents
     external = set()
