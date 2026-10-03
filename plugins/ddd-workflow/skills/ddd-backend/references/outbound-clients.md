@@ -106,11 +106,12 @@ exception never delivers it to the caller as that type — the caller sees a
 Translate that case in the `Client`, not the `Decoder`. Wrap the real transport the same
 way the `Client` already does for a connection failure, and on a successful response read
 the body fully right there — underneath where Feign's decode-time rewrapping applies —
-raising the vendor's own exception directly for a body that turns out empty or unreadable.
+raising the vendor's own exception directly for a body that breaks off before it is whole.
 That's the same layer that already turns "no response at all" into that exception;
-extending it to cover "a response whose body couldn't be used" keeps both failures raised
-from one place, instead of splitting the translation across a `Client` and a `Decoder`
-that behave differently under Feign's own exception handling.
+extending it to cover "a response whose body never fully arrived" keeps both failures
+raised from one place, instead of splitting the translation across a `Client` and a
+`Decoder` that behave differently under Feign's own exception handling. A whole body that
+won't parse is not this case: it stays Feign's own `DecodeException` (see below).
 
 ## What the failure means depends on who's asking
 
@@ -144,10 +145,20 @@ log line the 503 writes. Build the diagnostic from safe parts:
 Reading the body is where Feign leaks it on its own. An `IOException` while Feign reads a 2xx
 body — a connection reset midway — becomes `FeignException.errorReading`, whose message is
 `"<cause> reading GET <full URL>"`, and nothing catches it before the container logs it. So
-the `Client` reads the whole body itself, under the same `try` as the call, and a body that
-breaks off raises the vendor's unreachable exception: the answer never arrived, which is what
-`UNAVAILABLE` says, and a retry is the right advice. Catching `FeignException` in each
-repository instead would hold only for vendors whose repository remembers to.
+the `Client` reads the whole body itself, in a `try` of its own right after the call, and a
+body that breaks off raises the vendor's unreachable exception with its own diagnostic
+(`broke off mid-answer`): the answer never arrived, which is what `UNAVAILABLE` says, and a
+retry is the right advice. Catching `FeignException` in each repository instead would hold
+only for vendors whose repository remembers to.
+
+The cost is memory. Every vendor response is held whole in memory, one byte copy per call,
+with no upper bound. That is acceptable because `SpringDecoder` with Jackson already
+materialises the whole body to bind it, so the copy adds no new limit. A vendor that streams
+large or unbounded payloads needs a different decorator — a bounded read, or a streaming
+response type — not this one.
+
+Never set a Feign log level other than `NONE` on a client whose credentials travel in the
+query string: Feign's `Logger` writes the full request URL, key included.
 
 A decode failure — a whole 2xx body that won't parse — is a different fact, and is best
 left as Feign's own `DecodeException` rather than folded into the vendor's unreachable

@@ -29,6 +29,11 @@ import feign.codec.ErrorDecoder;
  * exception like a connection that never opened. Left to Feign, the read would fail as its {@code
  * FeignException.errorReading}, whose message is the full request URL, key included.
  *
+ * <p>The cost: every vendor response is held whole in memory, one byte copy per call, unbounded.
+ * Acceptable because {@code SpringDecoder} with Jackson already materialises the whole body to bind
+ * it. A vendor streaming large or unbounded payloads needs a different decorator — a bounded read,
+ * or a streaming response type — rather than this one.
+ *
  * <p>A whole body {@link #decoder} cannot parse is a different fact and stays Feign's own {@code
  * DecodeException}: the vendor answered, the answer just was not one this system could read, and
  * nothing here or in an adapter branches on the difference — see ADR 0009. Its message is the

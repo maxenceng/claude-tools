@@ -23,6 +23,7 @@ import com.example.app.shared.infrastructure.secondary.OutboundClientSupport;
 
 import feign.Client;
 import feign.Feign;
+import feign.Logger;
 import feign.Request;
 import feign.Response;
 import feign.codec.DecodeException;
@@ -102,8 +103,8 @@ class CourseCatalogueClientTest {
     }
 
     @Test
-    void shouldKeepTheQueryStringOutOfABodyThatBreaksOffBeforeItsDeclaredLength() {
-        CourseCatalogueClient client = client(respondingWithABodyThatBreaksOff(64));
+    void shouldKeepTheQueryStringOutOfABodyThatBreaksOffWhileFeignLogsTheResponse() {
+        CourseCatalogueClient client = client(respondingWithABodyThatBreaksOff(64), Logger.Level.HEADERS);
 
         Throwable failure = catchThrowable(() -> client.search("secret"));
 
@@ -113,7 +114,7 @@ class CourseCatalogueClientTest {
     }
 
     @Test
-    void shouldKeepTheQueryStringOutOfABodyOfUnknownLengthThatBreaksOff() {
+    void shouldKeepTheQueryStringOutOfABodyThatBreaksOffWhileDecoded() {
         CourseCatalogueClient client = client(respondingWithABodyThatBreaksOff(null));
 
         Throwable failure = catchThrowable(() -> client.search("secret"));
@@ -154,7 +155,13 @@ class CourseCatalogueClientTest {
     }
 
     static CourseCatalogueClient client(Client fake) {
+        return client(fake, Logger.Level.NONE);
+    }
+
+    static CourseCatalogueClient client(Client fake, Logger.Level logLevel) {
         return Feign.builder()
+                .logger(new DiscardingLogger())
+                .logLevel(logLevel)
                 .contract(new SpringMvcContract())
                 .decoder(OutboundClientSupport.decoder(CourseCatalogueJson.converter()))
                 .errorDecoder(OutboundClientSupport.errorDecoder(UNREACHABLE))
@@ -170,6 +177,13 @@ class CourseCatalogueClientTest {
                 .headers(Map.of("Content-Type", List.of("application/json")))
                 .body(new BreakingBody(declaredLength))
                 .build();
+    }
+
+    static final class DiscardingLogger extends Logger {
+
+        @Override
+        protected void log(String configKey, String format, Object... args) {
+        }
     }
 
     record BreakingBody(Integer length) implements Response.Body {
