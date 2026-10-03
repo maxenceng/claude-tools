@@ -79,6 +79,11 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!-- Not pulled in transitively by junit-jupiter. Surefire supplies its own
 		     launcher, but IDE test runners resolve it on every run without this. -->
 		<dependency>

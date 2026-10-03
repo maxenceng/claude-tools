@@ -255,7 +255,7 @@ public abstract class DomainException extends RuntimeException {
 }
 
 // error.domain — deliberately not HTTP
-public enum DomainErrorStatus { NOT_FOUND, CONFLICT, INVALID }
+public enum DomainErrorStatus { NOT_FOUND, CONFLICT, INVALID, UNAVAILABLE }
 ```
 
 Each exception declares its status where the rule lives, and the handler translates
@@ -269,6 +269,8 @@ maps to different codes over different protocols.
 Choose the status by what it tells the caller: `CONFLICT` when the request is fine and
 the state is not (a full course — retry later and it may work), `INVALID` when the
 request is wrong however the state changes.
+`UNAVAILABLE` when something the request depends on did not answer — retrying later may
+work, and it is nobody's input error.
 
 `AssertionException` is a separate hierarchy — it guards types rather than business
 rules — and the same handler answers `400` for it.

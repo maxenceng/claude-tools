@@ -45,6 +45,7 @@ class GlobalExceptionHandler {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case CONFLICT -> HttpStatus.CONFLICT;
             case INVALID -> HttpStatus.BAD_REQUEST;
+            case UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
     }
 }

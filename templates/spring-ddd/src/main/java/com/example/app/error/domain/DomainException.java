@@ -16,6 +16,11 @@ public abstract class DomainException extends RuntimeException {
         this.status = status;
     }
 
+    protected DomainException(DomainErrorStatus status, String message, Throwable cause) {
+        super(message, cause);
+        this.status = status;
+    }
+
     public DomainErrorStatus status() {
         return status;
     }
