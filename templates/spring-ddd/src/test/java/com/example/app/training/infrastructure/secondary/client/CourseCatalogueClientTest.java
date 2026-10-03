@@ -2,13 +2,15 @@ package com.example.app.training.infrastructure.secondary.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
@@ -25,7 +27,7 @@ class CourseCatalogueClientTest {
 
     private static final String CATALOGUE_URL = "https://api.example/api/courses";
 
-    private static final BiFunction<String, Throwable, RuntimeException> UNREACHABLE = CourseCatalogueUnreachableException::new;
+    private static final Function<String, RuntimeException> UNREACHABLE = CourseCatalogueUnreachableException::new;
 
     @Test
     void shouldSearchByTitleAndDeserialiseTheAnswer() {
@@ -69,7 +71,30 @@ class CourseCatalogueClientTest {
 
         assertThatThrownBy(() -> client.search("Introduction to Hexagonal Architecture"))
                 .isInstanceOf(CourseCatalogueUnreachableException.class)
-                .hasRootCauseInstanceOf(IOException.class);
+                .cause()
+                .hasMessageContaining("IOException");
+    }
+
+    @Test
+    void shouldKeepTheQueryStringOutOfATransportFailure() {
+        CourseCatalogueClient client = client((request, options) -> {
+            throw new IOException("Server returned HTTP response code: 500 for URL: " + request.url() + "&key=secret");
+        });
+
+        Throwable failure = catchThrowable(() -> client.search("Introduction to Hexagonal Architecture"));
+
+        assertThat(failure).isInstanceOf(CourseCatalogueUnreachableException.class);
+        assertThat(messagesOf(failure)).noneMatch(message -> message.contains("secret") || message.contains("?"))
+                .anyMatch(message -> message.contains("GET " + CATALOGUE_URL));
+    }
+
+    @Test
+    void shouldKeepTheQueryStringOutOfARefusal() {
+        CourseCatalogueClient client = client(respondingWith(new AtomicReference<>(), 500, "server error"));
+
+        Throwable failure = catchThrowable(() -> client.search("secret"));
+
+        assertThat(messagesOf(failure)).noneMatch(message -> message.contains("secret") || message.contains("?"));
     }
 
     @Test
@@ -81,6 +106,14 @@ class CourseCatalogueClientTest {
                 .hasMessage("The training catalogue did not answer; try again later.")
                 .cause()
                 .hasMessageContaining("HTTP 500");
+    }
+
+    static List<String> messagesOf(Throwable failure) {
+        List<String> messages = new ArrayList<>();
+        for (Throwable link = failure; link != null; link = link.getCause()) {
+            messages.add(String.valueOf(link.getMessage()));
+        }
+        return messages;
     }
 
     static CourseCatalogueClient client(Client fake) {

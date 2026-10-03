@@ -128,6 +128,18 @@ end of the call:
   that run's attempt. Raising it as a `DomainException` would route it through machinery
   built for a request thread that isn't there.
 
+A diagnostic never carries the request URL's query string or any credential, and the
+transport exception is not chained into it. The key travels in the query string, and a JDK
+transport error can quote the full URL in its message, so either one puts the key in the
+log line the 503 writes. Build the diagnostic from safe parts:
+
+- the HTTP method;
+- the URL up to `?`;
+- the exception's simple class name;
+- the status.
+
+`OutboundClientSupport` does this.
+
 A decode failure — a 2xx response whose body won't parse — is a different fact from either
 of those, and is best left as Feign's own `DecodeException` rather than folded into the
 vendor's unreachable exception. Nothing downstream usually branches on the difference

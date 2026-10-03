@@ -54,7 +54,7 @@ class CoursePopularityControllerTest {
 
     @Test
     void shouldAnswerUnavailableWhereTheCatalogueIsUnreachable() throws Exception {
-        when(service.popularityOf(title())).thenThrow(new CourseCatalogueUnreachableException("refused HTTP 500", null));
+        when(service.popularityOf(title())).thenThrow(new CourseCatalogueUnreachableException("GET https://api.example/api/courses refused: HTTP 500"));
 
         mvc.perform(get("/api/courses/popularity").param("title", title().value()))
                 .andExpect(status().isServiceUnavailable())

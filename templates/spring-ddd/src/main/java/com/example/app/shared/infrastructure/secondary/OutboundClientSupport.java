@@ -1,12 +1,13 @@
 package com.example.app.shared.infrastructure.secondary;
 
 import java.io.IOException;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.springframework.cloud.openfeign.support.SpringDecoder;
 import org.springframework.http.converter.HttpMessageConverter;
 
 import feign.Client;
+import feign.Request;
 import feign.codec.Decoder;
 import feign.codec.ErrorDecoder;
 
@@ -26,6 +27,11 @@ import feign.codec.ErrorDecoder;
  * which is not the same claim as the vendor being unreachable, and nothing here or in an adapter
  * branches on the difference — see ADR 0009.
  *
+ * <p>A diagnostic is built from safe parts only — the HTTP method, the URL without its query
+ * string, the transport exception's type, the status — and the transport exception itself is not
+ * chained. A vendor key travels in the query string, and a JDK transport error can quote the full
+ * URL in its message, so either would carry the key into the log line the 503 writes.
+ *
  * <p>{@link #transportFailures} decorates the {@link Client} it is given rather than replacing it
  * with one built here, so a test can wrap a fake transport the same way this decorates the real
  * one.
@@ -39,17 +45,23 @@ public final class OutboundClientSupport {
         return new SpringDecoder(new FixedObjectProvider<>(new SingleConverter(converter)));
     }
 
-    public static Client transportFailures(Client delegate, BiFunction<String, Throwable, RuntimeException> unreachable) {
+    public static Client transportFailures(Client delegate, Function<String, RuntimeException> unreachable) {
         return (request, options) -> {
             try {
                 return delegate.execute(request, options);
             } catch (IOException e) {
-                throw unreachable.apply("could not be reached: " + e.getMessage(), e);
+                throw unreachable.apply("%s could not be reached: %s".formatted(target(request), e.getClass().getSimpleName()));
             }
         };
     }
 
-    public static ErrorDecoder errorDecoder(BiFunction<String, Throwable, RuntimeException> unreachable) {
-        return (methodKey, response) -> unreachable.apply("refused %s: HTTP %d".formatted(methodKey, response.status()), null);
+    public static ErrorDecoder errorDecoder(Function<String, RuntimeException> unreachable) {
+        return (methodKey, response) -> unreachable.apply("%s refused: HTTP %d".formatted(target(response.request()), response.status()));
+    }
+
+    private static String target(Request request) {
+        String url = request.url();
+        int query = url.indexOf('?');
+        return request.httpMethod() + " " + (query < 0 ? url : url.substring(0, query));
     }
 }

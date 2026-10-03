@@ -12,15 +12,16 @@ import com.example.app.error.domain.DomainException;
  * nothing in {@code training} is the right place to decide what a caller should do about it.
  *
  * <p>Its message is the {@code detail} a person reads in the 503, so it is fixed and says nothing
- * about the vendor's internals. What actually went wrong — the transport error, or the status and
- * Feign method that refused — is wrapped into the cause, which the global handler logs.
+ * about the vendor's internals. What actually went wrong — the request without its query string,
+ * and the transport error's type or the refusing status — is wrapped into the cause, which the
+ * global handler logs.
  *
  * <p>Public: {@code CourseCatalogueRepository} throws it from outside this package.
  */
 public class CourseCatalogueUnreachableException extends DomainException {
 
-    public CourseCatalogueUnreachableException(String diagnostic, Throwable cause) {
+    public CourseCatalogueUnreachableException(String diagnostic) {
         super(DomainErrorStatus.UNAVAILABLE, "The training catalogue did not answer; try again later.",
-                new IllegalStateException("training catalogue " + diagnostic, cause));
+                new IllegalStateException("training catalogue " + diagnostic));
     }
 }
