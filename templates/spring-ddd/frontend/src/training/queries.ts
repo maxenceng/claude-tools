@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { ApiError, unwrap } from '../api/problem'
 
@@ -15,6 +15,5 @@ export function useCoursePopularity(title: string) {
     enabled: title.trim() !== '',
     // The server answered, so the UI offers Retry; only a network failure is retried silently.
     retry: (failures, error) => !(error instanceof ApiError) && failures < 1,
-    placeholderData: keepPreviousData,
   })
 }

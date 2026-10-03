@@ -89,4 +89,21 @@ describe('CoursePopularity', () => {
     expect((await screen.findByRole('status')).textContent).toMatch(/looking up/i)
     expect(await screen.findByText('73')).toBeTruthy()
   })
+
+  it('shows the busy indicator again, then the new value, on a second lookup', async () => {
+    popularity(() => HttpResponse.json({ title: 'DDD', popularity: 73 }))
+    ask('DDD')
+    expect(await screen.findByText('73')).toBeTruthy()
+
+    popularity(async () => {
+      await delay(50)
+      return HttpResponse.json({ title: 'CQRS', popularity: 12 })
+    })
+    fireEvent.change(screen.getByLabelText('Course title'), { target: { value: 'CQRS' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Look up' }))
+
+    expect((await screen.findByRole('status')).textContent).toMatch(/looking up/i)
+    expect(await screen.findByText('12')).toBeTruthy()
+    expect(screen.queryByText('73')).toBeNull()
+  })
 })

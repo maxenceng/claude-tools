@@ -42,7 +42,9 @@ export function CoursePopularity() {
           Look up
         </button>
       </form>
-      <Outcome popularity={popularity} />
+      <div aria-live="polite">
+        <Outcome popularity={popularity} />
+      </div>
     </section>
   )
 }
@@ -71,7 +73,7 @@ function Outcome({ popularity }: { popularity: ReturnType<typeof useCoursePopula
     )
   }
   return (
-    <p className="mt-4" aria-busy={popularity.isFetching}>
+    <p className="mt-4">
       <span className="text-4xl font-semibold tabular-nums">{popularity.data.popularity}</span>
       <span className="ml-2 text-sm text-neutral-600">popularity of {popularity.data.title}</span>
     </p>
