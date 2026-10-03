@@ -2,20 +2,30 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { i18n } from '../i18n/i18n'
 import { server } from '../test/server'
 import { CoursePopularity } from './CoursePopularity'
 
-const popularity = (respond: (info: { request: Request }) => Response | Promise<Response>) =>
+type Responder = (info: { request: Request }) => Response | Promise<Response>
+
+function popularity(respond: Responder): void {
   server.use(http.get('*/api/courses/popularity', respond))
+}
 
-const problem = (status: number, detail: string) => () => HttpResponse.json({ status, detail }, { status })
+function problem(status: number, detail: string): () => Response {
+  return () => HttpResponse.json({ status, detail }, { status })
+}
 
-function ask(title: string) {
+function renderScreen(): void {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <CoursePopularity />
     </QueryClientProvider>,
   )
+}
+
+function ask(title: string): void {
+  renderScreen()
   fireEvent.change(screen.getByLabelText('Course title'), { target: { value: title } })
   fireEvent.click(screen.getByRole('button', { name: 'Look up' }))
 }
@@ -27,11 +37,7 @@ describe('CoursePopularity', () => {
       calls += 1
       return HttpResponse.json({ title: 'DDD', popularity: 73 })
     })
-    render(
-      <QueryClientProvider client={new QueryClient()}>
-        <CoursePopularity />
-      </QueryClientProvider>,
-    )
+    renderScreen()
 
     fireEvent.change(screen.getByLabelText('Course title'), { target: { value: 'DDD' } })
     await delay(50)
@@ -104,11 +110,7 @@ describe('CoursePopularity', () => {
 
   it('announces a rejected title submitted with Enter from the input', async () => {
     popularity(problem(400, 'title must not be blank'))
-    render(
-      <QueryClientProvider client={new QueryClient()}>
-        <CoursePopularity />
-      </QueryClientProvider>,
-    )
+    renderScreen()
     const input = screen.getByLabelText<HTMLInputElement>('Course title')
     const regions = Array.from(document.querySelectorAll('[aria-live="polite"]'))
 
@@ -147,5 +149,13 @@ describe('CoursePopularity', () => {
     expect((await screen.findByRole('status')).textContent).toMatch(/looking up/i)
     expect(await screen.findByText('12')).toBeTruthy()
     expect(screen.queryByText('73')).toBeNull()
+  })
+
+  it('speaks French when the language is French', async () => {
+    await i18n.changeLanguage('fr')
+
+    renderScreen()
+
+    expect(screen.getByRole('button', { name: 'Rechercher' })).toBeTruthy()
   })
 })
