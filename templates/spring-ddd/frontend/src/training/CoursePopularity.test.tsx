@@ -102,13 +102,22 @@ describe('CoursePopularity', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
-  it('announces a rejected title by moving focus to the input', async () => {
+  it('announces a rejected title submitted with Enter from the input', async () => {
     popularity(problem(400, 'title must not be blank'))
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CoursePopularity />
+      </QueryClientProvider>,
+    )
+    const input = screen.getByLabelText<HTMLInputElement>('Course title')
+    const regions = Array.from(document.querySelectorAll('[aria-live="polite"]'))
 
-    ask('x')
+    input.focus()
+    fireEvent.change(input, { target: { value: 'x' } })
+    fireEvent.submit(input.form!)
 
-    await screen.findByText('title must not be blank')
-    expect(document.activeElement).toBe(screen.getByLabelText('Course title'))
+    const message = await screen.findByText('title must not be blank')
+    expect(regions.some((region) => region.contains(message))).toBe(true)
   })
 
   it('shows a busy indicator while the lookup is in flight', async () => {

@@ -42,7 +42,7 @@ user sees:
 | error | *offers a retry when the vendor is unavailable* |
 | error, no answer | *says the server could not be reached when nothing answers, not what fetch threw* |
 | rejected input | *ties a rejected title to the input, without an alert* |
-| rejected input, announced | *announces a rejected title by moving focus to the input* |
+| rejected input, announced | *announces a rejected title submitted with Enter from the input* |
 | loading | *shows a busy indicator while the lookup is in flight* |
 | loading again | *shows the busy indicator again, then the new value, on a second lookup* |
 
@@ -58,6 +58,11 @@ request that dropped the title would fail it even though the handler still answe
 The 400 test submits `'x'`, not a blank title. A blank title never reaches the server — the
 query is disabled while the title is blank — so the test plays a server that rejects a value
 the client let through, which is the case the UI must actually handle.
+
+*announces a rejected title submitted with Enter…* focuses the input and fires `submit` on
+its form, which is what Enter in a field does — jsdom does not turn a key press into a
+submit. It collects the `aria-live="polite"` regions before submitting and asserts the
+message lands inside one of them, so a slot mounted only with its message fails it.
 
 A loading test needs a handler that waits (`await delay(50)`), or the answer can arrive
 before the busy indicator is ever rendered.

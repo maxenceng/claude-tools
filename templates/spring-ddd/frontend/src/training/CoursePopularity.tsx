@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { ApiError } from '../api/problem'
 import { useCoursePopularity } from './queries'
 
@@ -8,13 +8,6 @@ export function CoursePopularity() {
   const popularity = useCoursePopularity(submitted)
   const error = popularity.error instanceof ApiError ? popularity.error : null
   const rejected = error?.status === 400 ? error.detail : null
-  const input = useRef<HTMLInputElement>(null)
-
-  // A rejected title is shown on the field, outside the live region; moving focus to the field
-  // is what makes a screen reader announce it, reading the message aria-describedby points at.
-  useEffect(() => {
-    if (error?.status === 400) input.current?.focus()
-  }, [error])
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -32,7 +25,6 @@ export function CoursePopularity() {
             Course title
           </label>
           <input
-            ref={input}
             id="course-title"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -40,11 +32,11 @@ export function CoursePopularity() {
             aria-describedby={rejected !== null ? 'course-title-error' : undefined}
             className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
           />
-          {rejected !== null && (
-            <p id="course-title-error" className="mt-1 text-sm text-red-700">
-              {rejected}
-            </p>
-          )}
+          {/* Always mounted, so the message is announced wherever focus is: a submit by Enter
+              leaves it on the field, a click on the button. */}
+          <p id="course-title-error" aria-live="polite" className="mt-1 text-sm text-red-700">
+            {rejected}
+          </p>
         </div>
         <button type="submit" className="mt-6 rounded bg-neutral-900 px-4 py-2 text-white">
           Look up

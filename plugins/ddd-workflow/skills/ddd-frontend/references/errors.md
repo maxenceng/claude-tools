@@ -62,7 +62,7 @@ The template's endpoint, `GET /api/courses/popularity`, documents 200, 400, 404 
 // src/training/CoursePopularity.tsx — the Outcome child
 if (popularity.isError) {
   const answered = popularity.error instanceof ApiError ? popularity.error : null
-  if (answered?.status === 400) return null       // shown on the field instead
+  if (answered?.status === 400) return null
   if (answered?.status === 404) {
     return <p className="mt-4 text-sm text-neutral-600">No popularity yet for this course.</p>
   }
@@ -79,10 +79,32 @@ if (popularity.isError) {
 
 **400 on the field.** The message belongs where the user will fix it. The input gets
 `aria-invalid` and `aria-describedby` pointing at the message, so a screen reader reads the
-reason with the field. The message sits outside the `aria-live` region, so nothing would
-announce it on its own: when a 400 arrives, an effect moves focus to the input, and the
-screen reader reads the field, its invalid state and the message together. The
-ProblemDetail names no field; see `queries.md` for forms with more than one.
+reason with the field. The message itself goes in an always-mounted `aria-live="polite"`
+slot under the input, so it is announced when it appears, wherever focus is:
+
+```tsx
+// src/training/CoursePopularity.tsx — the field
+<input
+  id="course-title"
+  value={draft}
+  onChange={(event) => setDraft(event.target.value)}
+  aria-invalid={rejected !== null}
+  aria-describedby={rejected !== null ? 'course-title-error' : undefined}
+  className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
+/>
+{/* Always mounted, so the message is announced wherever focus is: a submit by Enter
+    leaves it on the field, a click on the button. */}
+<p id="course-title-error" aria-live="polite" className="mt-1 text-sm text-red-700">
+  {rejected}
+</p>
+```
+
+Moving focus to the input instead does not work: a title submitted with Enter already has
+focus there, so nothing changes and nothing is announced. The slot is not `role="status"` —
+that role belongs to the busy indicator, and the tests find it by role. The slot must exist
+before the message does; a live region mounted together with its text is often not
+announced. The ProblemDetail names no field; see `queries.md` for forms with more than
+one.
 
 **404 is not an error screen.** "This course has no popularity yet" is a fact about the
 world, not a failure. Red text and `role="alert"` would tell the user something went wrong

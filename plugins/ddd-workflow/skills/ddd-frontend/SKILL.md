@@ -82,7 +82,7 @@ Map the status to a state, not to one generic error screen:
 
 | Status | Means | Render |
 |---|---|---|
-| 400 | the input was rejected | the `detail` on the field, `aria-invalid` + `aria-describedby`, focus moved to the field |
+| 400 | the input was rejected | the `detail` on the field in an always-mounted `aria-live` slot, `aria-invalid` + `aria-describedby` |
 | 404 | nothing there yet | a normal, neutral empty-like state, no `role="alert"` |
 | 409 | the request is fine, the state is not | explain why and offer what to do next |
 | 5xx, network | something did not answer | `role="alert"` with the `detail` (fixed words for a network failure) and a Retry button |
@@ -99,9 +99,10 @@ Every screen that reads the server renders and tests four states: **loading**,
 
 Put results inside an always-mounted `aria-live="polite"` region, so a screen reader hears
 each new outcome; keep `role="alert"` for errors and `role="status"` for the busy
-indicator. A message shown outside that region — a 400 on its field — is announced by
-moving focus to the field it describes. Each later lookup shows its loading state again —
-no `keepPreviousData`.
+indicator. A message shown outside that region — a 400 on its field — goes in an
+always-mounted `aria-live="polite"` slot of its own, not in a focus move: a submit by
+Enter leaves focus where it was, and nothing would be announced. Each later lookup shows
+its loading state again — no `keepPreviousData`.
 
 ## Tests
 
