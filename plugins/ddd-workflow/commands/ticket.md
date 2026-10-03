@@ -15,7 +15,7 @@ id, title and context. Say which one is in progress, and say plainly that anythi
 Otherwise dispatch on the first word — one of `new`, `refine`, `start`, `design`, `review`,
 `respond`, `done` — by reading `${CLAUDE_PLUGIN_ROOT}/ticket-steps/<word>.md` and following
 it. Read that one file and no others: the steps do not share instructions at runtime, and
-loading the five that are not running is most of what this command used to cost.
+loading the six that are not running is most of what this command used to cost.
 
 A ticket is captured cheaply and analysed later. `new` writes down what someone said and
 asks almost nothing; `refine` is where the questions, the modelling and the acceptance
