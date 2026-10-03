@@ -13,7 +13,8 @@ export function useCoursePopularity(title: string) {
     queryFn: async () =>
       unwrap(await api.GET('/api/courses/popularity', { params: { query: { title } } })),
     enabled: title.trim() !== '',
-    retry: (failures, error) => !(error instanceof ApiError && error.status < 500) && failures < 1,
+    // The server answered, so the UI offers Retry; only a network failure is retried silently.
+    retry: (failures, error) => !(error instanceof ApiError) && failures < 1,
     placeholderData: keepPreviousData,
   })
 }

@@ -5,9 +5,6 @@ import { describe, expect, it } from 'vitest'
 import { server } from '../test/server'
 import { CoursePopularity } from './CoursePopularity'
 
-// A 5xx is retried once after the default one-second backoff before it surfaces as an error.
-const RETRY_WINDOW = 3000
-
 const popularity = (respond: () => Response | Promise<Response>) =>
   server.use(http.get('*/api/courses/popularity', respond))
 
@@ -53,10 +50,15 @@ describe('CoursePopularity', () => {
   })
 
   it('offers a retry when the vendor is unavailable', async () => {
-    popularity(problem(503, 'vendor down'))
+    let calls = 0
+    popularity(() => {
+      calls += 1
+      return problem(503, 'vendor down')()
+    })
 
     ask('DDD')
-    const alert = await screen.findByRole('alert', {}, { timeout: RETRY_WINDOW })
+    const alert = await screen.findByRole('alert')
+    expect(calls).toBe(1)
     expect(alert.textContent).toContain('vendor down')
 
     popularity(() => HttpResponse.json({ title: 'DDD', popularity: 41 }))
