@@ -206,6 +206,12 @@ def check_plugin(plugin_root):
     # external dependency and reported below. What is not accepted is a bare name this
     # plugin does not define: unqualified, there is no way to tell a deliberate reuse
     # from a typo, and both fail the same silent way at runtime.
+    # A few dependencies are skills installed with `npx skills`, not plugins, so they
+    # have no `plugin:` prefix to qualify them with. Each is named here with its install
+    # line rather than accepted as any bare name, so a typo still fails.
+    NON_PLUGIN_SKILLS = {
+        "archify": "npx skills add tt-a1i/archify -g",
+    }
     known = skills | agents
     external = set()
     for dirpath, _dirnames, filenames in os.walk(plugin_root):
@@ -217,6 +223,8 @@ def check_plugin(plugin_root):
             for ns, ref in re.findall(r"`(?:([a-z][a-z0-9-]+):)?([a-z][a-z0-9-]+)` (?:skill|agent)", text):
                 if ns:
                     external.add(f"{ns}:{ref}")
+                elif ref in NON_PLUGIN_SKILLS:
+                    external.add(f"{ref} ({NON_PLUGIN_SKILLS[ref]})")
                 elif ref not in known:
                     fail(
                         path,
