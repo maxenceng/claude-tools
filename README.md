@@ -60,6 +60,11 @@ the change fits the domain model.
 - `ddd-backend` — conventions for aggregates, ports, adapters, error handling, the
   OpenAPI contract, tests and comments. Loaded when writing backend code, not on every
   request.
+- `ddd-frontend` — the frontend's counterpart: a context's folder, its query hooks and
+  keys, how a ProblemDetail becomes a UI state, and MSW tests per state. The template's
+  `frontend/src/training/` is the worked example it describes, and `architecture.test.ts`
+  enforces the import rules. It uses Vercel's `vercel-react-best-practices` and
+  `vercel-composition-patterns` skills when they are installed.
 - `project-retro` — turns repeated work, repeated corrections, and duplicated code into
   build checks, Make targets, hooks or skills.
 
@@ -135,4 +140,11 @@ is declared like the others: `/plugin marketplace add pbakaus/impeccable`, then
 `/plugin install impeccable@impeccable`. Archify is a
 skill, not a plugin — `npx skills add tt-a1i/archify -g` — so `verify-plugin.sh` names it
 in an explicit allow-list, and `/trace-endpoint` checks for it and stops with the install
-line when it is missing.
+line when it is missing. Two more skills are optional, used by `ddd-frontend` when present
+(`verify-plugin.sh` allow-lists them too):
+
+```bash
+npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g
+npx skills add vercel-labs/agent-skills@vercel-composition-patterns -g
+```
+
