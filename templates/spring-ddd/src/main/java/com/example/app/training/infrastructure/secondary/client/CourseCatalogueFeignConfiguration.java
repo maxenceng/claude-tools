@@ -28,8 +28,7 @@ import feign.codec.ErrorDecoder;
  */
 class CourseCatalogueFeignConfiguration {
 
-    private static final BiFunction<String, Throwable, RuntimeException> UNREACHABLE =
-            (detail, cause) -> new CourseCatalogueUnreachableException("training catalogue " + detail, cause);
+    private static final BiFunction<String, Throwable, RuntimeException> UNREACHABLE = CourseCatalogueUnreachableException::new;
 
     @Bean
     Decoder decoder() {

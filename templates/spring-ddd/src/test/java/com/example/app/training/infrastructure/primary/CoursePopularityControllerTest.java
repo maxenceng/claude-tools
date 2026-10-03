@@ -4,12 +4,14 @@ import static com.example.app.training.domain.PopularityFixture.popularity;
 import static com.example.app.training.domain.TitleFixture.title;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,9 +54,11 @@ class CoursePopularityControllerTest {
 
     @Test
     void shouldAnswerUnavailableWhereTheCatalogueIsUnreachable() throws Exception {
-        when(service.popularityOf(title())).thenThrow(new CourseCatalogueUnreachableException("down", null));
+        when(service.popularityOf(title())).thenThrow(new CourseCatalogueUnreachableException("refused HTTP 500", null));
 
         mvc.perform(get("/api/courses/popularity").param("title", title().value()))
-                .andExpect(status().isServiceUnavailable());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("The training catalogue did not answer; try again later."));
     }
 }

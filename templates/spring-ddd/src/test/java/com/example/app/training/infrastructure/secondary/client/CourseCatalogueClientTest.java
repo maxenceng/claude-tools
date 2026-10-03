@@ -25,8 +25,7 @@ class CourseCatalogueClientTest {
 
     private static final String CATALOGUE_URL = "https://api.example/api/courses";
 
-    private static final BiFunction<String, Throwable, RuntimeException> UNREACHABLE =
-            (detail, cause) -> new CourseCatalogueUnreachableException("training catalogue " + detail, cause);
+    private static final BiFunction<String, Throwable, RuntimeException> UNREACHABLE = CourseCatalogueUnreachableException::new;
 
     @Test
     void shouldSearchByTitleAndDeserialiseTheAnswer() {
@@ -78,7 +77,10 @@ class CourseCatalogueClientTest {
         CourseCatalogueClient client = client(respondingWith(new AtomicReference<>(), 500, "server error"));
 
         assertThatThrownBy(() -> client.search("Introduction to Hexagonal Architecture"))
-                .isInstanceOf(CourseCatalogueUnreachableException.class);
+                .isInstanceOf(CourseCatalogueUnreachableException.class)
+                .hasMessage("The training catalogue did not answer; try again later.")
+                .cause()
+                .hasMessageContaining("HTTP 500");
     }
 
     static CourseCatalogueClient client(Client fake) {
