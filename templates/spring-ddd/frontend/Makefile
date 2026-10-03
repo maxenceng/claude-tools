@@ -25,12 +25,15 @@ test: ## Run tests
 dup: ## Report copy-pasted code
 	npm run dup
 
+design-check: ## Fail on the UI anti-patterns impeccable detects without a model
+	npm run design-check
+
 openapi-client: ## Regenerate the typed client from docs/openapi.json
 	npm run openapi-client
 
 check: typecheck test ## The inner loop: typecheck and tests, no bundle
 
-ci: typecheck test dup build ## What CI runs for the frontend, cheapest first
+ci: typecheck test dup design-check build ## What CI runs for the frontend, cheapest first
 
 clean: ## Remove build output
 	rm -rf dist node_modules/.vite

@@ -19,6 +19,11 @@ created: YYYY-MM-DD
 New behaviour on an existing aggregate? A new aggregate? A new context? If the answer
 is "a new context", stop and say so — that is a bigger change than a ticket.>
 
+## Design direction
+
+<Frontend tickets: the UI direction from `/impeccable shape`, settled before coding
+starts. Anything else: "n/a", so a reader knows it was considered.>
+
 ## Glossary impact
 
 <Terms this adds, and any word it displaces. Both go in docs/glossary.md in the same

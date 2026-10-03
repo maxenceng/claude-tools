@@ -48,10 +48,11 @@ step "Check what the archetype format cannot express"
 # at all.
 [[ -f .gitignore ]] || { echo "FAIL: .gitignore missing — archetype dropped it again" >&2; exit 1; }
 [[ -f frontend/.gitignore ]] || { echo "FAIL: frontend/.gitignore missing — the first 'git add -A' commits node_modules/" >&2; exit 1; }
+[[ -f frontend/.impeccable/config.json ]] || { echo "FAIL: frontend/.impeccable/config.json missing — the archetype dropped a dot-directory" >&2; exit 1; }
 [[ -x mvnw ]]       || { echo "FAIL: mvnw is not executable — post-generate hook did not run" >&2; exit 1; }
 [[ ! -e .claude/settings.local.json ]] || { echo "FAIL: machine-specific settings.local.json leaked into the template" >&2; exit 1; }
 [[ ! -e HELP.md ]] || { echo "FAIL: HELP.md is git-ignored in the template but shipped anyway" >&2; exit 1; }
-echo "ok: both .gitignore files, mvnw +x, no git-ignored file leaked"
+echo "ok: both .gitignore files, impeccable config, mvnw +x, no git-ignored file leaked"
 
 step "Check every scripts/*.sh survived the post-generate chmod, not only the ones it names"
 # archetype-post-generate.groovy chmods a hand-typed list of paths, not a scan of what
