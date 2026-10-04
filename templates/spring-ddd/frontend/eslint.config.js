@@ -1,74 +1,30 @@
 // Vercel's style guide is archived and .eslintrc-only, so its rules are rebuilt here on
 // maintained plugins — at `error`, because a rule that only warns is one nobody follows.
+import comments from '@eslint-community/eslint-plugin-eslint-comments/configs'
 import js from '@eslint/js'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import local from './eslint/plugin.js'
 
 const TYPESCRIPT = ['**/*.{ts,tsx}']
 const TESTS = ['**/*.test.{ts,tsx}', 'src/test/**']
 const DESIGN_SYSTEM = ['src/design-system/**']
 
-/** Props whose string value is a token or an id, never copy a person reads. */
-const NON_COPY_PROPS = [
-  'id',
-  'key',
-  'type',
-  'name',
-  'role',
-  'htmlFor',
-  'as',
-  'variant',
-  'tone',
-  'size',
-  'gap',
-  'level',
-  'direction',
-  'align',
-  'autoComplete',
-  'inputMode',
-  'aria-live',
-  'aria-labelledby',
-  'aria-describedby',
-  'data-[a-z-]+',
-]
-const nonCopyProp = `/^(?:${NON_COPY_PROPS.join('|')})$/`
-
-const NO_JSX_COMMENTS = {
-  selector: 'JSXExpressionContainer > JSXEmptyExpression',
-  message: 'No comments inside JSX — explain above the component instead.',
+const STYLING_ON_ELEMENTS = {
+  selector: "JSXOpeningElement[name.type='JSXIdentifier'][name.name=/^[a-z]/] > JSXAttribute[name.name=/^(?:className|style)$/]",
+  message: 'Styling belongs to the design system: compose src/design-system components instead of className or style.',
 }
 
-// jsx-no-literals allows props by value, not by name, so it cannot tell `gap="md"` from
-// `label="Save"`; string props are checked here by name instead.
-const COPY_IN_PROPS = [
-  {
-    selector: `JSXAttribute[value.type='Literal'][value.value=/\\S/]:not([name.name=${nonCopyProp}])`,
-    message: 'User-facing text comes from i18n: pass t(…) instead of a string literal.',
-  },
-  {
-    selector: `JSXAttribute:not([name.name=${nonCopyProp}]) > JSXExpressionContainer > :matches(Literal[value=/\\S/], TemplateLiteral)`,
-    message: 'User-facing text comes from i18n: pass t(…) instead of a string literal.',
-  },
-]
-
-const STYLING_ON_ELEMENTS = [
-  {
-    selector: "JSXOpeningElement[name.type='JSXIdentifier'][name.name=/^[a-z]/] > JSXAttribute[name.name=/^(?:className|style)$/]",
-    message: 'Styling belongs to the design system: compose src/design-system components instead of className or style.',
-  },
-]
-
-/** `no-restricted-syntax` replaces rather than merges, so each file group gets its full list. */
-function restrictedSyntax({ copy, styling }) {
-  return [
-    'error',
-    NO_JSX_COMMENTS,
-    ...(copy ? COPY_IN_PROPS : []),
-    ...(styling ? STYLING_ON_ELEMENTS : []),
-  ]
+const STYLESHEET_IMPORTS = {
+  patterns: [
+    {
+      group: ['*.css', '*.scss', '*.sass', '*.less'],
+      message: 'Styling belongs to the design system: compose src/design-system components instead of importing a stylesheet.',
+    },
+  ],
 }
 
 const vercelReact = {
@@ -169,12 +125,21 @@ const vercelCore = {
 }
 
 export default tseslint.config(
-  { ignores: ['dist/', 'node_modules/', 'src/api/generated/'] },
+  { ignores: ['dist/', 'node_modules/', 'src/api/generated/', 'eslint/rules/fixtures/'] },
   { linterOptions: { reportUnusedDisableDirectives: 'error' } },
 
   js.configs.recommended,
   { rules: vercelCore },
-  { files: ['*.js'], languageOptions: { globals: globals.node } },
+  { files: ['*.js', 'eslint/**/*.js'], languageOptions: { globals: globals.node } },
+
+  {
+    // A rule's test cases are source code, template literals included, held in strings.
+    files: ['eslint/**/*.test.js'],
+    rules: { 'no-template-curly-in-string': 'off' },
+  },
+
+  comments.recommended,
+  { rules: { '@eslint-community/eslint-comments/require-description': 'error' } },
 
   {
     files: TYPESCRIPT,
@@ -193,6 +158,7 @@ export default tseslint.config(
       },
       globals: globals.browser,
     },
+    plugins: { local },
     settings: { react: { version: 'detect' } },
     rules: {
       ...vercelReact,
@@ -202,36 +168,32 @@ export default tseslint.config(
       'react-hooks/incompatible-library': 'error',
       'react-hooks/unsupported-syntax': 'error',
 
-      'react/jsx-no-literals': ['error', { noStrings: true, ignoreProps: true }],
-      'no-restricted-syntax': restrictedSyntax({ copy: true, styling: true }),
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['*.module.css', '*.module.scss', '*.module.sass', '*.module.less'],
-              message: 'Styling belongs to the design system: compose src/design-system components instead of a CSS Module.',
-            },
-          ],
-        },
-      ],
+      'local/no-literal-copy': 'error',
+      'local/no-jsx-comments': 'error',
+      'no-restricted-syntax': ['error', STYLING_ON_ELEMENTS],
+      'no-restricted-imports': ['error', STYLESHEET_IMPORTS],
     },
   },
 
   {
     files: DESIGN_SYSTEM,
     rules: {
-      'no-restricted-syntax': restrictedSyntax({ copy: true, styling: false }),
+      'no-restricted-syntax': 'off',
       'no-restricted-imports': 'off',
     },
+  },
+
+  {
+    // The entry point loads the design system's global stylesheets, once.
+    files: ['src/main.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 
   {
     // A test renders fixture copy and asserts on it; that copy is not the product's.
     files: TESTS,
     rules: {
-      'react/jsx-no-literals': 'off',
-      'no-restricted-syntax': restrictedSyntax({ copy: false, styling: true }),
+      'local/no-literal-copy': 'off',
       // `input.form!`: a test reaching a node it has just rendered fails loudly if it is absent.
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
