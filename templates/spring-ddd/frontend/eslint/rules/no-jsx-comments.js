@@ -1,3 +1,6 @@
+/** An inline ESLint directive is the escape hatch, and eslint-comments/require-description makes it explain itself. */
+const DIRECTIVE = /^eslint-(?:disable|enable)(?:-line|-next-line)?(?:\s|$)/u
+
 function isInsideJsx(node) {
   for (let current = node; current; current = current.parent) {
     if (current.type === 'JSXElement' || current.type === 'JSXFragment') return true
@@ -21,7 +24,7 @@ export default {
     return {
       'Program:exit'() {
         for (const comment of sourceCode.getAllComments()) {
-          if (isInsideJsx(sourceCode.getNodeByRangeIndex(comment.range[0]))) {
+          if (!DIRECTIVE.test(comment.value.trim()) && isInsideJsx(sourceCode.getNodeByRangeIndex(comment.range[0]))) {
             context.report({ loc: comment.loc, messageId: 'comment' })
           }
         }

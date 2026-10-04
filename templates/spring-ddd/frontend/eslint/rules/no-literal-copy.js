@@ -38,6 +38,8 @@ export default {
     schema: [],
     messages: {
       copy: 'User-facing text comes from i18n: render t(…) instead of a string literal.',
+      copyInProp:
+        'This prop is typed to take free text, so a string literal here reads as copy: render t(…) for text a person reads; for an id or a path, narrow the prop to a literal union, or pass a module-scope constant or useId().',
     },
   },
   create(context) {
@@ -45,8 +47,8 @@ export default {
     const program = services?.program
     const checker = program?.getTypeChecker()
 
-    function report(nodes) {
-      for (const node of nodes) context.report({ node, messageId: 'copy' })
+    function report(nodes, messageId = 'copy') {
+      for (const node of nodes) context.report({ node, messageId })
     }
 
     /** Whether the prop this value is passed to is declared as free text: `string`, `ReactNode`, or a union holding one. */
@@ -71,10 +73,11 @@ export default {
         const expression = node.value.type === 'JSXExpressionContainer' ? node.value.expression : node.value
         if (expression.type === 'JSXEmptyExpression') return
         const name = attributeName(node)
-        const checked = isIntrinsic(node.parent)
-          ? HUMAN_READABLE_ATTRIBUTES.has(name)
-          : !REACT_RESERVED_PROPS.has(name) && takesFreeText(expression)
-        if (checked) report(copyLiterals(expression))
+        if (isIntrinsic(node.parent)) {
+          if (HUMAN_READABLE_ATTRIBUTES.has(name)) report(copyLiterals(expression))
+        } else if (!REACT_RESERVED_PROPS.has(name) && takesFreeText(expression)) {
+          report(copyLiterals(expression), 'copyInProp')
+        }
       },
     }
   },
