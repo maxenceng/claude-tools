@@ -10,7 +10,7 @@ while the test enforces it.
 |---|---|---|
 | `shared` | Shared kernel: types genuinely common to all contexts. | Open — nested packages stay visible. |
 | `error` | Error kernel: `DomainException`, `Assert`, the global handler. | Open — nested packages stay visible. |
-| `training` | Worked example only (ADR 0008): a `Course` whose `popularity` a vendor's catalogue fills. Delete it, or rename it into your own first context, whichever comes first. | Standard — internal packages hidden. |
+| `training` | Worked example only (ADR 0008): a `Course` whose `popularity` a vendor's catalogue fills, and one HTTP read endpoint over it (ADR 0010). Delete it, or rename it into your own first context, whichever comes first. | Standard — internal packages hidden. |
 
 Delete the `training` row above once you do, and add your own first context in its place in
 the same change that adds the code — a context map written a week later describes what

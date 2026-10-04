@@ -255,7 +255,7 @@ public abstract class DomainException extends RuntimeException {
 }
 
 // error.domain — deliberately not HTTP
-public enum DomainErrorStatus { NOT_FOUND, CONFLICT, INVALID }
+public enum DomainErrorStatus { NOT_FOUND, CONFLICT, INVALID, UNAVAILABLE }
 ```
 
 Each exception declares its status where the rule lives, and the handler translates
@@ -269,6 +269,13 @@ maps to different codes over different protocols.
 Choose the status by what it tells the caller: `CONFLICT` when the request is fine and
 the state is not (a full course — retry later and it may work), `INVALID` when the
 request is wrong however the state changes.
+`UNAVAILABLE` when something the request depends on did not answer — retrying later may
+work, and it is nobody's input error.
+
+A `DomainException`'s message *is* the public `ProblemDetail` `detail` — the handler
+sends it verbatim — so write it for the person reading the response. Diagnostics (the
+request without its query string, the exception type, the upstream status) go in the
+cause, and the handler logs the cause of an `UNAVAILABLE` at warn rather than sending it.
 
 `AssertionException` is a separate hierarchy — it guards types rather than business
 rules — and the same handler answers `400` for it.
@@ -279,6 +286,9 @@ The `@ApiResponse` annotations on a controller are the API contract: the fronten
 client is generated from them, so a wrong code there becomes a wrong type in the
 frontend. Every failure code a route can produce comes from the global handler — read
 it before writing them, and do not document a code no handler emits.
+
+Mark each response record component `@Schema(requiredMode = RequiredMode.REQUIRED)`, or
+the generated client types every field optional.
 
 The generated client goes stale silently, because regenerating is two steps and only the
 second is obvious:

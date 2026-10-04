@@ -1,7 +1,7 @@
 # Frontend verbs. Node version is pinned in .nvmrc — run `nvm use` first.
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev build typecheck test dup openapi-client check ci clean
+.PHONY: help install dev build typecheck lint test dup openapi-client check ci clean
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -19,6 +19,9 @@ build: ## Typecheck and produce a production bundle
 typecheck: ## Typecheck without emitting
 	npm run typecheck
 
+lint: ## Fail on code that breaks the frontend's conventions
+	npm run lint
+
 test: ## Run tests
 	npm run test
 
@@ -33,7 +36,7 @@ openapi-client: ## Regenerate the typed client from docs/openapi.json
 
 check: typecheck test ## The inner loop: typecheck and tests, no bundle
 
-ci: typecheck test dup design-check build ## What CI runs for the frontend, cheapest first
+ci: typecheck lint test dup design-check build ## What CI runs for the frontend, cheapest first
 
 clean: ## Remove build output
 	rm -rf dist node_modules/.vite

@@ -22,4 +22,7 @@ public enum DomainErrorStatus {
 
     /** The request itself is not valid, whatever the current state is. */
     INVALID,
+
+    /** Something this depends on did not answer; the same request may work later. */
+    UNAVAILABLE,
 }

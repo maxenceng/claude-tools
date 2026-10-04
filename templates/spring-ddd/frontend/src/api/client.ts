@@ -1,5 +1,5 @@
 import createClient from 'openapi-fetch'
-import type { paths } from './generated/schema'
+import type { components, paths } from './generated/schema'
 
 /**
  * The only way this application talks to the backend.
@@ -15,3 +15,6 @@ import type { paths } from './generated/schema'
  * Never hand-edit the generated file; it is overwritten.
  */
 export const api = createClient<paths>({ baseUrl: '/' })
+
+/** A body the API declares, by its schema name: `Schema<'CoursePopularityResponse'>`. */
+export type Schema<Name extends keyof components['schemas']> = components['schemas'][Name]

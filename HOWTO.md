@@ -33,6 +33,9 @@ For the design loop and the endpoint atlas, add two more:
 /plugin marketplace add pbakaus/impeccable
 /plugin install impeccable@impeccable
 npx skills add tt-a1i/archify -g
+# optional: the frontend skill uses these when installed
+npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g
+npx skills add vercel-labs/agent-skills@vercel-composition-patterns -g
 ```
 
 Optionally, if a Vikunja instance is available, set `VIKUNJA_URL`, `VIKUNJA_TOKEN` and

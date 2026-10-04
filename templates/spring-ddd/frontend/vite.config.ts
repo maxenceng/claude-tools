@@ -1,9 +1,8 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
   server: {
     // Same-origin in development, so the generated client needs no base URL
     // and no CORS configuration is required on the backend.
@@ -15,5 +14,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: false,
+    environmentOptions: { jsdom: { url: 'http://localhost/' } },
+    setupFiles: ['./src/test/setup.ts'],
   },
 })

@@ -4,7 +4,7 @@ Date: 2026-09-05
 
 ## Status
 
-Accepted
+Accepted. Extended by [ADR 10](0010-training-demonstrates-one-http-read-endpoint.md): `training` now has one HTTP read endpoint.
 
 ## Context
 

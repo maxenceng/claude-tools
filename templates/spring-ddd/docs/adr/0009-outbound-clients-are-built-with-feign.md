@@ -4,7 +4,7 @@ Date: 2026-09-05
 
 ## Status
 
-Accepted
+Accepted. Amended by [ADR 10](0010-training-demonstrates-one-http-read-endpoint.md): the unreachable exception is now a `DomainException`.
 
 ## Context
 

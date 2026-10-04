@@ -106,11 +106,12 @@ exception never delivers it to the caller as that type — the caller sees a
 Translate that case in the `Client`, not the `Decoder`. Wrap the real transport the same
 way the `Client` already does for a connection failure, and on a successful response read
 the body fully right there — underneath where Feign's decode-time rewrapping applies —
-raising the vendor's own exception directly for a body that turns out empty or unreadable.
+raising the vendor's own exception directly for a body that breaks off before it is whole.
 That's the same layer that already turns "no response at all" into that exception;
-extending it to cover "a response whose body couldn't be used" keeps both failures raised
-from one place, instead of splitting the translation across a `Client` and a `Decoder`
-that behave differently under Feign's own exception handling.
+extending it to cover "a response whose body never fully arrived" keeps both failures
+raised from one place, instead of splitting the translation across a `Client` and a
+`Decoder` that behave differently under Feign's own exception handling. A whole body that
+won't parse is not this case: it stays Feign's own `DecodeException` (see below).
 
 ## What the failure means depends on who's asking
 
@@ -118,22 +119,56 @@ The vendor's own exception — the one the `Client`/`ErrorDecoder` pair raises �
 automatically a `DomainException`. Whether it should be one depends on what's on the other
 end of the call:
 
-- A controller-triggered lookup wants it to extend `DomainException`, carrying whichever
-  `DomainErrorStatus` fits "an upstream dependency didn't answer," so the one global handler
-  translates it the same way it translates every other business failure.
+- A controller-triggered lookup wants it to extend `DomainException`, carrying
+  `DomainErrorStatus.UNAVAILABLE` ("an upstream dependency didn't answer"), so the one global
+  handler answers `503` the way it answers every other business failure. The template's
+  `CourseCatalogueUnreachableException` is this shape, since `GET /api/courses/popularity` calls it.
 - A workflow-triggered lookup (see `references/workflows.md`) usually wants a plain
   exception instead: no business rule was broken, no HTTP caller is waiting on it, and
   Temporal's own activity retry is what decides whether the failure was a blip or the end of
   that run's attempt. Raising it as a `DomainException` would route it through machinery
   built for a request thread that isn't there.
 
-A decode failure — a 2xx response whose body won't parse — is a different fact from either
-of those, and is best left as Feign's own `DecodeException` rather than folded into the
-vendor's unreachable exception. Nothing downstream usually branches on the difference
-between "the vendor sent nothing usable" and "the vendor sent something this couldn't read,"
-so matching them costs more than the distinction is worth: either the vendor's own exception
-type ends up coupled to Feign's, or every call gets wrapped in a reflective proxy just to
-re-catch what Feign already caught once.
+No exception the outbound client raises carries the request URL's query string or any
+credential — not on connect, not on the status, not while the body is read or decoded — and
+the transport exception is not chained into it. The key travels in the query string, and a
+JDK transport error can quote the full URL in its message, so either one puts the key in the
+log line the 503 writes. Build the diagnostic from safe parts:
+
+- the HTTP method;
+- the URL up to `?`;
+- the exception's simple class name;
+- the status.
+
+`OutboundClientSupport` does this.
+
+Reading the body is where Feign leaks it on its own. An `IOException` while Feign reads a 2xx
+body — a connection reset midway — becomes `FeignException.errorReading`, whose message is
+`"<cause> reading GET <full URL>"`, and nothing catches it before the container logs it. So
+the `Client` reads the whole body itself, in a `try` of its own right after the call, and a
+body that breaks off raises the vendor's unreachable exception with its own diagnostic
+(`broke off mid-answer`): the answer never arrived, which is what `UNAVAILABLE` says, and a
+retry is the right advice. Catching `FeignException` in each repository instead would hold
+only for vendors whose repository remembers to.
+
+The cost is memory. Every vendor response is held whole in memory, one byte copy per call,
+with no upper bound. That is acceptable because `SpringDecoder` with Jackson already
+materialises the whole body to bind it, so the copy adds no new limit. A vendor that streams
+large or unbounded payloads needs a different decorator — a bounded read, or a streaming
+response type — not this one.
+
+Never set a Feign log level other than `NONE` on a client whose credentials travel in the
+query string: Feign's `Logger` writes the full request URL, key included.
+
+A decode failure — a whole 2xx body that won't parse — is a different fact, and is best
+left as Feign's own `DecodeException` rather than folded into the vendor's unreachable
+exception. Nothing downstream usually branches on the difference between "the vendor sent
+nothing usable" and "the vendor sent something this couldn't read," so matching them costs
+more than the distinction is worth: either the vendor's own exception type ends up coupled to
+Feign's, or every call gets wrapped in a reflective proxy just to re-catch what Feign already
+caught once. It is safe to leave because of what its message is: Feign builds it from the
+decoder's own exception message (`InvocationContext.decode`), and the converter's parse error
+never names the request. Check that again before relying on it with a different decoder.
 
 ## Skip one bad record by checking first, not by catching what building it throws
 

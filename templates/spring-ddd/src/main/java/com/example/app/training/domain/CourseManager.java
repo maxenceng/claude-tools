@@ -19,4 +19,8 @@ public record CourseManager(CourseCataloguePort catalogue) {
 
         return catalogue.lookup(course.title()).map(course::withPopularity).orElse(course);
     }
+
+    public Popularity popularityOf(Title title) {
+        return catalogue.lookup(title).orElseThrow(() -> new PopularityNotFoundException(title));
+    }
 }

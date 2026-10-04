@@ -1,0 +1,4 @@
+.status {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}

@@ -1,6 +1,6 @@
 package com.example.app.training.infrastructure.secondary.client;
 
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +28,7 @@ import feign.codec.ErrorDecoder;
  */
 class CourseCatalogueFeignConfiguration {
 
-    private static final BiFunction<String, Throwable, RuntimeException> UNREACHABLE =
-            (detail, cause) -> new CourseCatalogueUnreachableException("training catalogue " + detail, cause);
+    private static final Function<String, RuntimeException> UNREACHABLE = CourseCatalogueUnreachableException::new;
 
     @Bean
     Decoder decoder() {
