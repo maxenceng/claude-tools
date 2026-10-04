@@ -9,8 +9,10 @@ export interface HeadingProps {
   id?: string
 }
 
+const TAGS: Record<HeadingProps['level'], 'h1' | 'h2' | 'h3'> = { 1: 'h1', 2: 'h2', 3: 'h3' }
+
 export function Heading({ children, level, id }: HeadingProps): JSX.Element {
-  const Tag = `h${level}` as const
+  const Tag = TAGS[level]
   return (
     <Tag id={id} className={styles.heading}>
       {children}

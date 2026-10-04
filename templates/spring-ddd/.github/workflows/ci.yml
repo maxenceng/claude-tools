@@ -69,7 +69,7 @@ jobs:
       - name: Install
         run: make install
 
-      # Typecheck, tests, duplication, design check, bundle. Same target `make fe-ci` calls from the
-      # root, so there is one definition of what the frontend has to pass.
-      - name: Typecheck, tests, duplication, design check and bundle
+      # Typecheck, lint, tests, duplication, design check, bundle. Same target `make fe-ci` calls
+      # from the root, so there is one definition of what the frontend has to pass.
+      - name: Typecheck, lint, tests, duplication, design check and bundle
         run: make ci

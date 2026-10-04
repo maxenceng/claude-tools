@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { TextField } from './TextField'
 
-const noop = (): void => {}
+const noop = (): void => undefined
 
 describe('TextField', () => {
   it('labels its input', () => {

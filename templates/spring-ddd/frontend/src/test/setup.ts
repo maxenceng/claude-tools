@@ -25,4 +25,6 @@ afterEach(async () => {
   cleanup()
   await i18n.changeLanguage(DEFAULT_LANGUAGE)
 })
-afterAll(() => server.close())
+afterAll(() => {
+  server.close()
+})

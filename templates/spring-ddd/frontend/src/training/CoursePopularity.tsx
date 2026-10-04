@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent, type JSX } from 'react'
+import { useId, useState, type JSX, type SubmitEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { detailOf, isNotFound, isRejected, rejectionOf } from '../api/problem'
 import { Alert, Button, Heading, Stack, Status, Text, TextField } from '../design-system'
@@ -22,7 +22,7 @@ export function CoursePopularity(): JSX.Element {
   const popularity = useCoursePopularity(submitted)
   const rejected = rejectionOf(popularity.error)
 
-  function submit(event: FormEvent<HTMLFormElement>): void {
+  function submit(event: SubmitEvent<HTMLFormElement>): void {
     event.preventDefault()
     setSubmitted(draft)
   }

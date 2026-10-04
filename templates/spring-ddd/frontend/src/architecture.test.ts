@@ -21,19 +21,21 @@ function sourceFiles(dir: string): string[] {
 /** Relative imports of a file, resolved to absolute paths. */
 function relativeImports(file: string): string[] {
   const text = readFileSync(file, 'utf8')
-  const specifiers = [...text.matchAll(/(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g)].map((m) => m[1] ?? '')
+  const specifiers = [...text.matchAll(/(?:from\s+|import\s*\(\s*|import\s+)['"](?<specifier>[^'"]+)['"]/g)].map(
+    (m) => m.groups?.specifier ?? '',
+  )
   return specifiers.filter((s) => s.startsWith('.')).map((s) => path.resolve(path.dirname(file), s))
 }
 
-const within = (target: string, dir: string) => target === dir || target.startsWith(dir + path.sep)
+const within = (target: string, dir: string): boolean => target === dir || target.startsWith(dir + path.sep)
 /** The top-level folder of src/ a path lives in; a file directly in src/ has none. */
-const folderOf = (file: string) => {
+const folderOf = (file: string): string => {
   const parts = path.relative(src, file).split(path.sep)
   return parts.length > 1 ? (parts[0] ?? '') : ''
 }
 /** A bounded context: a top-level folder of src/ that is not shared. */
 const isContext = (folder: string): boolean => folder !== '' && !sharedFolders.has(folder)
-const show = (file: string, target: string) => `${path.relative(src, file)} → ${path.relative(src, target)}`
+const show = (file: string, target: string): string => `${path.relative(src, file)} → ${path.relative(src, target)}`
 
 function violations(offends: (file: string, target: string) => boolean): string[] {
   return sourceFiles(src).flatMap((file) =>

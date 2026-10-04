@@ -7,7 +7,9 @@ React 19, TypeScript, Vite. Server state through TanStack Query.
 Node is pinned in `.nvmrc` — run `nvm use` first.
 
 - `make check` — typecheck and tests, the inner loop
-- `make ci` — what CI runs: adds the duplication scan, `design-check` and the bundle
+- `make ci` — what CI runs: adds lint, the duplication scan, `design-check` and the bundle
+- `make lint` — fail on code that breaks the conventions: copy outside i18n, comments in
+  JSX, styling outside the design system, and Vercel's React and TypeScript rules
 - `make design-check` — fail on the UI anti-patterns impeccable detects
 - `make dev` — dev server, proxies `/api` to the backend on :8080
 - `make openapi-client` — regenerate the typed API client

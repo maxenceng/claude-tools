@@ -39,7 +39,11 @@ export function detailOf(error: unknown): string | undefined {
   return isAnswered(error) ? error.detail : undefined
 }
 
-type Result<T> = { data?: T; error?: unknown; response: Response }
+interface Result<T> {
+  data?: T
+  error?: unknown
+  response: Response
+}
 
 /** The data of a successful call; a failed one becomes an ApiError carrying the ProblemDetail. */
 export function unwrap<T>({ data, error, response }: Result<T>): T {
