@@ -12,7 +12,10 @@ declared as one. If the `archify` skill is not in this session's skill list, sto
 
 ```
 npx skills add tt-a1i/archify -g
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/archify-chrome.sh
 ```
+
+The second line installs the Chromium that archify's browser gate runs in.
 
 Do not fall back to Mermaid alone. A command that quietly does half its job is how the
 atlas ends up with two kinds of file nobody can tell apart.
@@ -82,6 +85,11 @@ file starts from an empty list); when none is given, keep `tickets` as it was.
 trace as a sequence diagram, and write its output here. The skill owns its own IR; hand
 it the trace and let it validate. If it cannot express an error branch as a branch,
 it goes in as a note — the Markdown file keeps the real `alt`.
+
+Run every archify command with `ARCHIFY_CHROME` set to the output of
+`bash ${CLAUDE_PLUGIN_ROOT}/scripts/archify-chrome.sh --path`. Without a Chrome, archify's
+last gate reports `skipped` and exits 2, which is not a pass. If `--path` fails, nothing is
+installed yet, so stop the same way as above.
 
 **`docs/endpoints/README.md`** — one heading per context, one line per endpoint linking
 its `.md`. Create it if it is missing; keep it sorted by context, then path.

@@ -141,7 +141,9 @@ is declared like the others: `/plugin marketplace add pbakaus/impeccable`, then
 `/plugin install impeccable@impeccable`. Archify is a
 skill, not a plugin — `npx skills add tt-a1i/archify -g` — so `verify-plugin.sh` names it
 in an explicit allow-list, and `/trace-endpoint` checks for it and stops with the install
-line when it is missing. Two more skills are optional, used by `ddd-frontend` when present
+line when it is missing. archify's `finalize` also needs a Chrome for its browser check:
+`plugins/ddd-workflow/scripts/archify-chrome.sh` installs Playwright's Chromium (no sudo) and,
+with `--path`, prints the binary `/trace-endpoint` hands archify as `ARCHIFY_CHROME`. Two more skills are optional, used by `ddd-frontend` when present
 (`verify-plugin.sh` allow-lists them too):
 
 ```bash
