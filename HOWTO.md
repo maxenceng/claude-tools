@@ -33,6 +33,7 @@ For the design loop and the endpoint atlas, add two more:
 /plugin marketplace add pbakaus/impeccable
 /plugin install impeccable@impeccable
 npx skills add tt-a1i/archify -g
+bash plugins/ddd-workflow/scripts/archify-chrome.sh   # the Chrome archify's browser gate needs
 # optional: the frontend skill uses these when installed
 npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g
 npx skills add vercel-labs/agent-skills@vercel-composition-patterns -g

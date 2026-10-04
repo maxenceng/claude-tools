@@ -12,7 +12,10 @@ declared as one. If the `archify` skill is not in this session's skill list, sto
 
 ```
 npx skills add tt-a1i/archify -g
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/archify-chrome.sh
 ```
+
+The second line installs the Chromium that archify's browser gate runs in.
 
 Do not fall back to Mermaid alone. A command that quietly does half its job is how the
 atlas ends up with two kinds of file nobody can tell apart.
@@ -82,6 +85,30 @@ file starts from an empty list); when none is given, keep `tickets` as it was.
 trace as a sequence diagram, and write its output here. The skill owns its own IR; hand
 it the trace and let it validate. If it cannot express an error branch as a branch,
 it goes in as a note — the Markdown file keeps the real `alt`.
+
+Run every archify command with `ARCHIFY_CHROME` set to the output of
+`bash ${CLAUDE_PLUGIN_ROOT}/scripts/archify-chrome.sh --path`. Without a Chrome, archify's
+last gate reports `skipped` and exits 2, which is not a pass. If `--path` fails, nothing is
+installed yet, so stop the same way as above.
+
+The HTML has less room than the Markdown. archify keeps a sequence readable on a desktop
+only up to about 1085px wide, and 696px tall at that width. It also needs 28px between
+messages that overlap, and it has no self-messages. That fits about six participants and
+twenty arrows. When the trace is bigger, shrink the HTML and leave the Markdown alone, in
+this order:
+
+1. Merge a participant into its neighbour along the call. A repository with its database
+   or vendor, an application service with the manager it only delegates to, a chain inside
+   another context with the adapter that calls into it. Name the merge in the sublabel, for
+   example `application + domain` or `adapter-out → PostgreSQL`.
+2. A call that now starts and ends on the same merged participant can't be drawn. Put it in
+   the `note` of the next arrow.
+3. If it still doesn't fit, error branches leave the drawing. Each becomes a note on the
+   arrow that raises it, and goes in an error card.
+
+Never widen the canvas or space the messages more tightly to get past a gate: the
+readability and spacing checks fail either way. The `.md` is the full trace. The `.html` is
+a view of it, and a merge is not a finding.
 
 **`docs/endpoints/README.md`** — one heading per context, one line per endpoint linking
 its `.md`. Create it if it is missing; keep it sorted by context, then path.
