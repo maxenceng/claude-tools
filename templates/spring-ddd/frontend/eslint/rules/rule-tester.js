@@ -11,12 +11,22 @@ RuleTester.itOnly = it.only
 const fixtures = path.join(import.meta.dirname, 'fixtures')
 const filename = path.join(fixtures, 'file.tsx')
 
-/** A RuleTester whose cases are type-checked as `fixtures/file.tsx`, with React's types in scope. */
+/**
+ * A RuleTester whose cases are type-checked as `fixtures/file.tsx`, with React's types in scope.
+ *
+ * `disallowAutomaticSingleRunInference`: with `CI=true` typescript-eslint assumes a one-shot lint
+ * and builds the program once, so every case after the first is checked against stale types.
+ */
 export function typedRuleTester() {
   const tester = new RuleTester({
     languageOptions: {
       parser: tseslint.parser,
-      parserOptions: { project: './tsconfig.json', tsconfigRootDir: fixtures, ecmaFeatures: { jsx: true } },
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: fixtures,
+        ecmaFeatures: { jsx: true },
+        disallowAutomaticSingleRunInference: true,
+      },
     },
   })
   const asFile = (testCase) => ({ ...(typeof testCase === 'string' ? { code: testCase } : testCase), filename })

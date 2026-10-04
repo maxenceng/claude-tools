@@ -204,7 +204,9 @@ expresses.
 2. Write `eslint/rules/<name>.test.js`. Import `./rule-tester.js`, which wires ESLint's
    `RuleTester` to vitest; for a rule that needs types, use its `typedRuleTester()`, which
    parses each case as a TSX file with React's types. Cover each form the rule must catch
-   and each near-miss it must pass.
+   and each near-miss it must pass. Keep its `disallowAutomaticSingleRunInference`: under
+   `CI=true` typescript-eslint otherwise builds the program once, and every later case is
+   type-checked against stale code — green locally, red in CI.
 3. Turn it on in `eslint.config.js` at `error`, scoped to the files it is about.
 4. Watch it fail: break the code the way the rule forbids, run `npx eslint <file>`, see the
    error, and put it back. A rule that has never been seen to fail is not yet evidence of
