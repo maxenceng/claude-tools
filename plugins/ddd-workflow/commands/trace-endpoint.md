@@ -91,6 +91,25 @@ Run every archify command with `ARCHIFY_CHROME` set to the output of
 last gate reports `skipped` and exits 2, which is not a pass. If `--path` fails, nothing is
 installed yet, so stop the same way as above.
 
+The HTML has less room than the Markdown. archify keeps a sequence readable on a desktop
+only up to about 1085px wide, and 696px tall at that width. It also needs 28px between
+messages that overlap, and it has no self-messages. That fits about six participants and
+twenty arrows. When the trace is bigger, shrink the HTML and leave the Markdown alone, in
+this order:
+
+1. Merge a participant into its neighbour along the call. A repository with its database
+   or vendor, an application service with the manager it only delegates to, a chain inside
+   another context with the adapter that calls into it. Name the merge in the sublabel, for
+   example `application + domain` or `adapter-out → PostgreSQL`.
+2. A call that now starts and ends on the same merged participant can't be drawn. Put it in
+   the `note` of the next arrow.
+3. If it still doesn't fit, error branches leave the drawing. Each becomes a note on the
+   arrow that raises it, and goes in an error card.
+
+Never widen the canvas or space the messages more tightly to get past a gate: the
+readability and spacing checks fail either way. The `.md` is the full trace. The `.html` is
+a view of it, and a merge is not a finding.
+
 **`docs/endpoints/README.md`** — one heading per context, one line per endpoint linking
 its `.md`. Create it if it is missing; keep it sorted by context, then path.
 
