@@ -47,8 +47,9 @@ only `.eslintrc` configs, so `eslint.config.js` rebuilds its rules on maintained
 (typescript-eslint type-checked, react, react-hooks with the React Compiler rules,
 jsx-a11y), every rule at `error`. Two local rules in `frontend/eslint/rules/` carry what no
 plugin expresses: `no-literal-copy` and `no-jsx-comments`. Styling outside the design
-system is refused by `no-restricted-syntax` and `no-restricted-imports`. `make lint` is part
-of `make ci`. An inline disable must give a reason.
+system is refused by `no-restricted-syntax` and `no-restricted-imports`. It runs as
+`make fe-lint` from the root (`make lint` in `frontend/`) and is part of `make fe-ci`. An
+inline disable must give a reason.
 
 Conditions and statuses are named: predicates in `src/api/problem.ts` and the context's
 `queries.ts`, unit-tested on their own. No lint rule enforces this; `no-magic-numbers` is
@@ -58,8 +59,9 @@ too noisy to keep on.
 
 **ESLint is pinned to 9.** `eslint-plugin-react` 7.37.5 and `eslint-plugin-jsx-a11y` 6.10.2
 cap their `eslint` peer range at `^9`, so ESLint 10 does not install without
-`legacy-peer-deps`. npm reports 9.39.5 as unsupported. Revisit when both plugins support
-10; until then, an upgrade attempt fails with `ERESOLVE`, and this file is the explanation.
+`legacy-peer-deps`. npm marks 9.39.5 deprecated ("This version is no longer supported") on
+install; that is the cost. Revisit when both plugins support 10; until then, an upgrade
+attempt fails with `ERESOLVE`, and this file is the explanation.
 
 **The copy rule has no allow-list, and relies on prop types instead.** It asks the type
 checker whether a component prop takes free text (`string`, or a union with it) and reports

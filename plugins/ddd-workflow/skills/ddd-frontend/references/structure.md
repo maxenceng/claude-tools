@@ -51,7 +51,8 @@ putting contexts side by side on a page is their job.
 4. Add the component and its test beside it — copy `CoursePopularity.tsx` and
    `CoursePopularity.test.tsx`, composed from the design system's primitives.
 5. Mount it from `App.tsx`.
-6. Run `make fe-check`, then `make lint`. The architecture test, the locale parity test and
+6. Run `make fe-check`, then `make fe-lint` (from the project root; the root's `make lint`
+   is the backend's formatting check). The architecture test, the locale parity test and
    the lint rules apply to the new folder without being told about it.
 
 ## A page that needs two contexts

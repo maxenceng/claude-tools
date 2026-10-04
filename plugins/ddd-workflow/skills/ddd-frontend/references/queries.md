@@ -18,8 +18,7 @@ const popularity = useCoursePopularity(submitted)
 What the user typed (`draft`) and what they asked for (`submitted`) are local. The answer
 is not: it is never put into `useState`, because then there are two copies, and the moment
 the query refetches, retries or is invalidated, the local copy is the stale one and nothing
-says so. Deriving
-from the query result on each render costs nothing and cannot drift.
+says so. Deriving from the query result on each render costs nothing and cannot drift.
 
 ## The key factory
 

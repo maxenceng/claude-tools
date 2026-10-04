@@ -144,6 +144,7 @@ function Outcome({ popularity }: OutcomeProps): JSX.Element | null {
       </Alert>
     )
   }
+...
 ```
 
 **400 on the field.** The message belongs where the user will fix it. The screen hands
@@ -192,12 +193,12 @@ will conflict again. The template has no 409 route yet, so no example exists in 
 the first one adds `CONFLICT: 409` to `HttpStatus` and an `isConflict` beside `isNotFound`.
 
 **5xx and network: alert with Retry.** The user cannot fix it and may want to try again.
-`Alert` carries `role="alert"` so it is announced, shows `detailOf` an answered request
-(the backend writes it for a person and keeps diagnostics in its logs), and offers a Retry
-that calls `refetch()`. A network failure has no `detail` — only whatever `fetch` threw,
-written for a developer — so `detailOf` is `undefined` and the alert falls back to the
-translated `popularity.unreachable`. Never render `error.message` of an error that is not
-an `ApiError`.
+`Alert` carries `role="alert"` so it is announced, shows the `detail` of an answered request
+(`detailOf`; the backend writes it for a person and keeps diagnostics in its logs), and
+offers a Retry that calls `refetch()`. A network failure has no `detail` — only whatever
+`fetch` threw, written for a developer — so `detailOf` is `undefined` and the alert falls
+back to the translated `popularity.unreachable`. Never render `error.message` of an error
+that is not an `ApiError`.
 
 The `detail` is rendered as the server wrote it, in the server's language. It is not a key
 and is not looked up in the locales; only the client's own words — the fallback included —

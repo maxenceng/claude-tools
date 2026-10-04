@@ -1,9 +1,10 @@
 # Lint
 
-`eslint.config.js` is a flat config, run by `make lint` (`eslint .`) and by `make ci`
-between the typecheck and the tests. Every rule is at `error`: a rule that only warns is a
-rule nobody follows, and a warning cannot fail CI. Generated code (`src/api/generated/`) is
-ignored.
+`eslint.config.js` is a flat config. `make fe-lint` runs it from the project root —
+`make lint` inside `frontend/`, which is `eslint .` — and `make fe-ci` runs it between the
+typecheck and the tests. The root's own `make lint` is the backend's formatting check, not
+ESLint. Every rule is at `error`: a rule that only warns is a rule nobody follows, and a
+warning cannot fail CI. Generated code (`src/api/generated/`) is ignored.
 
 ## Where the rules come from
 
@@ -32,9 +33,9 @@ raises them to `error`.
   declarations), `hook-use-state`, `jsx-no-leaked-render` (no `&&` rendering a `0`),
   `no-unstable-nested-components`, `no-array-index-key`, `self-closing-comp` and the rest
   of its React rules.
-- `vercelTypescript` — `consistent-type-imports` (inline `type`), `explicit-function-return-type`,
-  `naming-convention` (PascalCase types, no `I` prefix, no bare `Props`),
-  `switch-exhaustiveness-check`, `method-signature-style` and the rest.
+- `vercelTypescript` — `consistent-type-imports` (inline `type`),
+  `explicit-function-return-type`, `naming-convention` (PascalCase types, no `I` prefix, no
+  bare `Props`), `switch-exhaustiveness-check`, `method-signature-style` and the rest.
 - `vercelCore` — its best-practice, ES6, variables and possible-errors core rules:
   `eqeqeq`, `no-console`, `no-param-reassign`, `prefer-template`, `no-else-return`,
   `prefer-named-capture-group` and the rest.
@@ -189,9 +190,10 @@ a review; until then, they are listed here so a reviewer knows to look.
 ESLint is pinned to `9.39.5`, not 10. `eslint-plugin-react` 7.37.5 and
 `eslint-plugin-jsx-a11y` 6.10.2 declare their `eslint` peer range up to `^9`, so installing
 10 fails with `ERESOLVE` unless the project sets `legacy-peer-deps`, which would hide every
-other peer conflict too. npm prints a deprecation notice for 9.39.5; that is the cost.
-Revisit when both plugins declare support for 10. Every lint package is pinned exactly, so
-a preset's release cannot add a rule at `error` and fail CI with no change to the code.
+other peer conflict too. npm marks 9.39.5 deprecated ("This version is no longer supported")
+on install; that is the cost. Revisit when both plugins declare support for 10. Every lint
+package is pinned exactly, so a preset's release cannot add a rule at `error` and fail CI
+with no change to the code.
 
 ## Adding a local rule
 
@@ -201,10 +203,11 @@ expresses.
 1. Write `eslint/rules/<name>.js` and register it in `eslint/plugin.js`.
 2. Write `eslint/rules/<name>.test.js`. Import `./rule-tester.js`, which wires ESLint's
    `RuleTester` to vitest; for a rule that needs types, use its `typedRuleTester()`, which
-   parses each case as a TSX file with React's types. Cover each form the rule must catch and each near-miss it must
-   pass.
+   parses each case as a TSX file with React's types. Cover each form the rule must catch
+   and each near-miss it must pass.
 3. Turn it on in `eslint.config.js` at `error`, scoped to the files it is about.
 4. Watch it fail: break the code the way the rule forbids, run `npx eslint <file>`, see the
    error, and put it back. A rule that has never been seen to fail is not yet evidence of
    anything.
-5. `npx vitest run eslint` runs only the rule tests; `make ci` runs them with everything.
+5. `npx vitest run eslint` runs only the rule tests; `make fe-ci` runs them with
+   everything.

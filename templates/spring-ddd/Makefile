@@ -18,7 +18,7 @@ endif
 
 .PHONY: help doctor build test test-one arch docs fmt lint dup config-check adr-check
 .PHONY: no-skipped-tests test-comment-check run openapi openapi-check ci verify clean
-.PHONY: fe-install fe-check fe-ci fe-build openapi-client
+.PHONY: fe-install fe-check fe-lint fe-ci fe-build openapi-client
 
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -82,6 +82,9 @@ fe-install: ## Install frontend dependencies
 
 fe-check: ## The frontend inner loop: typecheck and tests
 	$(MAKE) -C frontend check
+
+fe-lint: ## Fail on frontend code that breaks its conventions (ESLint)
+	$(MAKE) -C frontend lint
 
 fe-ci: ## Everything CI runs for the frontend
 	$(MAKE) -C frontend ci

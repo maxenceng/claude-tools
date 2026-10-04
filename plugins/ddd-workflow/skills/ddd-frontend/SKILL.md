@@ -6,7 +6,7 @@ description: Conventions for writing frontend code in a DDD project's React + Ty
 # DDD frontend conventions
 
 The hard rules are enforced by `src/architecture.test.ts`, the type checker and ESLint
-(`make lint`). This document covers the things they cannot check: where a piece of UI
+(`make fe-lint`). This document covers the things they cannot check: where a piece of UI
 belongs, who owns a piece of state, what a failure should look like on screen, when a
 primitive needs a new variant, and how to test it.
 
@@ -112,8 +112,8 @@ Every screen that reads the server renders and tests four states: **loading**,
 
 The primitives carry the announcements: `Status` is the `role="status"` busy indicator,
 `Alert` the `role="alert"` failure, and `TextField` keeps its error slot always mounted as
-`aria-live="polite"`, so a 400 is heard whether the form was submitted by Enter or by the
-button. Put results inside an always-mounted `aria-live="polite"` region in the screen.
+`aria-live="polite"`. Put results inside an always-mounted `aria-live="polite"` region in
+the screen.
 Each later lookup shows its loading state again — no `keepPreviousData`.
 
 ## Design system
@@ -140,8 +140,9 @@ skill when they are installed.
   `useTranslation('<context>')` — one namespace per bounded context, `common` for the shell.
 - Keys say what the text is for (`popularity.notFound`), not what it says. They are typed:
   an unknown key fails `tsc`.
-- `en` and `fr` stay in parity: `locales.test.ts` fails on a key missing from either, or an
-  empty message. A new key goes into both in the same change.
+- `en` and `fr` stay in parity: `locales.test.ts` fails on a key missing from either, an
+  empty message, or a plural without exactly its language's forms (French has `_many`).
+  A new key goes into both in the same change.
 - Values are interpolated (`t('popularity.popularityOf', { title })`), never concatenated.
 - The ProblemDetail's `detail` is shown as the server sent it; only the client's own words
   are translated.
@@ -150,11 +151,11 @@ Read `references/i18n.md` before adding a namespace, a language or a key with a 
 
 ## Lint
 
-- `make lint` runs `eslint .`; `make ci` (and `make fe-ci` from the root) runs it. Every
-  rule is at `error`, so any finding fails the build.
-- It enforces: Vercel's archived style-guide rules rebuilt on maintained plugins,
-  typescript-eslint `strictTypeChecked`, react-hooks with the React Compiler rules,
-  jsx-a11y, and the review rules — `local/no-literal-copy` (copy through i18n),
+- From the project root, `make fe-lint` runs ESLint and `make fe-ci` runs it with
+  everything else; inside `frontend/` they are `make lint` and `make ci`. The root's own
+  `make lint` is the backend's formatting check, not ESLint. Every rule is at `error`, so
+  any finding fails the build.
+- Beyond Vercel's rules, three enforce the review: `local/no-literal-copy`,
   `local/no-jsx-comments`, and styling only inside `src/design-system/`.
 - Fix the code, not the rule. An inline disable is the last resort and states its reason:
   `// eslint-disable-next-line <rule> -- <why>`. One without a reason fails, and so does

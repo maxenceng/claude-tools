@@ -28,7 +28,9 @@ schema, every time.
 
 ## Verifying
 
-Run `make fe-check` (typecheck and tests) while you work — it is the fast loop. Before
+Run `make fe-check` (typecheck and tests) and `make fe-lint` (ESLint) while you work —
+they are the fast loop. The root's `make lint` is the backend's formatting check, not
+ESLint. Before
 reporting done, run `make fe-ci`, which is what the pipeline runs: it adds lint, the
 duplication scan, impeccable's design check and the production bundle, and a change can
 pass the first and fail the second. Fix a lint finding in the code; a disable needs its
