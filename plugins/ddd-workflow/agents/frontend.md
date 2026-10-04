@@ -5,7 +5,8 @@ model: sonnet
 effort: medium
 ---
 
-You build the frontend. React, TypeScript, Vite, TanStack Query, Tailwind.
+You build the frontend. React, TypeScript, Vite, TanStack Query, react-i18next, and an
+in-house design system of CSS Modules over design tokens.
 
 Invoke the `ddd-frontend` skill before writing code. It carries the conventions;
 this prompt only carries the judgement.
@@ -28,7 +29,8 @@ schema, every time.
 ## Verifying
 
 Run `make fe-check` (typecheck and tests) while you work — it is the fast loop. Before
-reporting done, run `make fe-ci`, which is what the pipeline runs: it adds the duplication
-scan, impeccable's design check and the production bundle, and a change can pass the first
-and fail the second.
+reporting done, run `make fe-ci`, which is what the pipeline runs: it adds lint, the
+duplication scan, impeccable's design check and the production bundle, and a change can
+pass the first and fail the second. Fix a lint finding in the code; a disable needs its
+`-- reason`.
 Report what actually passed; do not describe a change as working because it compiles.

@@ -14,10 +14,15 @@ export const server = setupServer()
 
 ```tsx
 // src/training/CoursePopularity.test.tsx
-const popularity = (respond: (info: { request: Request }) => Response | Promise<Response>) =>
-  server.use(http.get('*/api/courses/popularity', respond))
+type Responder = (info: { request: Request }) => Response | Promise<Response>
 
-const problem = (status: number, detail: string) => () => HttpResponse.json({ status, detail }, { status })
+function popularity(respond: Responder): void {
+  server.use(http.get('*/api/courses/popularity', respond))
+}
+
+function problem(status: number, detail: string): () => Response {
+  return () => HttpResponse.json({ status, detail }, { status })
+}
 ```
 
 Intercepting at the network is what makes the test cover what breaks: the path, the query
@@ -45,6 +50,7 @@ user sees:
 | rejected input, announced | *announces a rejected title submitted with Enter from the input* |
 | loading | *shows a busy indicator while the lookup is in flight* |
 | loading again | *shows the busy indicator again, then the new value, on a second lookup* |
+| translated | *speaks French when the language is French* |
 
 A test name says the behaviour, not the mechanism: *says, neutrally, that…* records that a
 404 must not raise an alert, and the test asserts `queryByRole('alert')` is null.
@@ -67,10 +73,17 @@ message lands inside one of them, so a slot mounted only with its message fails 
 A loading test needs a handler that waits (`await delay(50)`), or the answer can arrive
 before the busy indicator is ever rendered.
 
+*speaks French…* switches the language, renders, and finds the button by its French name
+(`Rechercher`); it also asserts `<html lang>` followed. One such test per screen proves the
+screen reads its copy through `t()` in its own namespace. The other tests stay in English
+— the setup pins `en` — so a translation change does not break a behaviour test.
+
 ## Find things the way a user does
 
 Query by role and accessible name: `getByRole('button', { name: 'Look up' })`,
-`getByLabelText('Course title')`, `findByRole('alert')`, `findByRole('status')`. A test that
+`getByLabelText('Course title')`, `findByRole('alert')`, `findByRole('status')`. The names
+are the English locale's text, written out in the test rather than read from the JSON: a
+test that called `t()` would pass on a key that rendered the wrong message. A test that
 finds the input by its label fails when the label is no longer tied to the input, which is
 an accessibility bug a class selector would never notice. Use `findBy*` for anything that
 appears after a request, and `queryBy*` to assert absence.
@@ -78,13 +91,13 @@ appears after a request, and `queryBy*` to assert absence.
 ## A fresh `QueryClient` per test
 
 ```tsx
-function ask(title: string) {
+// src/training/CoursePopularity.test.tsx
+function renderScreen(): void {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <CoursePopularity />
     </QueryClientProvider>,
   )
-  ...
 }
 ```
 
@@ -103,13 +116,19 @@ globalThis.Request = class extends NodeRequest {
     super(typeof input === 'string' ? new URL(input, window.location.href).href : input, init)
   }
 }
-
+...
 server.listen({ onUnhandledFrame: 'error' })
-afterEach(() => {
+...
+await i18n.changeLanguage(DEFAULT_LANGUAGE)
+
+afterEach(async () => {
   server.resetHandlers()
   cleanup()
+  await i18n.changeLanguage(DEFAULT_LANGUAGE)
 })
-afterAll(() => server.close())
+afterAll(() => {
+  server.close()
+})
 ```
 
 Each odd part is load-bearing. Do not "tidy" any of them:
@@ -130,11 +149,25 @@ Each odd part is load-bearing. Do not "tidy" any of them:
   `package.json`) because these option names have changed across majors.
 - **`cleanup()` in `afterEach`.** `globals: false` in `vite.config.ts` means Testing
   Library cannot register its own cleanup, so the setup does it.
+- **English, at load and after each test.** `i18n.ts` picks the language from
+  `navigator.language`, so without the first line the suite would assert English on one
+  machine and French on another. The `afterEach` puts it back after a test that switched,
+  so the French test cannot leak into the next one.
 
 ## What earns a test
 
 Every state a component renders, and every status the endpoint documents. Not: the
-`trainingKeys` arrays, a component's class names, or TanStack Query's own behaviour. `unwrap`
-gets plain unit tests (`src/api/problem.test.ts`) because it has branches of its own;
-a hook does not get a test apart from the component that uses it, because its behaviour is
-what the component shows.
+`trainingKeys` arrays, a primitive's CSS, or TanStack Query's own behaviour.
+
+- **Functions with branches of their own get plain unit tests.** `unwrap` and the failure
+  predicates in `src/api/problem.test.ts`; `isAskable` and `retriesOnlyUnansweredRequests`
+  in `src/training/queries.test.ts`. A hook does not get a test apart from the component
+  that uses it, because its behaviour is what the component shows.
+- **A primitive gets a test for what it promises, not how it looks.** `TextField.test.tsx`
+  checks the label, the `onChange` value and the always-mounted live error slot;
+  `Button.test.tsx` the explicit `type`; `primitives.test.tsx` the role or element each
+  presentational one renders. A primitive's own tests are the place for fixture copy.
+- **The locales get one parity test.** `src/i18n/locales.test.ts` covers every namespace
+  without being told about it (`i18n.md`).
+- **A local lint rule gets a RuleTester test beside it** in `eslint/rules/`, run by vitest
+  with the rest (`lint.md`).

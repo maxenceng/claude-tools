@@ -61,7 +61,8 @@ the change fits the domain model.
   OpenAPI contract, tests and comments. Loaded when writing backend code, not on every
   request.
 - `ddd-frontend` — the frontend's counterpart: a context's folder, its query hooks and
-  keys, how a ProblemDetail becomes a UI state, and MSW tests per state. The template's
+  keys, how a ProblemDetail becomes a UI state, and MSW tests per state, with screens built
+  from an in-house design system, copy through i18n, and ESLint enforcing both. The template's
   `frontend/src/training/` is the worked example it describes, and `architecture.test.ts`
   enforces the import rules. It uses Vercel's `vercel-react-best-practices` and
   `vercel-composition-patterns` skills when they are installed.
