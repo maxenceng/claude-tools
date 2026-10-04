@@ -40,8 +40,9 @@ com.example.app.<context>.{domain, application, infrastructure.{primary, seconda
 ```
 
 One bounded context per direct subpackage of the root. `training` is a worked example —
-delete it or rename it into your own domain, whichever comes first (ADR 0008); `shared` and
-`error` are kernels, not contexts.
+delete it or rename it into your own domain, whichever comes first (ADR 0008); it answers
+one HTTP read, `GET /api/courses/popularity`, so a frontend has an endpoint to copy
+(ADR 0010); `shared` and `error` are kernels, not contexts.
 
 The shape of a context is enforced by the rules below rather than copied from an
 example, so `make arch` will tell you when a new one is wrong.

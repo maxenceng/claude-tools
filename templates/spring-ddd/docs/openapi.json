@@ -14,6 +14,114 @@
       "description": "Same origin as the caller"
     }
   ],
-  "paths": {},
-  "components": {}
+  "paths": {
+    "/api/courses/popularity": {
+      "get": {
+        "operationId": "popularity",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoursePopularityResponse"
+                }
+              }
+            },
+            "description": "The vendor has a popularity for this title"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "The title is blank"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "The vendor has no popularity for this title yet"
+          },
+          "503": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "The vendor did not answer"
+          }
+        },
+        "summary": "A course's popularity, as the training catalogue vendor reports it",
+        "tags": [
+          "course-popularity-controller"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CoursePopularityResponse": {
+        "type": "object",
+        "properties": {
+          "popularity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "popularity",
+          "title"
+        ]
+      },
+      "ProblemDetail": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
 }

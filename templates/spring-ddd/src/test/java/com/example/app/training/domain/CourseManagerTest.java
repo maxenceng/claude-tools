@@ -3,7 +3,9 @@ package com.example.app.training.domain;
 import static com.example.app.training.domain.CourseFixture.course;
 import static com.example.app.training.domain.CourseFixture.courseWithPopularity;
 import static com.example.app.training.domain.PopularityFixture.popularity;
+import static com.example.app.training.domain.TitleFixture.title;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -48,5 +50,21 @@ class CourseManagerTest {
 
         assertThat(unchanged).isEqualTo(courseWithPopularity());
         verifyNoInteractions(catalogue);
+    }
+
+    @Test
+    void shouldAnswerThePopularityTheCatalogueHas() {
+        CourseManager manager = new CourseManager(catalogue);
+        when(catalogue.lookup(title())).thenReturn(Optional.of(popularity()));
+
+        assertThat(manager.popularityOf(title())).isEqualTo(popularity());
+    }
+
+    @Test
+    void shouldThrowPopularityNotFoundExceptionWhereTheCatalogueHasNone() {
+        CourseManager manager = new CourseManager(catalogue);
+        when(catalogue.lookup(title())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> manager.popularityOf(title())).isExactlyInstanceOf(PopularityNotFoundException.class);
     }
 }

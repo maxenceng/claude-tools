@@ -27,8 +27,10 @@ ticket changes from its criteria and the diff; ask only if neither says.
    `colorize`, `animate` — with a recommendation. They pick one, or say something in
    their own words.
 5. Apply it: a named move through the `impeccable:impeccable` skill, free-form feedback
-   by hand. Run `make fe-check` before the next round; a design change that breaks a test
-   is not a design change yet.
+   by hand. Either way the change lands in `frontend/src/design-system/` — a token in
+   `tokens.css`, or a primitive's variant or module — never in the screen, which may not
+   style itself. Run `make fe-check` and `make fe-lint` before the next round; a design
+   change that breaks a test or the lint is not a design change yet.
 
 Repeat until the human says it is done. Show one round at a time; a batch of changes
 nobody saw separately is a design nobody chose.

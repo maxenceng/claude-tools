@@ -1,0 +1,61 @@
+/*
+ * The design tokens: every colour, space, radius, border, focus ring and type value the UI uses.
+ * Primitives read these; nothing else names a raw value.
+ */
+:root {
+  color-scheme: light dark;
+
+  --color-text: oklch(0.21 0.01 260);
+  --color-muted: oklch(0.48 0.01 260);
+  --color-danger: oklch(0.5 0.19 27);
+  --color-surface: oklch(0.99 0.003 260);
+  --color-border: oklch(0.84 0.01 260);
+  --color-accent: oklch(0.27 0.02 260);
+  --color-accent-hover: oklch(0.36 0.02 260);
+  --color-accent-active: oklch(0.2 0.02 260);
+  --color-on-accent: oklch(0.99 0.003 260);
+  --color-focus: oklch(0.55 0.15 250);
+
+  --space-none: 0;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1.5rem;
+  --space-xl: 3rem;
+
+  --radius-sm: 0.25rem;
+  --border-width: 1px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+  --font-size-display: 2.25rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-tight: 1.2;
+  --line-height-body: 1.5;
+  --letter-spacing-tight: -0.01em;
+  --underline-offset: 0.2em;
+
+  --measure: 42rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: oklch(0.93 0.005 260);
+    --color-muted: oklch(0.72 0.01 260);
+    --color-danger: oklch(0.72 0.16 27);
+    --color-surface: oklch(0.19 0.01 260);
+    --color-border: oklch(0.4 0.01 260);
+    --color-accent: oklch(0.93 0.005 260);
+    --color-accent-hover: oklch(0.85 0.005 260);
+    --color-accent-active: oklch(0.97 0.005 260);
+    --color-on-accent: oklch(0.19 0.01 260);
+    --color-focus: oklch(0.72 0.13 250);
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "popularity": {
+    "heading": "Popularité des cours",
+    "titleLabel": "Titre du cours",
+    "lookUp": "Rechercher",
+    "lookingUp": "Recherche…",
+    "notFound": "Pas encore de popularité pour ce cours.",
+    "popularityOf": "popularité de {{title}}",
+    "unreachable": "Le serveur est injoignable ; réessayez.",
+    "retry": "Réessayer"
+  }
+}

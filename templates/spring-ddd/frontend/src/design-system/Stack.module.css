@@ -1,0 +1,18 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+
+  &[data-direction='horizontal'] { flex-direction: row; flex-wrap: wrap; }
+
+  &[data-gap='none'] { gap: var(--space-none); }
+  &[data-gap='xs'] { gap: var(--space-xs); }
+  &[data-gap='sm'] { gap: var(--space-sm); }
+  &[data-gap='md'] { gap: var(--space-md); }
+  &[data-gap='lg'] { gap: var(--space-lg); }
+  &[data-gap='xl'] { gap: var(--space-xl); }
+
+  &[data-align='stretch'] { align-items: stretch; }
+  &[data-align='start'] { align-items: flex-start; }
+  &[data-align='center'] { align-items: center; }
+  &[data-align='baseline'] { align-items: baseline; }
+}
