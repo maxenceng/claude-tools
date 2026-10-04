@@ -80,6 +80,9 @@ Each error branch is an `alt` block naming the error and its status. Mark the tr
 with a `rect` around the messages inside it. `tickets` is the endpoint's history, not its
 latest change: when a ticket id is given, append it to the ids already in the file (a new
 file starts from an empty list); when none is given, keep `tickets` as it was.
+The list names tickets that are already done, on purpose. If the project has a check that fails
+on references to landed tickets, `docs/endpoints/` belongs in its exemptions beside the ADRs.
+Keep the id in the list and exempt the folder, rather than dropping the id to get past the check.
 
 **`docs/endpoints/<context>/<name>.html`** — invoke the `archify` skill with the same
 trace as a sequence diagram, and write its output here. The skill owns its own IR; hand
@@ -109,6 +112,11 @@ this order:
 Never widen the canvas or space the messages more tightly to get past a gate: the
 readability and spacing checks fail either way. The `.md` is the full trace. The `.html` is
 a view of it, and a merge is not a finding.
+
+`finalize` leaves receipts beside the HTML: `<name>.finalize.json`, `.finalize-summary.json`,
+`.browser-check.json` and `.delivery.json`. `--out-dir` moves all but the last. Read the result
+from them, then delete all four. They record one run on one machine, and the atlas is the
+`.md` and `.html` alone.
 
 **`docs/endpoints/README.md`** — one heading per context, one line per endpoint linking
 its `.md`. Create it if it is missing; keep it sorted by context, then path.
