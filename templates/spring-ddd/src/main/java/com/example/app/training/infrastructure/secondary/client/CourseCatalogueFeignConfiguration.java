@@ -30,6 +30,9 @@ class CourseCatalogueFeignConfiguration {
 
     private static final Function<String, RuntimeException> UNREACHABLE = CourseCatalogueUnreachableException::new;
 
+    @Value("${training.catalogue.api-key}")
+    private String apiKey;
+
     @Bean
     Decoder decoder() {
         return OutboundClientSupport.decoder(CourseCatalogueJson.converter());
@@ -46,7 +49,7 @@ class CourseCatalogueFeignConfiguration {
     }
 
     @Bean
-    RequestInterceptor apiKeyParameter(@Value("${training.catalogue.api-key}") String apiKey) {
+    RequestInterceptor apiKeyParameter() {
         return new CourseCatalogueApiKeyParameter(apiKey);
     }
 }

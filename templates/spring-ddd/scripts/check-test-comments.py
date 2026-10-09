@@ -16,7 +16,8 @@ which is the same reason DomainIsFreeOfLombokTest reads source (ADR 0005).
 import os
 import sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# CHECK_ROOT is how guard-fixtures.py points this at a fixture tree; nothing else sets it.
+ROOT = os.environ.get("CHECK_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SOURCE_ROOT = os.path.join(ROOT, "src", "test", "java")
 

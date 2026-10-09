@@ -17,7 +17,8 @@ endif
 .DEFAULT_GOAL := help
 
 .PHONY: help doctor build test test-one arch docs fmt lint dup config-check adr-check
-.PHONY: no-skipped-tests test-comment-check run openapi openapi-check ci verify clean
+.PHONY: ticket-check round-trip-check guard-fixtures guard-harness
+.PHONY: no-skipped-tests test-comment-check run openapi openapi-check ci verify verify-report pr-checks clean
 .PHONY: fe-install fe-check fe-lint fe-ci fe-build openapi-client
 
 help: ## Show available targets
@@ -61,6 +62,18 @@ adr-check: ## Fail on a duplicate or missing ADR number
 test-comment-check: ## Fail on a comment under src/test, where the test name is the explanation
 	@python3 scripts/check-test-comments.py
 
+ticket-check: ## Fail on a reference to a ticket that has already landed
+	@python3 scripts/check-ticket-references.py
+
+round-trip-check: ## Fail on an integration test that reads back its own persistence context
+	@python3 scripts/check-round-trip-tests.py
+
+guard-fixtures: ## Fail if a scripts/check-* guard has no fixture proven to trip it
+	@python3 scripts/guard-fixtures.py
+
+guard-harness: ## Fail if guard-fixtures.py stops detecting a fixture that proves nothing
+	@python3 scripts/prove-guard-harness.py
+
 no-skipped-tests: ## Fail if the last test run skipped anything
 	@python3 scripts/check-no-skipped-tests.py
 
@@ -95,7 +108,7 @@ fe-build: ## Build the frontend bundle
 openapi-client: ## Regenerate the typed API client from docs/openapi.json
 	$(MAKE) -C frontend openapi-client
 
-ci: lint config-check adr-check test-comment-check test dup ## The backend job's first step, cheapest check first
+ci: lint config-check adr-check ticket-check round-trip-check test-comment-check guard-fixtures guard-harness test dup ## The backend job's first step, cheapest check first
 
 # CI runs these targets in this order. Adding a step to one without the other is what
 # makes "it passed locally" stop meaning anything.
@@ -104,6 +117,12 @@ verify: ## Everything CI runs, backend and frontend, in the order CI runs it
 	$(MAKE) no-skipped-tests
 	$(MAKE) openapi-check
 	$(MAKE) fe-ci
+
+verify-report: ## Run verify into a log and print the verdict, exit code included
+	@bash scripts/verify-report.sh
+
+pr-checks: ## Wait for CI on this branch's PR and exit on its verdict
+	@bash scripts/pr-checks.sh
 
 clean: ## Remove build output
 	$(MVN) clean

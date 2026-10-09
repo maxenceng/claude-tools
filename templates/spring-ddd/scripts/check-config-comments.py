@@ -15,7 +15,8 @@ MAX_LINES = 2
 
 # Anchored to the repo rather than to the working directory, so this cannot quietly check
 # nothing when invoked from somewhere else.
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# CHECK_ROOT is how guard-fixtures.py points this at a fixture tree; nothing else sets it.
+ROOT = os.environ.get("CHECK_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 TARGETS = [
     "pom.xml",

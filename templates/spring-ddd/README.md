@@ -10,7 +10,7 @@ first real one and record it in `docs/context-map.md`.
 
 ```bash
 make doctor     # check the toolchain first; it is usually the toolchain
-make ci         # lint, tests, duplication
+make ci         # lint, guards, tests, duplication
 make fe-check   # frontend typecheck and tests
 ```
 

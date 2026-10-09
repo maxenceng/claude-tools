@@ -14,7 +14,8 @@ import sys
 # Anchored to the repo rather than to the working directory. Globbed relative to wherever
 # it was invoked, this found no ADRs and reported success -- a check that passes when it
 # cannot see its input is worse than no check.
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# CHECK_ROOT is how guard-fixtures.py points this at a fixture tree; nothing else sets it.
+ROOT = os.environ.get("CHECK_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 ADR_DIR = os.path.join(ROOT, "docs", "adr")
 

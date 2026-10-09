@@ -30,14 +30,18 @@ Use `make`, never `mvn` directly — the Makefile selects the Java 25 toolchain.
 - `make test-one T=SomeTest` — one class or method, when the full run is too slow to iterate on
 - `make fmt` / `make lint` — apply / verify formatting
 - `make adr-check` — fail on a duplicate or missing ADR number; run it before choosing one
-- `make verify` — everything CI runs, in CI's order. This is the one to trust before a PR;
-  `make ci` is only the backend job's first step
+- `make verify` — everything CI runs, in CI's order; `make ci` is the backend half of it
+- `make verify-report` — the same run, into a log, printing the exit code and the totals
+- `make pr-checks` — wait for CI on this branch's PR and exit on its verdict
 
 ## Structure
 
 ```
-com.example.app.<context>.{domain, application, infrastructure.{primary, secondary}}
+com.example.app.<context>.{published, domain, application, infrastructure.{primary, secondary}}
 ```
+
+`published` holds the ids other contexts name this one by, and only exists once another
+context needs one — ADR 0012.
 
 One bounded context per direct subpackage of the root. `training` is a worked example —
 delete it or rename it into your own domain, whichever comes first (ADR 0008); it answers
@@ -57,8 +61,12 @@ do not weaken the rule without an ADR.
 3. Ports are interfaces in `domain`; adapters implement them in `infrastructure.secondary`.
    Only a domain service *holds* one — an adapter implements a port, it never depends on
    another. And nothing in `infrastructure.secondary` calls the application layer.
-4. Other contexts are reached by ID through a context's root package, never by
-   importing its internals.
+4. Other contexts are reached by ID through a context's `published` package, never by
+   importing anything else of it. That package carries `@NamedInterface`; ADR 0012 says
+   what may live in it. The one sanctioned exception: a context that needs more than a name
+   calls a bean the other exposes from its own `@NamedInterface` `infrastructure.query` or
+   `infrastructure.command` package — through a port of its own when its domain needs the
+   answer, straight from the writing adapter when the answer only stands in for a foreign key.
 5. Aggregates expose behaviour, not setters. A value object wraps one attribute; a domain
    record holding several holds value objects, never raw values.
 6. One `@RestControllerAdvice`, in `error.infrastructure.primary`. Domain exceptions
@@ -66,10 +74,9 @@ do not weaken the rule without an ADR.
 7. A context keeps its shape: `@Service` is an `*ApplicationService` in `application`,
    `@Repository` lives in `infrastructure.secondary`, `*Request`/`*Response` live in
    `infrastructure.primary`, domain exceptions extend `DomainException`, domain fields
-   are final, and nothing is injected into a field — except an `*ApplicationService`'s
-   own `@Value`-sourced scalar config, which is. Record that exception with an ADR the
-   day this project first adopts it; every other collaborator (ports, managers) stays a
-   `final`, constructor-injected field.
+   are final, and nothing is injected into a field — except a bean's own `@Value`-sourced
+   config, which always is and never goes through a constructor (ADR 0013).
+   Every collaborator (ports, managers, clients) stays a `final`, constructor-injected field.
 
 ## Conventions
 
@@ -82,7 +89,7 @@ Settled. Act on these rather than asking.
 
 - A coverage gap closes in the ticket that opened it. Write the test, do not defer it.
 - A decision someone could reverse later without knowing why gets an ADR, in the same change.
-- Work lands on a branch and a PR, never straight to `main`. Push once `make verify` is green.
+- Work lands on a branch and a PR, never straight to `main`. Push once `make ci` is green.
 - Formatting is whatever `make fmt` produces. `.editorconfig` matches the spotless config;
   neither is up for negotiation per file.
 - Re-check an acceptance criterion against the pushed commit, never against an earlier run.
@@ -102,9 +109,17 @@ Settled. Act on these rather than asking.
 - A new rule, check or guard is not done until it has been watched to fail on the case it
   exists for. A rule nobody has seen fail is a rule nobody has tested — and one that reads
   as protection while giving none is worse than no rule, because the next reader stops looking.
-- A build result is read from a captured exit code — `make verify > log 2>&1; echo $?` — never
-  from a pipeline, which reports the last command's status and not `make`'s. `Skipped: 0` is
-  part of the result; `make verify` fails on a skip.
+- A build result is read from a captured exit code — `make verify-report`, or
+  `make verify > log 2>&1; echo $?` — never from a pipeline, which reports the last command's
+  status and not `make`'s. `Skipped: 0` is part of the result; `make verify` fails on a skip.
+- A guard under `scripts/check-*` has a fixture that trips it, run by `make guard-fixtures`;
+  a guard with none fails the build — ADR 0015.
+- An integration test that reads back what it wrote clears the persistence context first, or it
+  asserts against Hibernate's first-level cache and would pass with no table at all. ADR 0014,
+  enforced by `make round-trip-check`.
+- A ticket id is a pointer while the work is open and a stale claim once it lands. Outside
+  `docs/backlog/` and `docs/adr/`, name the behaviour rather than the ticket that added it —
+  git and the ADRs are what remember which one did. `make ticket-check` enforces it (ADR 0016).
 
 Ask when the choice is a genuine trade-off rather than a default: a review that contradicts
 something asked for explicitly, a change to a published contract, or a rule that would have
