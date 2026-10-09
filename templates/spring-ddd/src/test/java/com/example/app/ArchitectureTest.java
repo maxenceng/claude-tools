@@ -1,5 +1,8 @@
 package com.example.app;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.equivalentTo;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameMatching;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
@@ -13,6 +16,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.modulith.NamedInterface;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +26,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.app.error.domain.DomainException;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaCodeUnitAccess;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -48,18 +55,20 @@ class ArchitectureTest {
 	@ArchTest
 	static final ArchRule domain_is_free_of_frameworks = noClasses()
 			.that()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.should()
-			.dependOnClassesThat()
-			.resideInAnyPackage("org.springframework..", "jakarta..", "com.fasterxml..", "lombok..")
-			.because("the domain models the business and must not know about frameworks. Lombok is "
+			.dependOnClassesThat(
+					resideInAnyPackage("org.springframework..", "jakarta..", "com.fasterxml..", "lombok..")
+							.and(not(equivalentTo(NamedInterface.class))))
+			.because("the domain models the business and must not know about frameworks. @NamedInterface on a "
+					+ "published package's own package-info is the one exception - ADR 0012. Lombok is "
 					+ "named here but caught by DomainIsFreeOfLombokTest: its annotations are "
 					+ "SOURCE-retention, so this rule never sees them - ADR 0005");
 
 	@ArchTest
 	static final ArchRule domain_does_not_depend_on_outer_layers = noClasses()
 			.that()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.should()
 			.dependOnClassesThat()
 			.resideInAnyPackage("..application..", "..infrastructure..")
@@ -113,7 +122,7 @@ class ArchitectureTest {
 	static final ArchRule domain_types_expose_no_setters = noMethods()
 			.that()
 			.areDeclaredInClassesThat()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.should()
 			.haveNameMatching("set[A-Z].*")
 			.because("aggregates expose intent-revealing behaviour, not setters");
@@ -192,7 +201,7 @@ class ArchitectureTest {
 	@ArchTest
 	static final ArchRule business_failures_extend_domain_exception = classes()
 			.that()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.and()
 			.resideOutsideOfPackage("..error..")
 			.and()
@@ -205,7 +214,7 @@ class ArchitectureTest {
 	static final ArchRule domain_state_is_final = fields()
 			.that()
 			.areDeclaredInClassesThat()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.and()
 			.areDeclaredInClassesThat()
 			.haveSimpleNameNotEndingWith("Builder")
@@ -218,6 +227,12 @@ class ArchitectureTest {
 			.should()
 			.beAnnotatedWith(Autowired.class)
 			.because("field injection hides a dependency and cannot be set in a plain unit test");
+
+	@ArchTest
+	static final ArchRule value_config_is_never_a_constructor_or_bean_method_parameter = classes()
+			.should(takeNoValueAnnotatedConstructorOrBeanParameter())
+			.because("a bean's own @Value config is a private field, never a constructor or @Bean method "
+					+ "parameter - ADR 0013");
 
 	/**
 	 * A port is a dependency the domain declares and a domain service holds. An adapter that
@@ -250,6 +265,16 @@ class ArchitectureTest {
 			.resideInAPackage("..application..")
 			.because("what is in secondary stays in secondary");
 
+	@ArchTest
+	static final ArchRule another_context_reaches_a_query_or_command_package_only_from_a_driven_adapter = noClasses()
+			.that()
+			.resideOutsideOfPackages("..infrastructure.secondary..", "..infrastructure.query..", "..infrastructure.command..")
+			.should()
+			.dependOnClassesThat()
+			.resideInAnyPackage("..infrastructure.query..", "..infrastructure.command..")
+			.because("a context asks or tells another only from its own driven adapter - ADR 0012; anything "
+					+ "else could skip the domain service that decides what the answer or the write means");
+
 	/**
 	 * A value object wraps one thing. A domain record holding several holds value objects,
 	 * not raw values — so a primitive or a JDK type appears in exactly one place, the type
@@ -263,7 +288,7 @@ class ArchitectureTest {
 	@ArchTest
 	static final ArchRule composite_domain_types_hold_value_objects = classes()
 			.that()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.and()
 			.resideOutsideOfPackage("..error..")
 			.and()
@@ -278,7 +303,7 @@ class ArchitectureTest {
 	@ArchTest
 	static final ArchRule composite_domain_types_are_built_through_their_own_builder = classes()
 			.that()
-			.resideInAPackage("..domain..")
+			.resideInAnyPackage("..domain..", "..published..")
 			.and()
 			.resideOutsideOfPackage("..error..")
 			.and()
@@ -406,6 +431,33 @@ class ArchitectureTest {
 				JavaClass parameterType = parameters.getFirst();
 				return parameterType.getSimpleName().equals(type.getSimpleName() + "Builder")
 						&& parameterType.getEnclosingClass().filter(type::equals).isPresent();
+			}
+		};
+	}
+
+	private static ArchCondition<JavaClass> takeNoValueAnnotatedConstructorOrBeanParameter() {
+		return new ArchCondition<>("take no @Value-annotated constructor or @Bean method parameter") {
+
+			@Override
+			public void check(JavaClass type, ConditionEvents events) {
+				type.getConstructors().forEach(constructor -> reportValueParameters(constructor, events));
+
+				type.getMethods().stream()
+						.filter(method -> method.isAnnotatedWith(Bean.class))
+						.forEach(method -> reportValueParameters(method, events));
+			}
+
+			private static void reportValueParameters(JavaCodeUnit codeUnit, ConditionEvents events) {
+				codeUnit.getParameters().stream()
+						.filter(parameter -> parameter.isAnnotatedWith(Value.class))
+						.forEach(parameter -> events.add(SimpleConditionEvent.violated(
+								parameter,
+								"%s takes @Value on parameter %d (%s) of %s; move it to a private field - ADR 0013"
+										.formatted(
+												codeUnit.getOwner().getSimpleName(),
+												parameter.getIndex(),
+												parameter.getRawType().getSimpleName(),
+												codeUnit.getDescription()))));
 			}
 		};
 	}

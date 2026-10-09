@@ -6,7 +6,9 @@
 # frontend still typechecks — against an API that no longer exists. The symptom is a field
 # that is `undefined` at runtime while the editor insists it is a string.
 #
-# Boots the app, captures the schema, and diffs it against the committed one.
+# Boots the app, captures the schema, and diffs it against the committed one. Before that
+# real diff runs, the same comparison is proven against a deliberately mutated copy of the
+# committed schema, so a silently no-op diff cannot let a real mismatch through unnoticed.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -15,12 +17,20 @@ SCHEMA=docs/openapi.json
 PORT=8080
 LOG="$(mktemp)"
 APP_PID=""
+MUTATED=""
 
 cleanup() {
 	[[ -n "$APP_PID" ]] && kill "$APP_PID" 2>/dev/null || true
+	[[ -n "$MUTATED" ]] && rm -f "$MUTATED"
 	rm -f "$LOG"
 }
 trap cleanup EXIT
+
+# The one comparison both the self-test and the real check below run, so proving the
+# self-test detects drift proves the real check would too.
+schema_matches() {
+	diff -u "$1" "$SCHEMA.actual" > /tmp/openapi.diff 2>&1
+}
 
 [[ -f "$SCHEMA" ]] || { echo "FAIL: $SCHEMA is not committed. Capture it: make run, make openapi" >&2; exit 1; }
 
@@ -46,7 +56,28 @@ curl -sf "http://localhost:$PORT/v3/api-docs" \
 	| python3 -m json.tool --indent 2 --no-ensure-ascii > "$SCHEMA.actual" \
 	|| { echo "FAIL: the application never served /v3/api-docs" >&2; tail -30 "$LOG" >&2; exit 1; }
 
-if diff -u "$SCHEMA" "$SCHEMA.actual" > /tmp/openapi.diff 2>&1; then
+# Prove the comparison above can detect drift, using the schema this boot already
+# captured. The mutation changes a value on an existing line, not an appended one, so a
+# comparison weakened to ignore whitespace or drop a field still shows as different.
+MUTATED="$(mktemp)"
+python3 -c '
+import re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+mutated, count = re.subn(r"(\"title\": \")[^\"]*", r"\1drift-fixture", text, count=1)
+if count != 1:
+    sys.exit("could not mutate the committed schema: it has no title to change")
+open(sys.argv[2], "w", encoding="utf-8").write(mutated)
+' "$SCHEMA" "$MUTATED"
+if schema_matches "$MUTATED"; then
+	echo "FAIL: the drift check did not detect a deliberately mutated schema — the comparison is broken" >&2
+	rm -f "$SCHEMA.actual"
+	exit 1
+fi
+echo "ok: the drift check detects a mutated schema"
+rm -f "$MUTATED"
+MUTATED=""
+
+if schema_matches "$SCHEMA"; then
 	rm -f "$SCHEMA.actual" /tmp/openapi.diff
 	echo "ok: committed schema matches the running application"
 else

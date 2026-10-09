@@ -28,9 +28,8 @@ jobs:
           java-version: '25'
           cache: maven
 
-      # Formatting, config comments, ADR numbering, tests, duplication -- cheapest first,
-      # ordered inside the Makefile so `make verify` runs exactly what this job runs.
-      - name: Lint, tests and duplication
+      # The Makefile holds the list, so a guard added to `ci` runs here with no second edit.
+      - name: Lint, guards, tests and duplication
         run: make ci
 
       # A Testcontainers test skips rather than fails when Docker is missing, so the suite

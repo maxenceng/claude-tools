@@ -47,7 +47,8 @@ com.example.<app>.<context>
 ```
 
 A bounded context is a direct subpackage of the application root. Its nested packages
-are internal: another context can only reach what sits in the context's root package.
+are internal unless one carries `@NamedInterface`: another context can only reach the ids in
+its `published` package, or a bean in its `infrastructure.query` / `infrastructure.command`.
 This is enforced, so a cross-context import of `training.domain.Course` fails the build
 rather than being caught in review.
 
