@@ -18,7 +18,7 @@ the conversation does.
        pullRequest(number: $n) {
          body
          reviewThreads(first: 100) { nodes { isResolved path line
-           comments(first: 20) { nodes { databaseId author { login } body } } } }
+           comments(first: 20) { nodes { databaseId author { login } body diffHunk } } } }
          comments(first: 100) { nodes { author { login } body } }
          reviews(first: 50) { nodes { author { login } state body } }
          commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
@@ -26,7 +26,10 @@ the conversation does.
      }
    }' --jq '.data.repository.pullRequest | {
      ci: .commits.nodes[0].commit.statusCheckRollup.state,
-     threads: [.reviewThreads.nodes[] | select(.isResolved | not)],
+     threads: [.reviewThreads.nodes[] | select(.isResolved | not) | {
+       path, line,
+       anchor: (.comments.nodes[0].diffHunk | split("\n") | last),
+       comments: [.comments.nodes[] | del(.diffHunk)] }],
      comments: .comments.nodes,
      reviews: [.reviews.nodes[] | select(.body != "")],
      body
@@ -34,7 +37,9 @@ the conversation does.
    ```
 
    Answer unresolved threads only; the filter already drops the rest. A thread's
-   `databaseId` is the REST id step 8 replies to. A red `ci` belongs on the list too — the
+   `databaseId` is the REST id step 8 replies to. `anchor` is the line the comment sits
+   on, keeping only that line of the hunk: a leading `+` or `-` means it changed, a space
+   means it is context. A `null` line means the thread is outdated. A red `ci` belongs on the list too — the
    pipeline is a reviewer that always comments. Read it with `gh run view <run-id>
    --log-failed`, not the full log: the failing step is the comment, the rest is noise
    priced per line.
@@ -70,10 +75,22 @@ the conversation does.
    wrong and wrong about what to do — an item worth acting on can still need a different
    fix than the one suggested. In particular:
 
+   - A terse comment anchored on a context line is not satisfied by the diff around it.
+     The reviewer is pointing at a line that should have changed and did not; work out
+     what change would touch it before deciding the comment is already answered.
+   - A comment names one instance, not the only one. Grep the whole PR for the same
+     shape and fix every occurrence. Occurrences outside the PR go to the human as a
+     follow-up ticket to accept or decline, not into this branch.
+   - Where the suggested mechanism would break but the direction is sound, say what
+     breaks and build what the reviewer was after another way.
+
    - A request to "do it properly" — add metrics, a filter, a config option — starts with
      a grep for callers. Nothing calls it: say so and propose removing it instead.
    - A comment that contradicts a decision the human already made, in the ticket's
      *Model decision* or an ADR, is put to the human, not implemented.
+   - Disagreement goes to the human in this session, in step 4's batch, before any code
+     changes or any reply is posted. A rebuttal posted on the thread that the human then
+     overrules costs a second round, and the comment may have been a deliberate test.
    - An item you cannot verify from here gets said as much — what you would need to
      check it — rather than applied on trust.
 

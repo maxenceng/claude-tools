@@ -37,6 +37,20 @@
    the PR body under an `Open` heading, written as the decision it needs rather than as a
    fix. Push either way.
 
+   `Open` is for forks in this ticket's design and nothing else. Try the smallest fix
+   that makes the code honest first; it is a fork only if two fixes genuinely differ in
+   design. Drop a reviewer's question about behaviour the project has not asked for
+   (deletion, moderation, a future lifecycle) rather than carrying it as an `Open` item.
+   Two findings are always forks, never fixed here:
+   - one that contradicts something the human asked for explicitly, however sure the
+     reviewer is;
+   - one that reopens a gap an ADR already accepted, where closing it needs new
+     infrastructure. Put it as a choice between a follow-up ticket and leaving it
+     documented. A gap that closes without new infrastructure is just a fix.
+
+   Mentioning the conflict in a report and shipping the reviewer's version anyway is not
+   asking.
+
    Check a finding against the code before acting on it. A reviewer reads the diff and not
    always the file the diff lands in, so it will name a cause confidently and get it
    wrong, and a fix aimed at the wrong cause is worse than the defect, which at least sat

@@ -23,7 +23,9 @@ ticket written from an ambiguous sentence looks precise and misleads everyone wh
 afterwards.
 
 Ask in rounds. A round is every question you can ask now without guessing at an answer
-not yet given — numbered, each with the options and your recommendation. A question that
+not yet given — numbered, each with the options and your recommendation. List the
+whole option space, including the conventional middle a competent engineer would reach
+for first; where you exclude one, say why in a line rather than leave it off. A question that
 depends on another one still open belongs to the next round, not this one: answered
 together, the first answer would have changed the second question. Wait for the answers,
 then ask whatever they unblocked.

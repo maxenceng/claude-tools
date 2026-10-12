@@ -14,8 +14,11 @@ unanalysed marker, for the same reason. Tickets refined before 2.0.0 have no suc
 Then:
 
 1. Set `status: in-progress`.
-2. Create a branch named `<id>-<slug>`, matching the filename. Use a worktree if the
-   current one has uncommitted work worth keeping.
+2. Create a branch named `<id>-<slug>`, matching the filename, off current main. Use a
+   worktree if the current one has uncommitted work worth keeping. If a branch of that
+   name already exists, diff it against main before reusing it: an abandoned attempt
+   that forked long ago will bring deleted files back. Rename it aside
+   (`<id>-stale-<date>`), say so in one line, and branch fresh.
 3. Dispatch the agent for what the ticket touches, from the Delegation table below, and
    tell it to work test-first and domain outwards: write one failing test, run it and see
    it fail for the reason the test names — a test that passes on first run proves
