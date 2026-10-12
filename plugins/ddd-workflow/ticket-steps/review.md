@@ -57,12 +57,24 @@
    `respond` has no comments to read, so the round is lost rather than paused. The PR is
    the channel between verbs, and a fork is answered by a human on it — which is what
    `respond` is for.
-6. Push and open a PR whose body links the ticket file and lists the acceptance criteria
-   with their outcomes. Feedback arriving on that PR is `respond` — not a second
-   `review`, which would re-run the reviewers over comments a human has already made.
+6. Push and open a PR. Its body, briefly and in the glossary's words:
 
-Invoke the `superpowers:verification-before-completion` skill before ticking anything or
-reporting that a step passed.
+   - **Summary** — the ticket link, then the smallest view that shows the change: a call
+     tree, a diff-shaped sketch of the package layout or the flow, or a few lines of
+     pseudocode. Not a file list; the diff already is one.
+   - **Criteria** — each acceptance criterion, ticked or not, with what demonstrated it:
+     the test that now passes, the command output, a screenshot for a frontend change.
+   - **Merge danger** — a one-way or two-way door (a migration, a removed endpoint or a
+     published contract is one-way), and the blast radius in a word or two. The reviewer
+     spends their care where this says to.
+   - **Open** — from step 5, if anything forked.
+
+   Feedback arriving on that PR is `respond` — not a second `review`, which would re-run
+   the reviewers over comments a human has already made.
+
+Before ticking anything or reporting that a step passed, run the command that proves it
+in this session and read its output — the exit code, the failure count, `Skipped:`.
+"Should pass", a run from before the last edit, or an agent saying it passed is not that.
 
 Tick an acceptance criterion only once something demonstrates it. An unticked box is
 information; a ticked one that nothing verifies is a lie the next reader will act on.

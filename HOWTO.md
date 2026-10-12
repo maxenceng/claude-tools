@@ -321,7 +321,7 @@ honest surface for you.
 | CI says the schema is stale | Backend changed, nobody recaptured | `make run`, `make openapi`, `make openapi-client` |
 | `make ci` green, CI red | `make ci` is the backend job's first step only | `make verify` — it runs the whole pipeline, in the pipeline's order |
 | `make verify` green, CI red | The two have drifted apart | A defect in the `Makefile`, not a step to run by hand. Fix `verify` so it matches the workflow again |
-| A `/ticket` step silently does nothing | It names a skill from `superpowers` that is not installed | `/plugin install superpowers@claude-plugins-official` |
+| A `/ticket` step silently does nothing | It names a skill from `impeccable` or `code-review`/`pr-review-toolkit` that is not installed | Install the plugin the step names |
 | `ddd-backend`'s advice contradicts a project's own ADR | The repo and the installed copy have drifted, or the repo itself never absorbed what the project just learned | Diff `plugins/ddd-workflow/skills/` against `~/.claude/plugins/cache/maxence-tools/ddd-workflow/<version>/skills/`; fix the repo, never the cache, then bump `plugin.json` |
 | CI fails: a plugin changed but its version didn't | `check-plugin-version-bump.sh` compares against the PR's base branch | Bump the changed plugin's `plugin.json` version |
 
@@ -339,14 +339,12 @@ types and `make` targets that do not exist. Install it, then delete or rewrite t
 rather than letting it answer confidently and wrongly. `project-retro`,
 `architecture-reviewer` and `codebase-explorer` travel fine.
 
-**`/ticket` leans on `superpowers`, and fails quietly without it.** `refine` invokes
-`superpowers:brainstorming`, `start` invokes `superpowers:test-driven-development`,
-`respond` invokes `superpowers:receiving-code-review`, and `review` invokes
-`superpowers:verification-before-completion`; the general code review goes to
-`code-review` or `pr-review-toolkit`. Reusing those rather than reimplementing them is deliberate, but a
+**`/ticket` leans on outside plugins, and fails quietly without them.** The general code
+review goes to `code-review` or `pr-review-toolkit`, and frontend tickets go through
+`impeccable:impeccable`. Reusing those rather than reimplementing them is deliberate, but a
 named skill that is not installed does not announce itself — the step simply proceeds
 without it, and the result looks like the command being loose rather than a missing
-dependency. Install `superpowers` alongside this, or expect those steps to be advisory.
+dependency. Install them alongside this, or expect those steps to be advisory.
 
 **The archetype is generated, not hand-maintained.** `templates/spring-ddd` is the
 readable, buildable source; `scripts/build-archetype.sh` derives the archetype from it.
