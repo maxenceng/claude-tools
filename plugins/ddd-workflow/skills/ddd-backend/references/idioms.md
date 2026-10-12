@@ -46,6 +46,28 @@ logical line), SQL in tests. `"…".formatted(…)` for interpolation, including
 prefix in an exception message. Never `+` between string pieces. Before pushing, grep the
 diff for `" + `.
 
+## `return switch`, not a statement switch
+
+When the result depends on which kind a sealed value is, each arm yields its result.
+Do not let a statement switch mutate a local that is returned afterwards. An arm that
+adds nothing (`-> {}`) gives this shape away.
+
+```java
+// no — the switch fills a list declared above it
+List<String> argv = new ArrayList<>(claude);
+switch (command) {
+    case NewClaude _ -> {}
+    case ResumeClaude resume -> argv.addAll(List.of(RESUME_FLAG, resume.session().value()));
+}
+return argv;
+
+// yes
+return switch (command) {
+    case NewClaude _ -> claude;
+    case ResumeClaude resume -> Stream.concat(claude.stream(), Stream.of(RESUME_FLAG, resume.session().value())).toList();
+};
+```
+
 ## Unnamed bindings
 
 `case MovieLibraryEntry _ -> ContentKind.MOVIE;` — bind a name only when the arm uses it.
