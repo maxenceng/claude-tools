@@ -10,7 +10,9 @@ import re
 import sys
 
 TRIGGER = re.compile(
-    r"\bgh\s+(api\s+\S*/(comments|reviews|issues)\b|pr\s+(view|diff)\b|issue\s+view\b)"
+    r"\bgh\s+(api\s+\S*/(comments|reviews|issues)\b|api\s+graphql\b.*\breviewThreads\b"
+    r"|pr\s+(view|diff)\b|issue\s+view\b)",
+    re.DOTALL,
 )
 
 

@@ -128,6 +128,11 @@ assertThatThrownBy(() -> courseBuilder().seats(null).build())
 assertThatCode(CourseFixture::course).doesNotThrowAnyException();
 ```
 
+Take the expected value from somewhere other than the code under test — a literal, the
+fixture, a worked example from the ticket. `assertThat(order.total()).isEqualTo(price *
+quantity)` recomputes the formula the way `total()` does, so it agrees with every bug in
+it and can never fail.
+
 `isExactlyInstanceOf`, not `isInstanceOf`: the loose form passes when a subclass or a
 wrapper slips through, which is exactly the regression worth catching. Use
 `.ignoringFields("id")` when the subject generates a value the test cannot predict.

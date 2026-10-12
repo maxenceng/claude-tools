@@ -37,6 +37,20 @@
    the PR body under an `Open` heading, written as the decision it needs rather than as a
    fix. Push either way.
 
+   `Open` is for forks in this ticket's design and nothing else. Try the smallest fix
+   that makes the code honest first; it is a fork only if two fixes genuinely differ in
+   design. Drop a reviewer's question about behaviour the project has not asked for
+   (deletion, moderation, a future lifecycle) rather than carrying it as an `Open` item.
+   Two findings are always forks, never fixed here:
+   - one that contradicts something the human asked for explicitly, however sure the
+     reviewer is;
+   - one that reopens a gap an ADR already accepted, where closing it needs new
+     infrastructure. Put it as a choice between a follow-up ticket and leaving it
+     documented. A gap that closes without new infrastructure is just a fix.
+
+   Mentioning the conflict in a report and shipping the reviewer's version anyway is not
+   asking.
+
    Check a finding against the code before acting on it. A reviewer reads the diff and not
    always the file the diff lands in, so it will name a cause confidently and get it
    wrong, and a fix aimed at the wrong cause is worse than the defect, which at least sat
@@ -57,12 +71,24 @@
    `respond` has no comments to read, so the round is lost rather than paused. The PR is
    the channel between verbs, and a fork is answered by a human on it — which is what
    `respond` is for.
-6. Push and open a PR whose body links the ticket file and lists the acceptance criteria
-   with their outcomes. Feedback arriving on that PR is `respond` — not a second
-   `review`, which would re-run the reviewers over comments a human has already made.
+6. Push and open a PR. Its body, briefly and in the glossary's words:
 
-Invoke the `superpowers:verification-before-completion` skill before ticking anything or
-reporting that a step passed.
+   - **Summary** — the ticket link, then the smallest view that shows the change: a call
+     tree, a diff-shaped sketch of the package layout or the flow, or a few lines of
+     pseudocode. Not a file list; the diff already is one.
+   - **Criteria** — each acceptance criterion, ticked or not, with what demonstrated it:
+     the test that now passes, the command output, a screenshot for a frontend change.
+   - **Merge danger** — a one-way or two-way door (a migration, a removed endpoint or a
+     published contract is one-way), and the blast radius in a word or two. The reviewer
+     spends their care where this says to.
+   - **Open** — from step 5, if anything forked.
+
+   Feedback arriving on that PR is `respond` — not a second `review`, which would re-run
+   the reviewers over comments a human has already made.
+
+Before ticking anything or reporting that a step passed, run the command that proves it
+in this session and read its output — the exit code, the failure count, `Skipped:`.
+"Should pass", a run from before the last edit, or an agent saying it passed is not that.
 
 Tick an acceptance criterion only once something demonstrates it. An unticked box is
 information; a ticked one that nothing verifies is a lie the next reader will act on.

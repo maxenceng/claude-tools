@@ -127,11 +127,18 @@ until it is needed.
 **Do not duplicate an installed plugin.** Check what `code-review`, `pr-review-toolkit`
 and `superpowers` already provide before adding something here.
 
-**Depending on one is fine; depending silently is not.** `/ticket` invokes
-`superpowers:brainstorming`, `superpowers:receiving-code-review` and
-`superpowers:verification-before-completion`, and sends its general code review to
-`code-review` or `pr-review-toolkit`. That is the rule above working as intended — but
-those steps do nothing if the plugin is absent, and nothing reports it at runtime. Qualify
+**Depending on one is fine; depending silently is not.** `/ticket` sends its general
+code review to `code-review` or `pr-review-toolkit` — the rule above working as intended —
+but a step that names an absent plugin does nothing, and nothing reports it at runtime.
+The reverse also holds: where a step already says most of what an outside skill would,
+write the few missing lines into the step instead of loading the skill. `/ticket` used to
+invoke four `superpowers` skills; each mostly repeated its step, sometimes contradicted it
+("fix and test one item at a time" against "verify once, commit once"), and loaded its
+whole body into every run to contribute a handful of rules. The handful that were worth
+having are adapted into the steps, along with a few from
+[mattpocock/skills](https://github.com/mattpocock/skills) (MIT): `refine`'s question
+rounds from `grilling`, `start`'s one-test-at-a-time loop and the tautological-assertion
+rule from `tdd`, and the PR body's *Merge danger* from `pr`. Qualify
 an outside reference with its plugin: `verify-plugin.sh` accepts a `plugin:` prefix as a
 declared dependency and lists it, and rejects a bare name this plugin does not define,
 because unqualified there is no way to tell deliberate reuse from a typo.

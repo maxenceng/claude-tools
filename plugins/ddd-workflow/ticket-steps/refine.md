@@ -18,15 +18,29 @@ id is in the filename and the branch name after this.
 aggregate, a new aggregate, or a new context. If it is a new context, stop and raise it;
 that is larger than a ticket.
 
-Invoke the `superpowers:brainstorming` skill unless the captured line already answers both
-questions above. A ticket written from an ambiguous sentence looks precise and misleads
-everyone who reads it afterwards.
+Question the human unless the captured line already answers both questions above. A
+ticket written from an ambiguous sentence looks precise and misleads everyone who reads it
+afterwards.
 
-Use it for the questioning only. Brainstorming's own checklist ends by writing a spec to
-`docs/superpowers/specs/` and going on to `writing-plans`; here it stops once the two
-questions are answered and the ticket is filled in. The ticket is this project's design
-record, and a spec beside it is a second description of the same decision that nothing
-keeps in step.
+Ask in rounds. A round is every question you can ask now without guessing at an answer
+not yet given — numbered, each with the options and your recommendation. List the
+whole option space, including the conventional middle a competent engineer would reach
+for first; where you exclude one, say why in a line rather than leave it off. A question that
+depends on another one still open belongs to the next round, not this one: answered
+together, the first answer would have changed the second question. Wait for the answers,
+then ask whatever they unblocked.
+
+Facts are yours to find, not the human's to supply. Look them up in the glossary and the
+ADRs, or dispatch `codebase-explorer` for the code — and do not hold the round for it:
+ask the questions that do not depend on what it will find while it runs.
+
+Stop when nothing the sections below need is still assumed rather than answered. Play
+back the context, the model decision and the criteria in a few lines and get a yes
+before writing them; a ticket the human has not seen summarised is one they will
+discover they disagree with at `review`.
+
+The ticket is this project's design record. Write no spec or plan beside it — a second
+description of the same decision is one that nothing keeps in step.
 
 Dispatch `codebase-explorer` first when the work touches code not already read this
 session. Its written summary is what keeps forty files out of this conversation.

@@ -14,11 +14,18 @@ unanalysed marker, for the same reason. Tickets refined before 2.0.0 have no suc
 Then:
 
 1. Set `status: in-progress`.
-2. Create a branch named `<id>-<slug>`, matching the filename. Use a worktree if the
-   current one has uncommitted work worth keeping.
+2. Create a branch named `<id>-<slug>`, matching the filename, off current main. Use a
+   worktree if the current one has uncommitted work worth keeping. If a branch of that
+   name already exists, diff it against main before reusing it: an abandoned attempt
+   that forked long ago will bring deleted files back. Rename it aside
+   (`<id>-stale-<date>`), say so in one line, and branch fresh.
 3. Dispatch the agent for what the ticket touches, from the Delegation table below, and
-   tell it to invoke the `superpowers:test-driven-development` skill and work domain
-   outwards, running `make test` as it goes — the architecture rules fail on a misplaced
+   tell it to work test-first and domain outwards: write one failing test, run it and see
+   it fail for the reason the test names — a test that passes on first run proves
+   nothing — then the least code that turns it green, then the next test. One test at a
+   time, not the suite up front: tests written before any code pin the shape you
+   imagined rather than the behaviour that emerged. It runs
+   `make test` as it goes — the architecture rules fail on a misplaced
    class immediately, which is cheaper than finding it in review. `backend-ddd` loads the
    `ddd-backend` skill itself for the shape each test takes; invoke either skill directly
    only when the work is small enough to stay inline.

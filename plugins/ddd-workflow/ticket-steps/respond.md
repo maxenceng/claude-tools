@@ -4,19 +4,45 @@ Feedback has arrived on the PR and the branch has to answer it. The ticket stays
 `in-review` throughout — this step changes code, not status, and it repeats as often as
 the conversation does.
 
-1. Collect all of it before changing anything. Comments arrive at three different
-   endpoints, and reading one of them silently drops the rest:
+1. Collect all of it before changing anything, in one call. Feedback lives in three
+   places — inline threads, top-level comments, review summaries — and reading one of
+   them silently drops the rest. Fetch them through GraphQL rather than the three REST
+   endpoints: REST returns every comment wrapped in its diff hunk, a full user object and
+   a dozen URLs, which is most of what this step used to cost, and it cannot tell a
+   resolved thread from a live one — `isResolved` exists in GraphQL alone.
 
-   ```
-   gh api repos/{owner}/{repo}/pulls/<n>/comments    # inline, anchored to a line
-   gh api repos/{owner}/{repo}/issues/<n>/comments   # top-level, on the PR
-   gh api repos/{owner}/{repo}/pulls/<n>/reviews     # review summaries
+   ```bash
+   gh api graphql -F owner='{owner}' -F repo='{repo}' -F n=<n> -f query='
+   query($owner: String!, $repo: String!, $n: Int!) {
+     repository(owner: $owner, name: $repo) {
+       pullRequest(number: $n) {
+         body
+         reviewThreads(first: 100) { nodes { isResolved path line
+           comments(first: 20) { nodes { databaseId author { login } body diffHunk } } } }
+         comments(first: 100) { nodes { author { login } body } }
+         reviews(first: 50) { nodes { author { login } state body } }
+         commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+       }
+     }
+   }' --jq '.data.repository.pullRequest | {
+     ci: .commits.nodes[0].commit.statusCheckRollup.state,
+     threads: [.reviewThreads.nodes[] | select(.isResolved | not) | {
+       path, line,
+       anchor: (.comments.nodes[0].diffHunk | split("\n") | last),
+       comments: [.comments.nodes[] | del(.diffHunk)] }],
+     comments: .comments.nodes,
+     reviews: [.reviews.nodes[] | select(.body != "")],
+     body
+   }'
    ```
 
-   Answer unresolved threads only. REST hands back a thread someone already resolved
-   looking exactly like a live one; `isResolved` exists in GraphQL alone, on
-   `pullRequest.reviewThreads`. A red CI run belongs on the list too — the pipeline is a
-   reviewer that always comments.
+   Answer unresolved threads only; the filter already drops the rest. A thread's
+   `databaseId` is the REST id step 8 replies to. `anchor` is the line the comment sits
+   on, keeping only that line of the hunk: a leading `+` or `-` means it changed, a space
+   means it is context. A `null` line means the thread is outdated. A red `ci` belongs on the list too — the
+   pipeline is a reviewer that always comments. Read it with `gh run view <run-id>
+   --log-failed`, not the full log: the failing step is the comment, the rest is noise
+   priced per line.
 
 2. Then read the PR body for an `Open` section: the decisions `review` could not make.
    That is the other half of the round — not feedback waiting on the branch, but the
@@ -36,7 +62,7 @@ the conversation does.
    When the answer comes back in the session rather than on the PR, put it on the PR as
    well. A decision that lives only in a transcript is one the next reader re-asks.
 
-   Only when all three endpoints are empty and nothing is open is the round genuinely
+   Only when threads, comments and reviews are all empty, CI is green and nothing is open is the round genuinely
    empty. Say so and stop; inventing something to change is worse than reporting it.
 
 3. Where an agent applied the comments, check its report against the tree before trusting
@@ -44,10 +70,29 @@ the conversation does.
    agent reports what it remembers doing, and an interrupted-and-resumed one drops whole
    items silently.
 
-   Invoke the `superpowers:receiving-code-review` skill and follow it. Check each item against this
-   codebase before implementing it, and push back with reasoning where a comment is wrong
-   here. A reviewer is often right that something is wrong and wrong about what to do —
-   an item worth acting on can still need a different fix than the one suggested.
+   Check each item against this codebase before implementing it, and push back with
+   reasoning where a comment is wrong here. A reviewer is often right that something is
+   wrong and wrong about what to do — an item worth acting on can still need a different
+   fix than the one suggested. In particular:
+
+   - A terse comment anchored on a context line is not satisfied by the diff around it.
+     The reviewer is pointing at a line that should have changed and did not; work out
+     what change would touch it before deciding the comment is already answered.
+   - A comment names one instance, not the only one. Grep the whole PR for the same
+     shape and fix every occurrence. Occurrences outside the PR go to the human as a
+     follow-up ticket to accept or decline, not into this branch.
+   - Where the suggested mechanism would break but the direction is sound, say what
+     breaks and build what the reviewer was after another way.
+
+   - A request to "do it properly" — add metrics, a filter, a config option — starts with
+     a grep for callers. Nothing calls it: say so and propose removing it instead.
+   - A comment that contradicts a decision the human already made, in the ticket's
+     *Model decision* or an ADR, is put to the human, not implemented.
+   - Disagreement goes to the human in this session, in step 4's batch, before any code
+     changes or any reply is posted. A rebuttal posted on the thread that the human then
+     overrules costs a second round, and the comment may have been a deliberate test.
+   - An item you cannot verify from here gets said as much — what you would need to
+     check it — rather than applied on trust.
 
 4. If any item is unclear, ask about every unclear item before implementing any of them.
    They relate to each other, and a half-understood set implemented in order produces a
@@ -55,8 +100,11 @@ the conversation does.
 
    On a frontend ticket, map design comments to moves first; see *Design feedback* below.
 
-5. Run `make verify`, then commit the whole answer as one change and push it to the same
-   branch. Subject line and at most a sentence; the threads carry the reasoning. Do not
+5. Apply every item, then run `make verify` once — not after each fix. The items were
+   checked against the code in step 3; a full pipeline run per comment buys the same
+   evidence several times over. Run the one test an item touches while working it if
+   you need the signal. Then commit the whole answer as one change and push it to the
+   same branch. Subject line and at most a sentence; the threads carry the reasoning. Do not
    close and reopen the PR — the threads are the record of the exchange and do not
    survive it.
 
@@ -78,10 +126,17 @@ the conversation does.
    quietly re-earning it. Say which ones and what would re-earn them.
 
 8. Reply in each comment's own thread rather than as a new top-level comment:
-   `gh api repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies`. One or two sentences:
+   `gh api repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies -f body=...`, where
+   `<id>` is the `databaseId` of the thread's first comment — GitHub refuses a reply to a
+   reply. One or two sentences:
    what changed, or why nothing did. A silent fix leaves the reviewer diffing the branch
    to work out whether they were heard, and a disagreement that is never written down
    gets raised again by the next reader.
+
+   State the change, not gratitude or agreement — "Fixed: the guard now runs before the
+   save", not "Great catch, thanks!". The diff is the acknowledgement. Where you pushed
+   back and the reviewer turns out right, say so in a sentence and fix it, without
+   defending the first answer.
 
    Match the reviewer's register. Someone who writes "remove this, I know how Docker
    works" is telling you the explanation was the problem; a paragraph defending the fix
