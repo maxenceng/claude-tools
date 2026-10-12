@@ -221,3 +221,15 @@ per-request URL — a thumbnail at a URL the previous response just handed back,
 that one call rather than forcing it into a client interface it doesn't fit; it doesn't need
 the vendor-wide credential or failure handling either, since it isn't hitting the vendor's
 authenticated endpoint.
+
+## Look for the library before writing the protocol
+
+A hand-written AES-GCM cipher, a custom Feign transport and a hand-built OAuth token
+request were all replaced by Spring Security (`AesBytesEncryptor`, the
+spring-security-oauth2-client token clients, `ClientRegistration`). Every hand-rolled
+piece is code a reviewer must read and trust where a maintained library already did the
+job. Before writing a protocol or crypto, check Spring Security, Spring, Boot and
+well-known OSS, and say what was found at refine. A class written to get around a
+library's limitation is a sign to switch library, not to write more code. Read the chosen
+library's source for the edge cases you rely on: Spring's OAuth error handler only reads a
+400's body, so a vendor answering 401 `invalid_grant` still needs a small handler.

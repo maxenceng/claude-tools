@@ -144,6 +144,29 @@ case's rules cheapest-first — check what costs nothing before what costs a que
 
 **Use case input** with more than one part gets a record of its own.
 
+**Methods take domain types.** A manager, application service, aggregate or value-object
+method takes no `Instant`, `String`, `Duration` or other JDK value: wrap it in a value
+object named for the concept. `boolean`, `List` and `Set` pass as they are. The application
+service reads the clock and passes it down.
+
+**A field only one kind has gets that kind's own types.** When one subtype of a sealed
+hierarchy gains an attribute, its request, change type and route are its own. Never use a
+shared input type that refuses the field at run time for the other kinds.
+
+**Behaviour that varies by kind** is an abstract method on the sealed base. First
+instances come from a `*Factory` switching over the sealed input. Not overloads funnelling
+into a generic helper that takes a `Class<E>` and lambdas.
+
+**Name the concept, not the first implementation.** A store's score is
+`StoreReviewsPort`, parameterised by the store, even while only one store exists.
+
+**A context holds what its name is about.** A cluster of types that reaches the context's
+aggregate through one call — an import run, its workflow, its vendor client — is a context
+of its own. Propose the split at refine, not at review.
+
+**A design that only works if the operator avoids an ordinary configuration is a model
+bug.** Fix the model; do not document the configuration to avoid.
+
 **Ports** are interfaces in `domain`, named for what the domain needs. Only a domain
 service holds a port — an adapter that holds one, or depends on another adapter, is a
 second place deciding what the use case means.
@@ -157,7 +180,8 @@ Read `references/modelling.md` before modelling an aggregate, value object, doma
 service, or use-case input — it has the reasoning behind each rule and the trade-offs
 this summary drops (the builder exceptions in full, the sealed-type threshold, what a
 `Manager` drifting toward carried data means, the `ArchitectureTest`/`AssertTest` rules
-that pin these).
+that pin these, and the worked examples for domain-type parameters, per-kind types and
+the factory shape).
 
 **Exceptions** extend `DomainException`, are named after the rule (`CourseFullException`),
 and pass a `DomainErrorStatus` to `super`. See *Errors* below.
@@ -224,6 +248,15 @@ types, never annotated `@Entity` directly. A context's persistence is three type
 Name a driven adapter for the port it satisfies, not its technology: `NotifierPort` is
 implemented by `NotifierRepository`, not `SmtpNotifier`.
 
+Writes go through JPA `create`/`update` port methods, never `nativeQuery`. The database
+mints ids, and a type identified by a natural pair (a user and a course) has no id at
+all.
+
+A check that another context's id exists happens in the adapter that writes the row,
+through that context's `query` bean. It is not in the manager, which has no business
+need for it. Where an input came from (an API write, an import) is set by the `toDomain`
+that builds it, never hardcoded in the domain.
+
 Read `references/adapters.md` before writing a primary or secondary adapter — it covers
 entity field access rules, `saveAndFlush` vs `save`, translating the specific constraint
 exception rather than its parent, database-generated ids, and never editing a Liquibase
@@ -232,11 +265,15 @@ changeset that has run.
 **An outbound client to a vendor's API is a secondary adapter too**, just not persistence's
 shape. Read `references/outbound-clients.md` before writing one — it covers the package
 placement, the declarative client shape, and the factories every vendor client reuses so the
-second one is smaller than the first.
+second one is smaller than the first. Before writing a protocol (OAuth, JWT, crypto) or a
+transport workaround, look for it in Spring Security, Spring, or a maintained library; a
+class written to get around a library is a sign to change library.
 
 Where the trigger is a schedule rather than a request — a nightly re-sync, a batch lookup —
 the driving side is a Temporal workflow, not a controller. Read
-`references/workflows.md` before writing one.
+`references/workflows.md` before writing one. A type that crosses a workflow or activity
+boundary has no `is`/`get`-prefixed derived method: Temporal serialises through Jackson,
+which writes it as a field and then refuses to read it back.
 
 ## Errors
 
@@ -287,6 +324,10 @@ The `@ApiResponse` annotations on a controller are the API contract: the fronten
 client is generated from them, so a wrong code there becomes a wrong type in the
 frontend. Every failure code a route can produce comes from the global handler — read
 it before writing them, and do not document a code no handler emits.
+
+A response every route shares (the global 400/401/404, `@SecurityRequirement`) goes on the
+controller class once; springdoc applies it to every operation. Each route keeps its
+`@Operation` and its success schema.
 
 Mark each response record component `@Schema(requiredMode = RequiredMode.REQUIRED)`, or
 the generated client types every field optional.
@@ -339,6 +380,25 @@ Read `references/tests.md` before writing one — it covers placement and naming
 `src/test` carries no comments, fixture conventions, assertion style, what each layer's
 test looks like (including why a bean's `@Value` config is a field, so that `@InjectMocks` can
 always build the subject), and what earns a test at all.
+
+- A test calls an action, and the expected value is a named fixture:
+  `assertThat(course().enroll(student())).usingRecursiveComparison().isEqualTo(enrolledCourse())`.
+  A test with no action reads back what it constructed and proves nothing.
+- An exception test asserts the type. Assert the message only where it is what tells two
+  cases apart, such as which field was missing.
+
+## Java idioms
+
+- `instanceof` with a pattern and a typed domain exception, never a cast justified by a
+  comment.
+- A stream, not an accumulator filled in a loop: `toMap` with a merge function,
+  `IntStream.iterate` for batches, `reduce` for a fold. Never reassign a local in a loop.
+- A text block for a multi-line string and `formatted` for interpolation. Never `+`.
+- `_` for a pattern binding the arm does not use, on every arm of the switch.
+- A new compiler or CI warning on a touched line is a defect of the change.
+
+Read `references/idioms.md` for the shapes and the traps (`toMap` without a merge function,
+`javap` hiding `@Deprecated`).
 
 ## Comments
 

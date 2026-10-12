@@ -31,3 +31,11 @@ raw nulls inline is doing the manager's job with none of its guarantees.
 See `references/outbound-clients.md` for what an activity that calls a vendor should raise on
 failure — usually not a `DomainException`, since nothing about a transport failure is a
 business rule broken, and Temporal's own retry is what's deciding whether to try again.
+
+Temporal's default data converter is Jackson, and domain records carry no `@JsonIgnore`.
+A derived method named like a bean getter — `Playtime.isZero()` — is written as a `zero`
+field into the history, and reading it back fails with `UnrecognizedPropertyException`.
+The workflow task fails on every retry, and the only visible symptom can be a query timing
+out somewhere else. Name derived methods on any type that crosses the boundary without the
+prefix (`played()`). When a Temporal test times out on a query, check the worker log for a
+`DataConverterException` before suspecting timing.
