@@ -72,3 +72,20 @@ Never edit a changeset that has run. Liquibase identifies it by checksum, so an 
 edit fails validation at boot on every database that already applied it — including a
 developer's, whose data survives `db-down`. Add a new changeset; `addDefaultValue` and
 friends exist for exactly this.
+
+## Writes, ids and references across contexts
+
+Write through Hibernate with a `create`/`update` port pair. An `INSERT ... ON CONFLICT` in
+a `@Query(nativeQuery = true)` bypasses the entity mapping and the constraint translation
+above. Where it was reached for to make a concurrent first write safe, the race was
+accepted in an ADR instead of adding a retry nobody had seen needed.
+
+Never define an id in Java, including a placeholder the aggregate "requires". A domain
+type identified by a natural pair, such as a user's rating of a course, needs no id at all;
+drop it from the domain type.
+
+A check that another context's id exists is the stand-in for a foreign key the module
+boundary will not allow, so it lives where the row is written. The writing `*Repository`
+calls the other context's `query` bean and throws the domain's not-found exception. A
+manager doing `kinds.kindOf(id).orElseThrow(...)` has no business need for the check, and
+it gains a port that exists only to answer it.

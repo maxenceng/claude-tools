@@ -161,3 +161,54 @@ duplication is the price, not a reason to nest — or, where the decision is lar
 duplicating it would itself be the bug, wire both managers into the `*ApplicationService`
 instead and have it call one, then the other, passing the first's result to the second. The
 call is per case, not a blanket preference for either shape.
+
+## Methods take domain types
+
+`credentialFor(ConnectionId, Instant)` says "some instant" where the model means a named
+concept, and the next caller passes the wrong one. Wrap it: `credentialFor(ConnectionId,
+CredentialReadTime)`. The value object's own constructor is the one place the raw
+`Instant` goes in. The application service calls `CredentialReadTime.now()` and passes it
+down, which also lets a boundary test hand in an exact time instead of racing the clock.
+`boolean`, `List` and `Set` are exempt; wrapping them names nothing.
+
+## Per-kind types, abstract methods and factories
+
+Content is sealed so that a field only video games have never sits nullable on the shared
+type. A shared input reopens that one layer out: put `playtime` on one `LibraryEntryChange`
+behind one route, refuse it at run time for movies, and the next per-kind field joins it.
+Give each kind its own request, change record and route instead, mirroring the sealed
+entry.
+
+The operation the kinds share is abstract on the base. Each subtype pattern-matches the
+change it accepts, and the manager reads `find(id).map(stored -> stored.merge(change))`.
+First instances come from a `LibraryEntryFactory.create(userId, contentId, change)` that
+switches over the sealed change and calls each subtype's builder directly. Do not write a
+helper like `firstWrite(a, b, c)`: it breaks the day the type has fifteen attributes. The
+rejected shape is three `write` overloads funnelling into a private generic helper taking
+a `Class<E>`, a `UnaryOperator<E>` and a `Supplier<E>`. It exists to avoid one
+`instanceof` and costs more to read than it saves.
+
+## Name the concept
+
+With one store implemented, `StoreReviewsPort` and `withStoreScore` were questioned as
+names that pretend to a generality nobody built. The two fixes were renaming them after
+the vendor, or keeping the generic names and passing the store they apply to. The second
+won: a small parameter now keeps the domain name honest about its concept. The vendor's
+name belongs on the adapter.
+
+## A context holds only its core
+
+An import of a user's library from a vendor added a run, its summary, a workflow, a vendor
+client and a list of unmatched items to `library`. Only one call touched a library entry.
+Everything else moved to its own context, which writes back through
+`library.infrastructure.command`. When a feature brings a cluster of types and one call
+into the host aggregate, that is the signal.
+
+## Configuration is not a model
+
+Listings were replaced per currency. Two countries sharing a currency then overwrote each
+other, and the config comment and two ADRs said "keep one country per currency". Several
+countries per currency is the ordinary case, so the model was wrong, not the
+configuration. The fix: the first configured country wins per store, and the currency is
+replaced once from all its countries. A comment telling the operator what not to configure
+is a bug report written in the wrong place.

@@ -119,7 +119,7 @@ assertThat(courses.findById(courseId()))
         .usingRecursiveComparison()
         .isEqualTo(course());
 
-// Failure — isExactlyInstanceOf, and assert the message names the field
+// Failure — isExactlyInstanceOf; the message only where it tells cases apart
 assertThatThrownBy(() -> courseBuilder().seats(null).build())
         .isExactlyInstanceOf(MissingMandatoryValueException.class)
         .hasMessageContaining("seats");
@@ -136,6 +136,12 @@ it and can never fail.
 `isExactlyInstanceOf`, not `isInstanceOf`: the loose form passes when a subclass or a
 wrapper slips through, which is exactly the regression worth catching. Use
 `.ignoringFields("id")` when the subject generates a value the test cannot predict.
+
+The exception type is the contract; assert it alone by default. The `"seats"` check above
+earns its place because every missing field throws the same `MissingMandatoryValueException`,
+so the field name is the only thing telling the cases apart. A message check that echoes an
+input back (`hasMessageContaining(courseId().value().toString())`) pins formatting, not
+behaviour.
 
 ## What each layer gets
 
@@ -210,6 +216,20 @@ of `spring-boot-starter-test` into `spring-boot-webmvc-test`; if `@WebMvcTest` w
 resolve, that dependency is missing rather than the annotation being gone.
 
 ## What earns a test
+
+A test calls an action. The shape is a fixture, an action on it, and another named fixture
+as the expected value:
+
+```java
+assertThat(course().enroll(student()))
+        .usingRecursiveComparison()
+        .isEqualTo(enrolledCourse());
+```
+
+The expected value is always a named fixture. It is never a builder chain restating the
+answer, and never the method under test. A test that builds a record and asserts one of
+its fields equals the fixture it was built from has no action: it proves the record's
+accessor works, which the language already guarantees. Delete it rather than dress it up.
 
 Test the boundary, not the middle. A capacity rule covered at 0-of-10 and 10-of-10 passes
 with an off-by-one still in it — 9-of-10 is the case that catches it. Whenever a rule has
