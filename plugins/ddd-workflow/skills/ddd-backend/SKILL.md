@@ -395,6 +395,8 @@ always build the subject), and what earns a test at all.
   `IntStream.iterate` for batches, `reduce` for a fold. Never reassign a local in a loop.
 - A text block for a multi-line string and `formatted` for interpolation. Never `+`.
 - `_` for a pattern binding the arm does not use, on every arm of the switch.
+- A value that depends on a sealed type's kind is a `return switch` expression whose arms
+  yield it. Never a statement `switch` that fills or reassigns a local and returns it after.
 - A new compiler or CI warning on a touched line is a defect of the change.
 
 Read `references/idioms.md` for the shapes and the traps (`toMap` without a merge function,
