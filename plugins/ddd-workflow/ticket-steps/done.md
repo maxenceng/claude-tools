@@ -50,6 +50,15 @@
    plugin and is overwritten by the next update or reinstall, which is exactly how a shared
    skill silently falls behind the projects it is meant to guide.
 
+   A case that came up only once still gets asked about. It is not dropped because it fell
+   short of step 4's threshold. List each one: a review correction made once, a convention
+   found once, an approach rejected once. Ask the user about each case as its own question,
+   with the comment or commit it came from. Offer three answers: carry it into a named
+   shared skill, keep it in this project, or drop it. Do not batch the cases into one
+   yes/no, and do not pre-filter the ones that look too small. Deciding whether a one-off
+   generalises is the user's call. A correction the next project will hit again looks just
+   like a one-off the first time.
+
 ## Vikunja
 
 Once `status: done` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
