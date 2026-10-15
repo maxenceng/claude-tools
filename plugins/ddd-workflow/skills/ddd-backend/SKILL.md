@@ -136,6 +136,12 @@ the manager.
 behind an `Optional<T>` accessor. Once more than one field varies together, split into a
 `sealed interface` instead.
 
+**A sealed type has at least one variant carrying data.** A set of empty records is just a
+flag, and an enum that restates an existing one adds a translation switch with nothing
+behind it. If the value collapses from a type you already have (a CI result is the worst
+check's outcome), derive it from that type and return `Optional` when there is nothing.
+Add a new tag-only type only for a distinction no existing type makes.
+
 **Identities** are records wrapping a `UUID`, one per aggregate.
 
 **Domain services** (`<Aggregate>Manager`) are records taking the ports they need, for a
