@@ -96,6 +96,13 @@ A context exposes three kinds of package, each `@NamedInterface`, and nothing el
 | `infrastructure.query` | a plain bean that answers | reading what the other context holds |
 | `infrastructure.command` | a plain bean that writes, and what it is asked with | changing what the other context holds |
 
+A type moves into `published` with its first reader in another context, never ahead of
+it: one published for a later ticket stays in the domain until that ticket reads it.
+`ArchitectureTest` can pin this — a published type is read when an outside class depends
+on it or calls a method returning it, and its sealed variants, nested builder and the
+exceptions it throws count as read with it. A type on an accessor nobody outside calls
+still fails.
+
 A bean that writes goes in `command`, never in `query`: a `query` package that changes
 state makes its name a lie. The command's argument is a `*Payload` — not `*Request`, which
 is kept for what HTTP sends, and not `*Command`, which names the bean. Each payload has a
@@ -190,7 +197,9 @@ that pin these, and the worked examples for domain-type parameters, per-kind typ
 the factory shape).
 
 **Exceptions** extend `DomainException`, are named after the rule (`CourseFullException`),
-and pass a `DomainErrorStatus` to `super`. See *Errors* below.
+and pass a `DomainErrorStatus` to `super`. See *Errors* below. Its javadoc says what the failure leaves the
+caller with when that differs by caller — nothing on a first load, the previous result kept
+on a refresh, one item marked failed rather than the whole read.
 
 ## Application layer
 
