@@ -39,6 +39,49 @@ listings.stream().reduce(stored, VideoGame::withListing, (first, second) -> seco
 Pass the merge function to `toMap`. Without it, a duplicate key throws where the `put`
 it replaced silently kept the last value, so the rewrite changes behaviour.
 
+The point is to avoid mutation, not the `for` keyword. A `forEach` that `add`s, a
+collection handed to a helper that fills it, and `new ArrayList<>()` followed by
+conditional `add`s are the same accumulator. A list made of parts, some of them
+conditional, is a stream of streams:
+
+```java
+// no — the out-parameters are filled by both helpers
+Set<Path> present = new HashSet<>();
+Set<Path> unlisted = new HashSet<>();
+listTranscripts(present, unlisted);
+
+// yes — the helper returns a value, and the values combine
+TranscriptListing listing = folders.map(this::listFolder).reduce(TranscriptListing.none(), TranscriptListing::and);
+
+// yes — parts, one of them only when a condition holds
+return Stream.of(
+                Stream.of(heading),
+                facts.stream(),
+                shown ? Stream.of(footer) : Stream.<Row>empty())
+        .flatMap(Function.identity())
+        .toList();
+```
+
+State that changes over time — a set of folded rows, the changes a loop has seen but not
+yet handled — is an immutable value replaced as a whole (`folded = toggled(folded, key)`),
+not a collection changed in place. Where the project has PMD, make it fail the build. An
+XPath rule over `ConstructorCall` of the mutable collection types inside a
+`MethodDeclaration`, a `forEach` whose lambda or method reference calls `add`/`put`/`remove`,
+and those calls on a `FormalParameter`, catches all three shapes.
+
+## A loop that ends
+
+A worker thread's loop is `while (!Thread.currentThread().isInterrupted())`, never
+`while (true)` left only through an exception. The IDE warns on the second, and the first
+says how the thread stops: whoever closes the adapter interrupts it.
+
+## No copy of a field without a reason
+
+`Optional<WatchService> open = service;` before reading `service` twice draws "why create
+a variable here?". A local copy of a field is justified only when the field can change
+between the reads in a way that matters. Say which way in the code, or read the field
+directly.
+
 ## Strings
 
 A text block for anything spanning lines — OpenAPI descriptions (a trailing `\` keeps one

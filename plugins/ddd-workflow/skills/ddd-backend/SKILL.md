@@ -408,6 +408,10 @@ always build the subject), and what earns a test at all.
   comment.
 - A stream, not an accumulator filled in a loop: `toMap` with a merge function,
   `IntStream.iterate` for batches, `reduce` for a fold. Never reassign a local in a loop.
+  The aim is no mutation: no `forEach` that adds, no collection handed to a helper to
+  fill, and changing state is an immutable value replaced whole.
+- A worker loop is `while (!Thread.currentThread().isInterrupted())`, never `while (true)`.
+- No local copy of a field unless the field can change between reads in a way that matters.
 - A text block for a multi-line string and `formatted` for interpolation. Never `+`.
 - `_` for a pattern binding the arm does not use, on every arm of the switch.
 - A value that depends on a sealed type's kind is a `return switch` expression whose arms
