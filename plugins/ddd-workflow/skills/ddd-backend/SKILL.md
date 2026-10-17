@@ -125,7 +125,8 @@ value-object validity in the compact constructor; a rule about a *transition* be
 the method that performs the transition.
 
 **Value objects** are records wrapping **one** attribute, validated in the compact
-constructor so an invalid instance cannot exist.
+constructor so an invalid instance cannot exist. A type's name carries what it is a
+value of: `EnvironmentVariableValue`, not `VariableValue`; `KittyConfigKey`, not `ConfigKey`.
 
 **Every domain type with more than a couple of fields gets a builder** — hand-written,
 never Lombok's `@Builder`, in the shape `Price` and `CastMember` use. Two exceptions: a
