@@ -196,6 +196,15 @@ the vendor, or keeping the generic names and passing the store they apply to. Th
 won: a small parameter now keeps the domain name honest about its concept. The vendor's
 name belongs on the adapter.
 
+A bare `Value`, `Key`, `Entry` or `Config` names a shape, not a concept. In a context that
+reads both a process's environment and a terminal's config file, `VariableValue` and
+`ConfigKey` could each belong to either. Review renamed them `EnvironmentVariableValue` and
+`KittyConfigKey`, and renamed every sibling of the same shape in that change with them
+(`KittyConfigLine`, `KittyConfigSetting`, `TranscriptEntryText`). A name that is already
+specific, such as `ToolName`, stays as it is. The prefix is what the value belongs to,
+not the context's own name. The test is whether the name still reads unambiguously once
+the project gains its own configuration.
+
 ## A context holds only its core
 
 An import of a user's library from a vendor added a run, its summary, a workflow, a vendor
