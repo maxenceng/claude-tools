@@ -31,6 +31,15 @@ When a term is vague or overloaded, propose the precise one. "You're saying 'acc
 do you mean the Customer or the User? Those are different things, and the glossary
 should say which."
 
+### Leave the coming concepts their words
+
+Before a new name settles, read the open tickets in `docs/backlog/` for the concept that
+will need the same word. A `PullRequestReviewManager` that only reads a diff takes the
+word *review* from the GitHub review that a later ticket submits. That ticket then has to
+pick a second-best name or rename this one. Name what the code does now
+(`PullRequestDiffManager`). When the screen and the coming concept share an everyday word,
+give the screen a glossary row that says which one the code means.
+
 ### Discuss concrete scenarios
 
 When a domain relationship is on the table, stress-test it with a specific edge case.
