@@ -142,7 +142,8 @@ the manager.
 
 **A value that is sometimes absent**: one field not always supplied stays nullable
 behind an `Optional<T>` accessor. Once more than one field varies together, split into a
-`sealed interface` instead.
+`sealed interface` instead. Two `Optional`s that must agree, one present only when the
+other is absent, are one sealed type too, in an adapter as much as in the domain.
 
 **A sealed type has at least one variant carrying data.** A set of empty records is just a
 flag, and an enum that restates an existing one adds a translation switch with nothing
@@ -421,9 +422,13 @@ always build the subject), and what earns a test at all.
 - A value that depends on a sealed type's kind is a `return switch` expression whose arms
   yield it. Never a statement `switch` that fills or reassigns a local and returns it after.
 - A new compiler or CI warning on a touched line is a defect of the change.
+- The compiler fails the build on a warning (`-Xlint:all,-serial -Werror`, main and test).
+- An `Optional` is unwrapped where it is checked: `map` it into the method that uses the
+  value. No `get()` and no no-argument `orElseThrow()`, which ArchUnit can fail on.
+- No `var`, record patterns and tests included. PMD sees only local declarations.
 
 Read `references/idioms.md` for the shapes and the traps (`toMap` without a merge function,
-`javap` hiding `@Deprecated`).
+`javap` hiding `@Deprecated`, what PMD's `var` rule misses).
 
 ## Comments
 
