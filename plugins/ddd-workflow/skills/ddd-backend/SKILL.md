@@ -414,6 +414,9 @@ always build the subject), and what earns a test at all.
 - A worker loop is `while (!Thread.currentThread().isInterrupted())`, never `while (true)`.
 - No local copy of a field unless the field can change between reads in a way that matters.
 - A text block for a multi-line string and `formatted` for interpolation. Never `+`.
+- A string literal is a named `static final` constant, except in an annotation, an enum
+  constant, an exception message, an `Assert` field or a `formatted` template. A count is
+  never compared to `0`. Ask a named question (`isEmpty`, `hasLines`).
 - `_` for a pattern binding the arm does not use, on every arm of the switch.
 - A value that depends on a sealed type's kind is a `return switch` expression whose arms
   yield it. Never a statement `switch` that fills or reassigns a local and returns it after.
