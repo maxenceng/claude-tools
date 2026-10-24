@@ -89,6 +89,38 @@ logical line), SQL in tests. `"…".formatted(…)` for interpolation, including
 prefix in an exception message. Never `+` between string pieces. Before pushing, grep the
 diff for `" + `.
 
+## A string is named, and a count is not compared to zero
+
+A string literal in a method body is a constant waiting for a name: a flag, a key, a state
+another system writes. Name it as a `static final` field, once. A literal stays inline
+only where it is already a name or a message: an annotation, an enum constant's
+arguments, an exception's message, an `Assert` call's field name, and the template that
+`.formatted` is called on.
+
+```java
+// no — "PENDING" is GitHub's word, retyped wherever a state is checked
+return "PENDING".equals(state);
+
+// yes
+private static final String PENDING = "PENDING";
+return PENDING.equals(state);
+```
+
+A method's answer compared to `0` is a question without a name. Ask it by name instead:
+`isEmpty()`, or a method the type gains (`rows.hasLines()`, `area.hasNoRoom()`).
+
+```java
+// no
+if (rows.size() > 0) { … }
+
+// yes
+if (rows.hasLines()) { … }
+```
+
+Where the project has PMD, make both fail the build. One XPath rule matches a
+`StringLiteral` that has none of the exempt ancestors. Another matches an
+`InfixExpression` comparing a `MethodCall` to the `NumericLiteral` 0.
+
 ## `return switch`, not a statement switch
 
 When the result depends on which kind a sealed value is, each arm yields its result.
