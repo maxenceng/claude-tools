@@ -155,3 +155,28 @@ Before pushing, grep the build output for `WARNING].*\.java` and `deprecated` on
 branch changed. Choose a replacement for a deprecated API by compiling with it and reading
 the warnings, or its source or javadoc. `javap` signatures do not show `@Deprecated`, which
 is how a deprecated method once got replaced with its equally deprecated overload.
+
+Make the compiler fail the build rather than relying on that grep: `-Xlint:all -Werror` in
+the compiler plugin, for main and test sources, so a deprecated call, an unchecked cast or a
+raw type is red. Fix what it reports when it is switched on; do not suppress it. Turn off
+`serial` (`-Xlint:all,-serial`) unless the project really serialises its exceptions. Without
+that, every exception needs a `serialVersionUID` that means nothing. The cost of the gate is a
+JDK upgrade: a new lint there turns the build red.
+
+## `Optional` is unwrapped where it is checked
+
+An `Optional` checked in one place and unwrapped in another, `if (prompt.isPresent()) …
+prompt.get()`, depends on the reader keeping the two together. Hand the value on instead:
+`prompt.map(asked -> answer(asked, key))`, and the method that answers takes the value
+itself, not the `Optional`. The same goes for a no-argument `orElseThrow()`. Reach the value
+through `map`, `or` or `orElse`, or throw a named exception from `orElseThrow(Supplier)`.
+Where the project has ArchUnit, fail on a call to `Optional.get()` or to the no-argument
+`orElseThrow()` in main sources. It sees both, since they are method calls in the bytecode.
+
+## No `var`
+
+Write the type out: in a local declaration, a try-with-resources, a lambda parameter and a
+record pattern alike, in main and test sources. PMD's `UseExplicitTypes` only covers the
+first. It misses a record pattern's `var`, and PMD usually does not read `src/test`. A
+short script over the sources closes the gap. It has to skip `var` inside comments and
+strings, and `var` used as a variable name.

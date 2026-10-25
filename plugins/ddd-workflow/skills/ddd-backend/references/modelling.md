@@ -119,6 +119,13 @@ instead of reading past a null check that may or may not be there. Default to th
 shape — it costs one field and an `Optional` — and reach for the second only once a nullable
 field would need a comment explaining which other fields it drags with it.
 
+The same holds for two `Optional`s that must agree. An adapter holding
+`Optional<WatchService> service` next to `Optional<String> serviceFailure`, exactly one of
+them present, is one state written as two. Make it `sealed interface WatchServiceState`
+with `Watching(WatchService)` and `NotWatching(reason)`. The loop matches it once, and its
+helpers take the `WatchService` itself. This applies in infrastructure as much as in the
+domain.
+
 **Identities** are records wrapping a `UUID`, one per aggregate. Distinct `CourseId`
 and `StudentId` types make it impossible to pass one where the other is expected —
 a mistake `UUID` everywhere invites.
