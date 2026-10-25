@@ -40,6 +40,14 @@ pick a second-best name or rename this one. Name what the code does now
 (`PullRequestDiffManager`). When the screen and the coming concept share an everyday word,
 give the screen a glossary row that says which one the code means.
 
+### Check a new name against the words already taken
+
+Before a new type or state gets its name, look the word up in `docs/glossary.md` and in the
+screen or context it lives on. A status-columns `ColumnCursor` collides with a `Column` that
+already means the screen's halves, and a *folded* column collides with a group the board
+already folds. Pick a word with no meaning there yet (`StatusColumnsPlace`, *narrow*). A
+glossary drift check only catches a word used two ways after the fact.
+
 ### Discuss concrete scenarios
 
 When a domain relationship is on the table, stress-test it with a specific edge case.

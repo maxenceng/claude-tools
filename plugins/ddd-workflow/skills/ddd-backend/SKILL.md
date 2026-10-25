@@ -150,6 +150,9 @@ flag, and an enum that restates an existing one adds a translation switch with n
 behind it. If the value collapses from a type you already have (a CI result is the worst
 check's outcome), derive it from that type and return `Optional` when there is nothing.
 Add a new tag-only type only for a distinction no existing type makes.
+Before adding one, name the existing type it is not. A type whose value changes whenever
+another type's does is a restatement even without a translation switch. A zoom that ends on
+every focus move is a `boolean` plus the focus, not a `Zoom` enum listing the panes.
 
 **Identities** are records wrapping a `UUID`, one per aggregate.
 
