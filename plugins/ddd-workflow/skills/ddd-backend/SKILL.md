@@ -154,6 +154,11 @@ Before adding one, name the existing type it is not. A type whose value changes 
 another type's does is a restatement even without a translation switch. A zoom that ends on
 every focus move is a `boolean` plus the focus, not a `Zoom` enum listing the panes.
 
+**A composite or sealed type declares no static factory.** Only its builder builds a
+composite, and the adapter that reads the raw input chooses a sealed variant: a
+`Title.of(Optional<String>)` that picks `Title | NoTitle` has moved the reader's decision
+into the value. A one-value type keeps a factory that parses its one value (`fromWord`).
+
 **Identities** are records wrapping a `UUID`, one per aggregate.
 
 **Domain services** (`<Aggregate>Manager`) are records taking the ports they need, for a

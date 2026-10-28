@@ -55,6 +55,18 @@ executable rule. Lombok's `@Builder` stays correct on JPA entities in
 multi-field type gets a builder" rule applies there too, just with the framework tool rather
 than a hand-written one.
 
+Nothing else builds a composite, and that includes the type itself. A static
+`Facts.of(Optional<String> title, Optional<String> prompt)` on a domain or published record,
+or a `Body.of(String)` on a sealed `Body` that returns `NoBody` when the text is blank,
+looks like a convenience but is the source's reading written onto the type it produces:
+which raw input means which shape belongs to the adapter that read it, and its tests
+already cover those cases through a real file. Put the choice there, build with the
+builder or the variant's constructor, and pin it in `ArchitectureTest` — no static
+method of a multi-field or sealed type in `domain` or `published` returns that type or a
+variant. A single-value type keeps its named factory (`TicketId.fromWord`,
+`SessionId.random`): it parses one value, it does not assemble or choose a shape. An
+instance method returning a changed copy is not a factory either.
+
 A record written as `(String reference, Duration validFor)` wants to be
 `(EnrolmentReference, ValidityWindow)`. The payoff is not tidiness: every rule belonging to
 the raw value — a format, a bound, a `toString` that must not print it — then has exactly one
