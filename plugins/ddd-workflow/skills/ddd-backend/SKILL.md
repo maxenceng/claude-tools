@@ -159,6 +159,10 @@ composite, and the adapter that reads the raw input chooses a sealed variant: a
 `Title.of(Optional<String>)` that picks `Title | NoTitle` has moved the reader's decision
 into the value. A one-value type keeps a factory that parses its one value (`fromWord`).
 
+**Things keyed by their own id are a list, not a map.** When each element already carries
+its id, hold a `List<Thing>` and answer `of(id)` with an `Optional`; a `Map<Id, Thing>`
+stores the id twice and leaves every caller to unwrap `get` into `Optional.ofNullable`.
+
 **Identities** are records wrapping a `UUID`, one per aggregate.
 
 **Domain services** (`<Aggregate>Manager`) are records taking the ports they need, for a
