@@ -114,3 +114,15 @@ class VerifyTest(MigrationCase):
 
     def test_dry_run_with_verify_is_a_usage_error(self):
         self.assertEqual(self.run_script("verify", "--dry-run").returncode, 2)
+
+    def test_a_sub_issue_derived_from_a_map_body_is_checked_too(self):
+        self.write("docs/backlog/PROJ-5-slug.md", ticket("PROJ-5", type="decision"))
+        self.write("docs/backlog/PROJ-1-slug.md", ticket("PROJ-1", type="map", status="in-progress", body="PROJ-5\n"))
+        self.commit()
+        self.run_script()
+        self.assertEqual(self.run_script("verify").returncode, 0, self.result.stdout)
+        state = self.load()
+        state["issues"][str(self.number("PROJ-1"))].pop("sub_issues")
+        self.state = state
+        self.save()
+        self.failing("sub-issue PROJ-5")

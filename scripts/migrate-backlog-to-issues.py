@@ -120,6 +120,23 @@ def read_tickets():
     return tickets, problems
 
 
+def map_candidates(tickets):
+    """Decision id -> the maps it belongs to: those whose body links it, and those it is blocked_by."""
+    by_id = {t["id"]: t for t in tickets}
+    rewriter = Rewriter(tickets, {t["id"]: 0 for t in tickets}, repository_files(), "")
+    found = {t["id"]: set() for t in tickets if t["type"] == "decision"}
+    for ticket in tickets:
+        if ticket["type"] != "map":
+            continue
+        rewriter.seen = set()
+        rewriter.rewrite(ticket["body"], ticket["path"])
+        for id in rewriter.seen & found.keys():
+            found[id].add(ticket["id"])
+    for id in found:
+        found[id] |= {b for b in by_id[id]["blocked_by"] if b in by_id and by_id[b]["type"] == "map"}
+    return {id: sorted(maps) for id, maps in found.items()}
+
+
 def refusals(tickets, problems):
     by_id = {t["id"]: t for t in tickets}
     found = list(problems)
@@ -127,12 +144,13 @@ def refusals(tickets, problems):
         if ticket["status"] in ("in-progress", "in-review") and ticket["type"] != "map":
             found.append("%s: %s is %s and not a map; finish or park it, and keep no ticket branch open"
                          % (ticket["path"], ticket["id"], ticket["status"]))
+    candidates = map_candidates(tickets)
     for ticket in tickets:
         for blocker in ticket["blocked_by"]:
             if blocker not in by_id:
                 found.append("%s: %s is blocked_by %s, which is no ticket on %s" % (ticket["path"], ticket["id"], blocker, BRANCH))
         if ticket["type"] == "decision":
-            maps = [b for b in ticket["blocked_by"] if b in by_id and by_id[b]["type"] == "map"]
+            maps = candidates[ticket["id"]]
             if len(maps) != 1:
                 found.append("%s: decision %s reaches %s through blocked_by; it needs exactly one"
                              % (ticket["path"], ticket["id"], "no map" if not maps else "%s maps (%s)" % ("two" if len(maps) == 2 else len(maps), ", ".join(maps))))
@@ -174,7 +192,7 @@ def migrated_issues():
 def plan(tickets):
     """What each ticket becomes: its labels, whether it closes, its dependencies and its parent map."""
     by_id = {t["id"]: t for t in tickets}
-    planned = {}
+    planned, candidates = {}, map_candidates(tickets)
     for ticket in tickets:
         labels = ([] if ticket["status"] in ("draft", "done") else ["status:" + ticket["status"]])
         labels += ["type:" + ticket["type"], "context:" + ticket["context"]]
@@ -182,7 +200,7 @@ def plan(tickets):
         planned[ticket["id"]] = {
             "ticket": ticket, "labels": labels, "closed": ticket["status"] == "done",
             "blocked_by": [b for b in ticket["blocked_by"] if b not in onto_maps],
-            "dropped": onto_maps, "parent": onto_maps[0] if ticket["type"] == "decision" else None}
+            "dropped": onto_maps, "parent": candidates[ticket["id"]][0] if ticket["type"] == "decision" else None}
     return planned
 
 
@@ -231,6 +249,7 @@ class Rewriter:
         self.files = set(files)
         self.dirs = {posixpath.dirname(f) for f in files} | {d for f in files for d in parents(f)}
         self.repo_url = repo_url
+        self.seen = set()
         ids = sorted(self.numbers, key=len, reverse=True)
         bare = r"(?P<bare>(?<![\w/#-])(?:%s)(?![\w-]))" % "|".join(re.escape(i) for i in ids)
         self.pattern = re.compile("|".join([CODE_SPAN, LINK, DEFINITION, bare]), re.S | re.M)
@@ -259,6 +278,7 @@ class Rewriter:
         if found.group("code"):
             return found.group(0)
         if found.group("bare"):
+            self.seen.add(found.group("bare"))
             return "#%d" % self.numbers[found.group("bare")]
         if found.group("link"):
             target = self.resolve(found.group("target"), from_path)
@@ -266,6 +286,7 @@ class Rewriter:
                 return found.group(0)
             if target[0] == "ticket":
                 ticket = self.by_path[target[1]]
+                self.seen.add(ticket["id"])
                 number = self.numbers[ticket["id"]]
                 text = found.group("text").strip().strip("`")
                 base = posixpath.basename(ticket["path"])
@@ -276,6 +297,8 @@ class Rewriter:
         target = self.resolve(found.group("defined"), from_path)
         if target is None:
             return found.group(0)
+        if target[0] == "ticket":
+            self.seen.add(self.by_path[target[1]]["id"])
         url = "%s/issues/%d" % (self.repo_url, self.numbers[self.by_path[target[1]]["id"]]) \
             if target[0] == "ticket" else target[1]
         return found.group("lead") + url

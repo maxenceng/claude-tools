@@ -50,3 +50,14 @@ class DryRunTest(MigrationCase):
         out = self.migrated("--dry-run").stdout
         self.assertIn("PROJ-1  exists as #41, skipped", out)
         self.assertIn("would create 1 issue", out)
+
+    def test_a_decision_linked_only_from_its_map_body_is_that_maps_sub_issue(self):
+        self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="- [d](PROJ-3-slug.md): done\n"),
+                     ticket("PROJ-3", type="decision"))
+        out = self.migrated("--dry-run").stdout
+        self.assertIn("sub-issue of: PROJ-1", out[out.index("PROJ-3"):])
+
+    def test_a_feature_linked_from_a_map_body_is_not_a_sub_issue(self):
+        self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="built in PROJ-2\n"), ticket("PROJ-2"))
+        out = self.migrated("--dry-run").stdout
+        self.assertNotIn("sub-issue of", out)

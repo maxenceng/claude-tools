@@ -92,3 +92,21 @@ class RefusalTest(MigrationCase):
         self.git("checkout", "-q", "-b", "PROJ-1-branch")
         self.backlog(ticket("PROJ-1", status="in-review"))
         self.assertEqual(self.run_script("--dry-run").returncode, 0, self.result.stderr)
+
+    def test_a_decision_linked_from_two_map_bodies_is_refused_naming_both(self):
+        self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="See [d](PROJ-3-slug.md)\n"),
+                     ticket("PROJ-2", type="map", status="in-progress", body="Decided: PROJ-3\n"),
+                     ticket("PROJ-3", type="decision"))
+        done = self.refused("--dry-run", why="docs/backlog/PROJ-3-slug.md")
+        self.assertIn("two maps (PROJ-1, PROJ-2)", done.stderr)
+
+    def test_a_decision_linked_from_one_map_and_blocked_by_another_is_refused(self):
+        self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="PROJ-3\n"),
+                     ticket("PROJ-2", type="map", status="in-progress"),
+                     ticket("PROJ-3", type="decision", blocked_by=["PROJ-2"]))
+        self.refused("--dry-run", why="two maps (PROJ-1, PROJ-2)")
+
+    def test_a_link_to_a_decision_inside_code_in_a_map_body_does_not_count(self):
+        self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="`PROJ-3`\n\n```\nPROJ-3\n```\n"),
+                     ticket("PROJ-3", type="decision"))
+        self.refused("--dry-run", why="reaches no map")
