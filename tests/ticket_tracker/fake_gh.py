@@ -129,7 +129,7 @@ if group == "issue" and verb == "close":
     out("closed")
 
 if group == "issue" and verb == "develop":
-    issue = issue_of(args[2])
+    issue = issue_of(next(a for a in args[2:] if a.isdigit()))
     if "--list" in args:
         out("".join("%s\thttps://github.com/o/r/tree/%s\n" % (b, b) for b in issue["branches"]).rstrip("\n"))
     branch = option("--name") or "%d-%s" % (issue["number"], re.sub(r"[^a-z0-9]+", "-", issue["title"].lower()).strip("-"))
@@ -152,7 +152,7 @@ if group == "pr" and verb == "list":
     out([{"number": 7} for b in state["merged_heads"] if b == head])
 
 if group == "api":
-    path = args[1]
+    path = next(a for a in args[1:] if a == "graphql" or a.startswith("repos/"))
     method = option("-X", "GET")
     if path == "graphql":
         out(state["graphql"])
@@ -168,7 +168,8 @@ if group == "api":
             by_id = {i["id"]: i["number"] for i in state["issues"].values()}
             issue.setdefault(key, []).append(by_id[wanted])
             out({})
-        out([public(issue_of(n), ["number", "title", "state", "labels"]) for n in issue.get(key, [])])
+        rows = [public(issue_of(n), ["number", "title", "state", "labels"]) for n in issue.get(key, [])]
+        out([dict(row, state=row["state"].lower()) for row in rows])
     reply = re.fullmatch(r"repos/\{owner\}/\{repo\}/pulls/(\d+)/comments/(\d+)/replies", path)
     if reply and method == "POST":
         state["replies"].append({"pr": reply.group(1), "comment": reply.group(2), "body": option("-f", "")})

@@ -3,6 +3,7 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -99,6 +100,7 @@ class TrackerCase(unittest.TestCase):
         self.state_path = os.path.join(self.dir, "state.json")
         self.state = {"issues": {}, "labels": [], "calls": [], "next": 100, "clock": 0,
                       "prs": [], "replies": [], "merged_heads": [], "graphql": {}, "offline": False}
+        self.save()
 
     def write(self, relative, text):
         path = os.path.join(self.project, relative)
@@ -126,9 +128,10 @@ class TrackerCase(unittest.TestCase):
         self.state.update(values)
         self.save()
 
-    def run_tracker(self, *args, stdin=""):
-        env = dict(os.environ, PATH=self.bin + os.pathsep + os.environ["PATH"], FAKE_GH_STATE=self.state_path)
-        done = subprocess.run(["python3", os.path.abspath(SCRIPT), *args], cwd=self.project, env=env,
+    def run_tracker(self, *args, stdin="", env_path=None):
+        path = env_path or self.bin + os.pathsep + os.environ["PATH"]
+        env = dict(os.environ, PATH=path, FAKE_GH_STATE=self.state_path)
+        done = subprocess.run([sys.executable, os.path.abspath(SCRIPT), *args], cwd=self.project, env=env,
                               input=stdin, capture_output=True, text=True)
         self.result = done
         return done
