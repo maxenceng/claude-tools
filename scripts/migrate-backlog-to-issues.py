@@ -22,7 +22,7 @@ import urllib.parse
 
 BRANCH = "main"
 BACKLOG = "docs/backlog/"
-NOT_TICKETS = ("README.md", "_template.md", "ROADMAP.md")
+NOT_TICKETS = re.compile(r"README\.md|_template\.md|ROADMAP[^/]*\.md")
 STATUSES = ("draft", "todo", "in-progress", "in-review", "done")
 TYPES = ("feature", "fix", "chore", "spike", "map", "decision")
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n(.*)\Z", re.S)
@@ -109,7 +109,7 @@ def read_tickets():
     tickets, problems = [], []
     paths = [p for p in repository_files()
              if p.startswith(BACKLOG) and p.endswith(".md") and "/" not in p[len(BACKLOG):]
-             and p[len(BACKLOG):] not in NOT_TICKETS]
+             and not NOT_TICKETS.fullmatch(p[len(BACKLOG):])]
     for path in sorted(paths):
         try:
             tickets.append(parse_ticket(path, git("show", "%s:%s" % (BRANCH, path))))

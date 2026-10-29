@@ -80,6 +80,12 @@ class RefusalTest(MigrationCase):
         self.commit()
         self.assertEqual(self.run_script("--dry-run").returncode, 0, self.result.stderr)
 
+    def test_a_roadmap_document_with_a_version_in_its_name_is_not_a_ticket(self):
+        self.backlog(ticket("PROJ-1"))
+        self.write("docs/backlog/ROADMAP-v1.1.md", "# Roadmap\n")
+        self.commit()
+        self.assertEqual(self.run_script("--dry-run").returncode, 0, self.result.stderr)
+
     def test_only_main_is_read_not_the_working_tree(self):
         self.backlog(ticket("PROJ-1"))
         self.commit()
