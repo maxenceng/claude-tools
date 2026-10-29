@@ -181,7 +181,12 @@ Never resolve more than one decision ticket per session, except research tickets
    **out of scope** rather than resolving it. Update or delete map parts the decision
    invalidates. A newly-surfaced ticket of `/ticket`'s own vocabulary (`feature`, `fix`, `chore`,
    `spike`) is a real ticket `/ticket start` will pick up, not a wayfinder artifact: create it
-   with the ticket template, `--status todo`, and no `add-sub-issue` — it is not part of the map.
+   with the ticket template, `--status draft`, and no `add-sub-issue` — it is not part of the map.
+   Where the resolution already settles it — the *Model decision* and every acceptance criterion
+   follow from the answer with no question left, and a frontend ticket's *Design direction* too —
+   write those sections (`write-sections`) and `ticket-tracker move <n> todo`. Otherwise leave it
+   `draft`, its *Notes* naming the decision, for `/ticket refine`; never move it to `todo` with a
+   section still unanalysed, which `ready start` refuses.
 6. A map's file changes — a glossary term, an ADR a decision produced — go on one branch and
    **one pull request** that refs the map (`ticket-tracker pr-create --refs <map>`), never one per
    decision, and closing nothing. **The map is closed by hand**, once its destination is reached

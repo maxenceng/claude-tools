@@ -46,7 +46,9 @@ before writing.
 - **A map's decisions are its sub-issues; a graduated feature ticket is not.** The frontier is the
   map's open `status:todo` sub-issues whose dependencies are all closed. Claiming adds
   `status:in-progress`; a decision, resolved or ruled out, closes as completed; the map's own file
-  changes go on one pull request that `Refs` it, and the map is closed by hand.
+  changes go on one pull request that `Refs` it, and the map is closed by hand. A graduated ticket is
+  created `draft`; `/wayfinder` writes its sections and moves it to `todo` only when the decision
+  leaves nothing to ask, and otherwise leaves it to `/ticket refine` rather than skip the analysis.
 - **Vikunja, `tracker_id`, the Obsidian board and `docs/backlog/` are gone.** There is one cut-over, at
   the plugin's 3.0.0, with no mode that detects `docs/backlog/` and keeps both.
 
