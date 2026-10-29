@@ -224,6 +224,14 @@ specific, such as `ToolName`, stays as it is. The prefix is what the value belon
 not the context's own name. The test is whether the name still reads unambiguously once
 the project gains its own configuration.
 
+One concept gets one word, the glossary's, in every type that carries it. A terminal
+emulation was a `Terminal*` in some types and an emulator in others, while the glossary
+said *emulator*. Review renamed the whole family (`EmulatorKeyPayload`,
+`EmulatorScreenView`, `HostedEmulatorQuery`). Only a subclass of a library type keeps the
+library's word (`HostedTerminal extends Terminal`), because there the word is the
+library's, not the domain's. When the code needs a word the glossary lacks, add it to the
+glossary before naming the type.
+
 ## A context holds only its core
 
 An import of a user's library from a vendor added a run, its summary, a workflow, a vendor
