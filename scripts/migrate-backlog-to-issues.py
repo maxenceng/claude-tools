@@ -152,7 +152,7 @@ def refusals(tickets, problems):
         if ticket["type"] == "decision":
             maps = candidates[ticket["id"]]
             if len(maps) != 1:
-                found.append("%s: decision %s reaches %s through blocked_by; it needs exactly one"
+                found.append("%s: decision %s reaches %s (blocked_by or linked from its body); it needs exactly one"
                              % (ticket["path"], ticket["id"], "no map" if not maps else "%s maps (%s)" % ("two" if len(maps) == 2 else len(maps), ", ".join(maps))))
     return found
 
