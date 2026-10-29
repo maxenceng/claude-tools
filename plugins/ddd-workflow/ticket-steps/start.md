@@ -1,24 +1,25 @@
 # start
 
-Refuse to start a ticket in `draft`, and say it needs `/ticket refine <ID>` first. A draft
-is a captured sentence, not a decision — starting one means the design gets made at the
-keyboard by whoever picked the ticket up.
+`ticket-tracker` below is `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`; it is the only way to
+reach GitHub.
 
-Refuse a `todo` whose *Model decision* is still empty for the same reason. The status says
-it was analysed; the empty section says it was not, and the section is the one telling the
-truth.
-
-Refuse a ticket touching `frontend/**` whose *Design direction* is missing or still the
-unanalysed marker, for the same reason. Tickets refined before 2.0.0 have no such section.
+Run `ticket-tracker ready <n> start` first. It refuses, with the reason, a ticket in `draft` (it needs
+`/ticket refine <n>` first: a draft is a captured sentence, not a decision, and starting one means
+the design gets made at the keyboard by whoever picked the ticket up), a ticket whose *Model decision*
+is empty or still the unanalysed marker (the status says it was analysed; the empty section says it
+was not, and the section is the one telling the truth), a ticket touching `frontend/**` whose *Design
+direction* is missing or still the unanalysed marker, and any ticket it cannot read. Do not start past
+a refusal.
 
 Then:
 
-1. Set `status: in-progress`.
-2. Create a branch named `<id>-<slug>`, matching the filename, off current main. Use a
-   worktree if the current one has uncommitted work worth keeping. If a branch of that
-   name already exists, diff it against main before reusing it: an abandoned attempt
-   that forked long ago will bring deleted files back. Rename it aside
-   (`<id>-stale-<date>`), say so in one line, and branch fresh.
+1. `ticket-tracker move <n> in-progress`.
+2. `ticket-tracker develop <n>`, which creates `<n>-<title-slug>` through GitHub's issue-branch linking, linked to
+   the issue by GitHub, and prints its name; `--checkout` also checks a new branch out, and `checkedOut` says whether it did. Add a worktree on that
+   branch if the current one has uncommitted work worth keeping. If it reports the branch already
+   existed (`"existing": true`), or a local branch of that name is already there, diff it against main
+   before reusing it: an abandoned attempt that forked long ago will bring deleted files back. Rename
+   it aside (`<n>-stale-<date>`), say so in one line, and branch fresh.
 3. Dispatch the agent for what the ticket touches, from the Delegation table below, and
    tell it to work test-first and domain outwards: write one failing test, run it and see
    it fail for the reason the test names — a test that passes on first run proves
@@ -35,6 +36,8 @@ Then:
 5. If the API surface changed, recapture the schema: `make run`, `make openapi`,
    `make openapi-client`. Running only the last regenerates types from a stale schema.
 6. Apply the *Glossary impact* to `docs/glossary.md` in this change, not later.
+7. Commit subjects say the change in words and carry no ticket id; the pull request body is where
+   `Closes #<n>` goes (`review`).
 
 ## Delegation
 
@@ -53,14 +56,3 @@ Stay inline when the whole change is a file already read this session. Dispatchi
 cold start and a re-read of context the session already holds. Agents are named here
 because role-specific judgement at implementation is worth that cost — not because
 delegation is better by default.
-
-## Vikunja
-
-Once `status: in-progress` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
-`VIKUNJA_PROJECT_ID` are all set, move the ticket's task to the bucket titled
-`in-progress` — see the Vikunja section of `/ticket` itself for the lookup shape. A
-ticket with no `tracker_id` here is unusual — `refine` should have created one — but if
-it happens, create it the way `refine` does, straight into `in-progress`, rather than
-blocking the start on a sync problem.
-
-Skip this section, and say so once, when any of the three variables is unset.

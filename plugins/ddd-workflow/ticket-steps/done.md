@@ -1,13 +1,24 @@
 # done
 
-1. Confirm the work is merged. If it is not, say so and stop. Check before anything else:
-   the rest of this step writes a record of what landed, and nothing has landed yet.
-2. Set `status: done`. Closing a ticket writes files, so it lands on a branch and a PR
-   like any other change — `start` said this and the habit does not survive a step that
-   does not repeat it.
+`ticket-tracker` below is `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`; it is the only way to
+reach GitHub. This step runs after the merge. Its first move is `ticket-tracker show <n>`: keep the
+`updatedAt` it returns for the write in step 3.
+
+1. Confirm the work is merged. The `ticket-tracker done` call in step 3 is that check: it refuses
+   when no branch that `develop` linked to the ticket has a merged pull request, and says so;
+   then stop. Make that call before steps 4 to 7: the rest of this step writes a record of what
+   landed, and nothing has landed yet.
+2. There is no status to set. The merge's `Closes #<n>` closed the issue as completed, and a
+   closed-as-completed issue is `done` whatever labels it still carries. Closing the ticket now
+   writes files only if the work below changes any, and then it lands on a branch and a PR like
+   any other change — `start` said this and the habit does not survive a step that does not repeat it.
 3. Fill in *Notes* with anything the code will not show — an approach rejected, a
    constraint found. Skip it if there is genuinely nothing; padding trains people to stop
-   reading the section.
+   reading the section. Put the text in a file and run
+   `ticket-tracker done <n> --notes-file <file> --expect-updated-at <updatedAt>`. In one edit it
+   writes the *Notes* section into the issue and removes every leftover `status:` label; if the
+   merge's keyword was missed and the issue is still open, it closes it as completed and says so.
+   With nothing to write, run `ticket-tracker done <n>` alone for the labels and the close.
 4. Invoke the `project-retro` skill if anything during the ticket was done by hand more
    than twice, or if the same correction came up repeatedly.
 5. Raise an ADR if a decision was made that someone could reasonably reverse later
@@ -32,15 +43,18 @@
    Find the endpoints the ticket touched: controllers changed in the merged diff, plus
    controllers in the same context whose call path reaches a class the diff changed.
    Invoke the `/trace-endpoint` command (the `ddd-workflow:trace-endpoint` skill, through
-   the Skill tool) on each, passing this ticket's id as the trailing argument so it
-   lands in `tickets` — for example, `/trace-endpoint POST /api/orders ORDERING-12`.
+   the Skill tool) on each, passing this ticket's issue number as the trailing argument so it
+   lands in `tickets` — for example, `/trace-endpoint POST /api/orders 12`.
    For an endpoint the ticket removed, delete its `.md` and `.html` and its line in
    `docs/endpoints/README.md`.
 
    A frontend-only ticket usually touches no endpoint. Say so and move on rather than
    tracing something to show the step ran.
 
-   All of it goes in the same branch and PR as `status: done`.
+   Whatever files this step changes go on one branch and one PR, opened with
+   `ticket-tracker pr-create --title "<the change, in words>" --body-file <file> --refs <n>`: it
+   closes nothing, since the issue is already closed, and a body with a closing keyword is refused.
+   Open that PR only if this step changed files; with no change there is no branch and no PR.
 7. Ask whether this ticket taught `ddd-backend`, another shared skill, or an agent's
    instructions something worth keeping — a convention this project only discovered under
    review, a pattern an ADR here now documents generally rather than for this project alone.
@@ -58,19 +72,3 @@
    yes/no, and do not pre-filter the ones that look too small. Deciding whether a one-off
    generalises is the user's call. A correction the next project will hit again looks just
    like a one-off the first time.
-
-## Vikunja
-
-Once `status: done` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
-`VIKUNJA_PROJECT_ID` are all set, move the ticket's task to the bucket titled `done` —
-see the Vikunja section of `/ticket` itself for the lookup shape. A correctly configured
-done-bucket marks the task done as a side effect of the move; send one more call anyway,
-since a board that reads done is worth the extra request and costs nothing if redundant:
-
-```bash
-curl -sf -X POST "$VIKUNJA_URL/api/v1/tasks/$TRACKER_ID" \
-  -H "Authorization: Bearer $VIKUNJA_TOKEN" -H "Content-Type: application/json" \
-  -d '{"done": true}'
-```
-
-Skip this section, and say so once, when any of the three variables is unset.

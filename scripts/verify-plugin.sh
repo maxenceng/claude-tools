@@ -252,6 +252,45 @@ for plugin_name, plugin_root in plugin_dirs:
         print(f"  external: {', '.join(sorted(external))}")
         print("            these must be installed separately; nothing reports it if they are not")
 
+# --- the ticket loop reaches GitHub through one script ----------------------------------
+# Every step, /wayfinder and /debt calls plugins/ddd-workflow/scripts/ticket-tracker. A `gh issue`
+# or `gh api` snippet in one of them is the drift that script exists to remove: nine files each
+# holding their own idea of how to read a ticket. And what 3.0.0 deleted stays deleted.
+GITHUB_SNIPPET = re.compile(r"\bgh\s+(issue|api)\b")
+RETIRED = re.compile(r"vikunja|tracker_id|obsidian|docs/backlog", re.I)
+ticket_dir = os.path.join(root, "plugins", "ddd-workflow")
+for folder in ("commands", "ticket-steps"):
+    base = os.path.join(ticket_dir, folder)
+    for name in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        path = os.path.join(base, name)
+        if name.endswith(".md") and GITHUB_SNIPPET.search(open(path, encoding="utf-8").read()):
+            fail(path, "carries a `gh issue` or `gh api` snippet; call scripts/ticket-tracker instead")
+
+def retired_sweep(base, skip):
+    for dirpath, dirnames, filenames in os.walk(base):
+        dirnames[:] = [d for d in dirnames if d not in {"node_modules", "target", "dist", ".git", "__pycache__"}]
+        for name in filenames:
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, root)
+            if rel.startswith(skip) or not name.endswith((".md", ".py", ".sh", ".json", ".yml", ".java")):
+                continue
+            try:
+                text = open(path, encoding="utf-8").read()
+            except UnicodeDecodeError:
+                continue
+            found = RETIRED.search(text)
+            if found:
+                fail(path, f"mentions '{found.group(0)}', which the move to GitHub Issues removed")
+
+retired_sweep(ticket_dir, ())
+retired_sweep(os.path.join(root, "templates", "spring-ddd"),
+              ("templates/spring-ddd/docs/adr/", "templates/spring-ddd/scripts/"))
+for top in ("README.md", "HOWTO.md"):
+    path = os.path.join(root, top)
+    found = RETIRED.search(open(path, encoding="utf-8").read())
+    if found:
+        fail(path, f"mentions '{found.group(0)}', which the move to GitHub Issues removed")
+
 print(f"\nchecked {checked} manifests and documents across {len(plugin_dirs)} plugins")
 
 if errors:
@@ -261,3 +300,10 @@ if errors:
     sys.exit(1)
 print("\nall plugins are well formed")
 PY
+
+# The tests of what the plugins ship as code. They run here so that CI's plugin job and a local
+# run of this script are the same command.
+cd "$ROOT"
+for tests in tests/ticket_tracker tests/check_ticket_references tests/memory_sync; do
+  python3 -m unittest discover -s "$tests"
+done

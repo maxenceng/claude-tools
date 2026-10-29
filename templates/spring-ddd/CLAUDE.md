@@ -117,9 +117,11 @@ Settled. Act on these rather than asking.
 - An integration test that reads back what it wrote clears the persistence context first, or it
   asserts against Hibernate's first-level cache and would pass with no table at all. ADR 0014,
   enforced by `make round-trip-check`.
-- A ticket id is a pointer while the work is open and a stale claim once it lands. Outside
-  `docs/backlog/` and `docs/adr/`, name the behaviour rather than the ticket that added it —
-  git and the ADRs are what remember which one did. `make ticket-check` enforces it (ADR 0016).
+- A ticket is a GitHub issue, and the pull request that merges it closes it. No `#n` or issue
+  URL appears outside `docs/adr/`, `docs/research/`, `docs/endpoints/` and `scripts/`, open or
+  closed: name the behaviour, and let git and the ADRs remember which issue added it. A commit
+  subject says the change in words, with no ticket id. `make ticket-check` enforces it with no
+  network (ADR 0018).
 
 Ask when the choice is a genuine trade-off rather than a default: a review that contradicts
 something asked for explicitly, a change to a published contract, or a rule that would have
@@ -127,7 +129,7 @@ to carve out an exception to hold.
 
 ## Where to look
 
-- `docs/backlog/` — features to do and their status; driven by `/ticket`
+- GitHub Issues — features to do and their status; driven by `/ticket` (ADR 0017)
 - `docs/glossary.md` — ubiquitous language; use these words in code
 - `docs/context-map.md` — contexts and their relationships
 - `docs/adr/` — why things are the way they are

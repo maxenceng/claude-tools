@@ -1,6 +1,6 @@
 ---
 description: Trace one endpoint's call path and write its sequence diagram into docs/endpoints/
-argument-hint: "<METHOD> <path> [ticket-id], e.g. POST /api/orders/{id}/lines ORDERING-12"
+argument-hint: "<METHOD> <path> [issue-number], e.g. POST /api/orders/{id}/lines 12"
 ---
 
 Requested: `$ARGUMENTS`
@@ -44,15 +44,15 @@ The file name is the method and the path with its leading `/` dropped, each `/` 
 into `-` and braces removed: `POST /api/orders/{id}/lines` → `POST-api-orders-id-lines`.
 The folder is the context that owns the controller.
 
-**`docs/endpoints/<context>/<name>.md`** — the primary file, because GitHub and Obsidian
-both render Mermaid and neither renders the HTML:
+**`docs/endpoints/<context>/<name>.md`** — the primary file, because GitHub
+renders Mermaid and does not render the HTML:
 
 ````
 ---
 endpoint: POST /api/orders/{id}/lines
 context: ordering
 traced_at: <output of git rev-parse origin/main>
-tickets: [ORDERING-12]
+tickets: [12]
 ---
 
 # POST /api/orders/{id}/lines
@@ -78,11 +78,11 @@ repo-relative path, never abbreviated with `...`, since `onboard` feeds them to 
 
 Each error branch is an `alt` block naming the error and its status. Mark the transaction
 with a `rect` around the messages inside it. `tickets` is the endpoint's history, not its
-latest change: when a ticket id is given, append it to the ids already in the file (a new
+latest change: when an issue number is given, append it to the numbers already in the file (a new
 file starts from an empty list); when none is given, keep `tickets` as it was.
-The list names tickets that are already done, on purpose. If the project has a check that fails
-on references to landed tickets, `docs/endpoints/` belongs in its exemptions beside the ADRs.
-Keep the id in the list and exempt the folder, rather than dropping the id to get past the check.
+The list names issues that are already closed, on purpose. A project's check that fails on an
+issue named outside the record exempts `docs/endpoints/` beside the ADRs. Keep the number in the
+list and exempt the folder, rather than dropping the number to get past the check.
 
 **`docs/endpoints/<context>/<name>.html`** — invoke the `archify` skill with the same
 trace as a sequence diagram, and write its output here. The skill owns its own IR; hand

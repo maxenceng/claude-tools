@@ -1,0 +1,682 @@
+#!/usr/bin/env python3
+"""Every GitHub operation the ticket loop needs, in one place.
+
+A ticket is a GitHub issue named by its number: labels carry its status, context and type, its
+body carries the `##` sections, and a closing keyword in the merged pull request makes it done.
+Every /ticket step, /wayfinder and /debt reaches GitHub through this script and nowhere else,
+so the readability rules, the single-edit status move and the stale-write refusal exist once.
+
+Standard library only; it shells out to `gh`. Output is JSON on stdout. A refusal writes its
+reason to stderr and exits 1; an unreachable GitHub exits 3, so /debt can tell "skipped" from
+"refused". Nothing is cached and nothing is written when a verb refuses.
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+
+STATUSES = ("draft", "todo", "in-progress", "in-review")
+TYPES = ("feature", "fix", "chore", "spike", "map", "decision")
+NOT_COMPLETED = ("NOT_PLANNED", "DUPLICATE")
+ISSUE_FIELDS = "number,title,body,labels,state,stateReason,updatedAt,url"
+HEADING = re.compile(r"^## (.+?)\s*$")
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
+
+
+class Refusal(Exception):
+    exit_code = 1
+
+
+class Offline(Refusal):
+    exit_code = 3
+
+
+class Usage(Refusal):
+    exit_code = 2
+
+
+UNREACHABLE = ("error connecting to", "could not resolve host", "no such host", "network is unreachable",
+               "connection refused", "connection reset", "i/o timeout", "dial tcp", "tls handshake timeout",
+               "context deadline exceeded")
+
+
+def gh(*args, stdin=None):
+    try:
+        done = subprocess.run(["gh", *args], input=stdin, capture_output=True, text=True)
+    except FileNotFoundError:
+        raise Refusal("gh is not installed; every ticket verb needs it")
+    if done.returncode != 0:
+        if any(sign in done.stderr.lower() for sign in UNREACHABLE):
+            raise Offline("GitHub is unreachable, and no ticket verb works offline; nothing was written")
+        raise Refusal("gh %s failed: %s" % (" ".join(args[:2]), done.stderr.strip()))
+    return done.stdout
+
+
+def gh_json(*args):
+    return json.loads(gh(*args) or "null")
+
+
+def gh_api_list(path):
+    """Every page of a REST list; without --paginate the API stops at its first 30 rows."""
+    return [row for page in gh_json("api", "--paginate", "--slurp", path) for row in page]
+
+
+def split_sections(body):
+    """Return (preamble, [(name, raw)]); every section keeps its own text byte for byte."""
+    preamble, sections, fence = [], [], None
+    for line in body.splitlines(keepends=True):
+        marker = FENCE.match(line)
+        if marker and fence is None:
+            fence = marker.group(1)
+        elif marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence):
+            fence = None
+        heading = None if fence else HEADING.match(line.rstrip("\r\n"))
+        if heading:
+            sections.append([heading.group(1), line])
+        elif sections:
+            sections[-1][1] += line
+        else:
+            preamble.append(line)
+    return "".join(preamble), [(name, raw) for name, raw in sections]
+
+
+def section_text(raw):
+    return raw.split("\n", 1)[1].strip() if "\n" in raw else ""
+
+
+def names_of(labels, family):
+    prefix = family + ":"
+    return [name[len(prefix):] for name in labels if name.startswith(prefix)]
+
+
+def read_ticket(raw):
+    number = raw["number"]
+    labels = [label["name"] for label in raw["labels"]]
+    ticket = {"number": number, "title": raw["title"], "url": raw.get("url"), "updatedAt": raw["updatedAt"],
+              "body": raw["body"] or "", "labels": labels, "state": raw["state"]}
+    _, sections = split_sections(ticket["body"])
+    ticket["sections"] = {name: section_text(text) for name, text in sections}
+
+    if raw["state"] == "CLOSED":
+        if raw.get("stateReason") in NOT_COMPLETED:
+            raise Refusal("#%d is unreadable: closed as not planned; there is no dropped status" % number)
+        ticket.update(status="done", context=(names_of(labels, "context") or [None])[0],
+                      type=(names_of(labels, "type") or [None])[0])
+        return ticket
+
+    statuses = names_of(labels, "status")
+    if len(statuses) > 1:
+        raise Refusal("#%d is unreadable: two status labels (%s)" % (number, ", ".join(statuses)))
+    status = statuses[0] if statuses else "draft"
+    if status not in STATUSES:
+        raise Refusal("#%d is unreadable: unknown status label status:%s" % (number, status))
+    ticket["status"] = status
+    for family in ("context", "type"):
+        found = names_of(labels, family)
+        if len(found) > 1:
+            raise Refusal("#%d is unreadable: two %s: labels (%s)" % (number, family, ", ".join(found)))
+        if not found and status != "draft":
+            raise Refusal("#%d is unreadable: no %s: label, and a %s needs one" % (number, family, status))
+        ticket[family] = found[0] if found else None
+    if ticket["type"] is not None and ticket["type"] not in TYPES:
+        raise Refusal("#%d is unreadable: unknown type label type:%s" % (number, ticket["type"]))
+    return ticket
+
+
+def fetch(number):
+    return read_ticket(gh_json("issue", "view", str(number), "--json", ISSUE_FIELDS))
+
+
+def show(number):
+    return fetch(number)
+
+
+def raw_of(ticket):
+    return {"number": ticket["number"], "title": ticket["title"], "url": ticket["url"], "body": ticket["body"],
+            "labels": [{"name": name} for name in ticket["labels"]], "state": ticket["state"], "stateReason": None,
+            "updatedAt": ticket["updatedAt"]}
+
+
+def public(ticket):
+    return {key: value for key, value in ticket.items() if key not in ("body", "labels")}
+
+
+LABEL_COLOURS = {"status": "ededed", "type": "c5def5", "context": "bfd4f2"}
+
+
+def ensure_label(name):
+    existing = {label["name"] for label in gh_json("label", "list", "--json", "name", "--limit", "1000")}
+    if name not in existing:
+        gh("label", "create", name, "--color", LABEL_COLOURS[name.split(":")[0]])
+
+
+def move(number, status):
+    if status == "done":
+        raise Refusal("done is closed as completed, by the merge or by `done`; it is not a label to move to")
+    if status not in STATUSES:
+        raise Usage("status is one of %s" % ", ".join(STATUSES))
+    ticket = fetch(number)
+    if ticket["status"] == "done":
+        raise Refusal("#%s is done; a closed ticket is not moved" % number)
+    target = "status:" + status
+    old = [name for name in ticket["labels"] if name.startswith("status:") and name != target]
+    after = [name for name in ticket["labels"] if name not in old and name != target] + [target]
+    read_ticket(dict(raw_of(ticket), labels=[{"name": name} for name in after]))
+    ensure_label(target)
+    edit = ["issue", "edit", str(number), "--add-label", target]
+    if old:
+        edit += ["--remove-label", ",".join(old)]
+    gh(*edit)
+    return {"number": int(number), "status": status}
+
+
+CONTEXT_MAP = os.path.join("docs", "context-map.md")
+CROSS_CONTEXT = "cross-context"
+CONTEXT_ROW = re.compile(r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|")
+
+
+def named_contexts():
+    """The first table under `## Contexts` in docs/context-map.md; later tables are not contexts."""
+    try:
+        with open(CONTEXT_MAP, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        raise Refusal("%s is missing, so no context: label can be checked against it" % CONTEXT_MAP)
+    names, inside, seen_table = [], False, False
+    for line in lines:
+        if line.startswith("#"):
+            inside = line.strip() == "## Contexts"
+        elif inside and line.startswith("|"):
+            seen_table = True
+            row = CONTEXT_ROW.match(line)
+            if row:
+                names.append(row.group(1))
+        elif inside and seen_table:
+            break
+    return names
+
+
+def check_context(name):
+    if name == CROSS_CONTEXT:
+        return
+    if name not in named_contexts():
+        raise Refusal("context:%s is not named in %s; add the context there first, or use context:%s"
+                      % (name, CONTEXT_MAP, CROSS_CONTEXT))
+
+
+def check_type(name):
+    if name not in TYPES:
+        raise Usage("type is one of %s" % ", ".join(TYPES))
+
+
+def relabel(number, context, kind):
+    wanted = []
+    if context:
+        check_context(context)
+        wanted.append("context:" + context)
+    if kind:
+        check_type(kind)
+        wanted.append("type:" + kind)
+    ticket = fetch(number)
+    for label in wanted:
+        ensure_label(label)
+    edit = ["issue", "edit", str(number), "--add-label", ",".join(wanted)]
+    stale = [name for name in ticket["labels"]
+             if name not in wanted and any(name.startswith(label.split(":")[0] + ":") for label in wanted)]
+    if stale:
+        edit += ["--remove-label", ",".join(stale)]
+    gh(*edit)
+    return {"number": int(number), "labels": wanted}
+
+
+TEMPLATES = {"ticket": ("feature", "draft"), "map": ("map", "in-progress"), "decision": ("decision", "todo")}
+TEMPLATE_DIR = os.path.join(".github", "ISSUE_TEMPLATE")
+
+
+def template_body(kind):
+    path = os.path.join(TEMPLATE_DIR, kind + ".md")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError:
+        raise Refusal("%s is missing; it ships with the project template, copy it from there" % path)
+    if text.startswith("---\n"):
+        text = text.split("\n---\n", 1)[1] if "\n---\n" in text else text
+    return text.lstrip("\n")
+
+
+def create(kind, title, context, kind_of_work, status, notes):
+    default_type, default_status = TEMPLATES[kind]
+    if kind_of_work and kind != "ticket":
+        raise Usage("the %s template fixes the type; --type is for the ticket template" % kind)
+    work, status = kind_of_work or default_type, status or default_status
+    if status not in STATUSES:
+        raise Usage("status is one of %s" % ", ".join(STATUSES))
+    check_type(work)
+    if status != "draft" and not context:
+        raise Refusal("a %s needs a context: label, and none was given" % status)
+    if context:
+        check_context(context)
+    body = template_body(kind)
+    if notes:
+        body = replace_sections(body, {"Notes": notes}).rstrip() + "\n"
+    labels = ["status:" + status, "type:" + work] + (["context:" + context] if context else [])
+    for label in labels:
+        ensure_label(label)
+    url = gh("issue", "create", "--title", title, "--body-file", "-", "--label", ",".join(labels), stdin=body).strip()
+    return {"number": int(url.rsplit("/", 1)[1]), "url": url, "status": status, "type": work, "context": context}
+
+
+UNANALYSED = "_Not analysed yet"
+
+
+def is_analysed(ticket, section):
+    text = ticket["sections"].get(section, "")
+    return bool(text) and not text.startswith(UNANALYSED)
+
+
+def touches_frontend(ticket):
+    return "frontend/" in ticket["body"]
+
+
+def ready(number, verb):
+    ticket = fetch(number)
+    n, status = ticket["number"], ticket["status"]
+    if verb == "refine" and status != "draft":
+        raise Refusal("#%d is %s, not draft; refine only analyses a captured draft" % (n, status))
+    if verb in ("start", "design") and status == "done":
+        raise Refusal("#%d is done" % n)
+    if verb == "start":
+        if status == "draft":
+            raise Refusal("#%d is a draft; run /ticket refine %d first" % (n, n))
+        if not is_analysed(ticket, "Model decision"):
+            raise Refusal("#%d has no Model decision; the status says it was analysed, the section says it was not" % n)
+        if touches_frontend(ticket) and not is_analysed(ticket, "Design direction"):
+            raise Refusal("#%d touches frontend/** and has no Design direction" % n)
+    if verb == "design":
+        if status != "in-progress":
+            raise Refusal("#%d is %s, not in-progress" % (n, status))
+        if not touches_frontend(ticket):
+            raise Refusal("#%d does not touch frontend/**" % n)
+    return public(ticket)
+
+
+def develop(number, checkout):
+    ticket = fetch(number)
+    linked = [line.split("\t")[0] for line in gh("issue", "develop", "--list", str(number)).splitlines() if line.strip()]
+    if linked:
+        return {"number": ticket["number"], "branch": linked[0], "existing": True, "checkedOut": False}
+    out = gh("issue", "develop", str(number), *(["--checkout"] if checkout else []))
+    match = re.search(r"/tree/(\S+)", out)
+    if not match:
+        raise Refusal("gh issue develop printed no branch: %r" % out.strip())
+    return {"number": ticket["number"], "branch": match.group(1), "existing": False, "checkedOut": checkout}
+
+
+CLOSING_KEYWORD = re.compile(r"\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\s*:?\s+"
+                             r"(\S*#\d+|https://github\.com/[^/\s]+/[^/\s]+/issues/\d+)", re.IGNORECASE)
+
+
+def create_pr(title, body_file, closes, refs):
+    if bool(closes) == bool(refs):
+        raise Usage("pr-create needs exactly one of --closes N (review) or --refs N (a close-out that closes nothing)")
+    number = closes or refs
+    ticket = fetch(number)
+    if closes and ticket["type"] == "map":
+        raise Refusal("#%s is a map; a map is closed by hand, never by a pull request" % number)
+    with open(body_file, encoding="utf-8") as handle:
+        body = handle.read().rstrip("\n")
+    if refs and CLOSING_KEYWORD.search(body):
+        raise Refusal("this pull request closes nothing, and its body carries a closing keyword (%s)"
+                      % CLOSING_KEYWORD.search(body).group(0))
+    line = ("Closes #%s" if closes else "Refs #%s") % number
+    if not re.search(r"(?m)^%s(?!\d)" % re.escape(line), body):
+        body += "\n\n" + line
+    url = gh("pr", "create", "--title", title, "--body-file", "-", stdin=body + "\n").strip()
+    return {"number": ticket["number"], "url": url}
+
+
+FEEDBACK_QUERY = """
+query($owner: String!, $repo: String!, $n: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $n) {
+      body
+      reviewThreads(first: 100) { nodes { isResolved path line
+        comments(first: 20) { nodes { databaseId author { login } body diffHunk } } } }
+      comments(first: 100) { nodes { author { login } body } }
+      reviews(first: 50) { nodes { author { login } state body } }
+      commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+    }
+  }
+}"""
+
+
+def pr_feedback(number):
+    data = gh_json("api", "graphql", "-F", "owner={owner}", "-F", "repo={repo}", "-F", "n=" + str(number),
+                   "-f", "query=" + FEEDBACK_QUERY)
+    pr = data["data"]["repository"]["pullRequest"]
+    rollup = pr["commits"]["nodes"][0]["commit"]["statusCheckRollup"] if pr["commits"]["nodes"] else None
+    threads = []
+    for thread in pr["reviewThreads"]["nodes"]:
+        if thread["isResolved"]:
+            continue
+        first = thread["comments"]["nodes"][0]
+        threads.append({
+            "path": thread["path"], "line": thread["line"],
+            "anchor": first["diffHunk"].split("\n")[-1],
+            "comments": [{k: v for k, v in c.items() if k != "diffHunk"} for c in thread["comments"]["nodes"]]})
+    return {"ci": rollup["state"] if rollup else None, "threads": threads, "comments": pr["comments"]["nodes"],
+            "reviews": [r for r in pr["reviews"]["nodes"] if r["body"]], "body": pr["body"]}
+
+
+def pr_reply(number, comment_id, body_file):
+    with open(body_file, encoding="utf-8") as handle:
+        body = handle.read().strip()
+    gh("api", "-X", "POST", "repos/{owner}/{repo}/pulls/%s/comments/%s/replies" % (number, comment_id), "-f", "body=" + body)
+    return {"pr": int(number), "comment": int(comment_id)}
+
+
+RUN_ID = re.compile(r"/actions/runs/(\d+)")
+
+
+def ci_log(number):
+    failed = [check for check in gh_json("pr", "checks", str(number), "--json", "name,bucket,link")
+              if check["bucket"] == "fail"]
+    runs = sorted({int(found.group(1)) for found in (RUN_ID.search(check["link"] or "") for check in failed) if found})
+    return {"pr": int(number), "failed": [check["name"] for check in failed],
+            "logs": [{"run": run, "log": gh("run", "view", str(run), "--log-failed")} for run in runs]}
+
+
+def has_merged_pull_request(number):
+    branches = [line.split("\t")[0] for line in gh("issue", "develop", "--list", str(number)).splitlines() if line.strip()]
+    return any(gh_json("pr", "list", "--state", "merged", "--head", branch, "--json", "number") for branch in branches)
+
+
+def status_labels(ticket):
+    return [name for name in ticket["labels"] if name.startswith("status:")]
+
+
+def finish(number, notes_file, expected_at):
+    if notes_file and not expected_at:
+        raise Usage("--notes-file needs --expect-updated-at, the updatedAt the ticket was read at")
+    ticket = fetch(number)
+    n = ticket["number"]
+    if not has_merged_pull_request(number):
+        raise Refusal("#%d is not merged: no branch gh issue develop linked to it has a merged pull request" % n)
+    edit, body = ["issue", "edit", str(number)], None
+    if notes_file:
+        if ticket["updatedAt"] != expected_at:
+            raise Refusal("#%d changed since it was read (updatedAt %s, read at %s); read it again before writing"
+                          % (n, ticket["updatedAt"], expected_at))
+        with open(notes_file, encoding="utf-8") as handle:
+            body = replace_sections(ticket["body"], {"Notes": handle.read()})
+        edit += ["--body-file", "-"]
+    leftover = status_labels(ticket)
+    if leftover:
+        edit += ["--remove-label", ",".join(leftover)]
+    if len(edit) > 3:
+        gh(*edit, stdin=body)
+    closed_here = ticket["state"] == "OPEN"
+    if closed_here:
+        gh("issue", "close", str(number), "--reason", "completed")
+    message = ("#%d was still open: the pull request's closing keyword was missed, so it is closed as completed now" % n
+               if closed_here else "#%d was already closed as completed by the merge" % n)
+    return {"number": n, "closedByDone": closed_here, "labelsRemoved": leftover, "notesWritten": bool(notes_file),
+            "message": message}
+
+
+def close(number):
+    ticket = fetch(number)
+    if ticket["type"] == "map":
+        raise Refusal("#%d is a map; a map is closed by hand, once nothing is left to decide" % ticket["number"])
+    if ticket["type"] != "decision":
+        raise Refusal("#%d is a %s; it is done when its pull request merges, and only a decision is closed here"
+                      % (ticket["number"], ticket["type"]))
+    leftover = status_labels(ticket)
+    if leftover:
+        gh("issue", "edit", str(number), "--remove-label", ",".join(leftover))
+    gh("issue", "close", str(number), "--reason", "completed")
+    return {"number": ticket["number"], "labelsRemoved": leftover}
+
+
+def board():
+    rows = gh_json("issue", "list", "--state", "open", "--json", ISSUE_FIELDS, "--limit", "1000")
+    tickets, unreadable = {status: [] for status in STATUSES}, []
+    for raw in sorted(rows, key=lambda row: row["number"]):
+        try:
+            ticket = read_ticket(raw)
+        except Refusal as refusal:
+            unreadable.append({"number": raw["number"], "title": raw["title"], "reason": str(refusal)})
+            continue
+        tickets[ticket["status"]].append({key: ticket[key] for key in ("number", "title", "context", "type")})
+    return {"tickets": tickets, "unreadable": unreadable}
+
+
+def notes():
+    rows = gh_json("issue", "list", "--state", "all", "--json", ISSUE_FIELDS, "--limit", "1000")
+    found = []
+    for raw in sorted(rows, key=lambda row: row["number"]):
+        if raw["state"] == "CLOSED" and raw.get("stateReason") in NOT_COMPLETED:
+            continue
+        text = dict((name, section_text(body)) for name, body in split_sections(raw["body"] or "")[1]).get("Notes", "")
+        if text and not text.startswith(UNANALYSED):
+            found.append({"number": raw["number"], "title": raw["title"], "state": raw["state"], "notes": text})
+    return found
+
+
+def rest_ticket(row):
+    return {"number": row["number"], "title": row["title"], "body": "", "labels": row["labels"],
+            "state": row["state"].upper(), "stateReason": (row.get("state_reason") or "").upper() or None,
+            "updatedAt": ""}
+
+
+def is_done(row):
+    try:
+        return read_ticket(rest_ticket(row))["status"] == "done"
+    except Refusal:
+        return False
+
+
+def frontier(number):
+    ticket = fetch(number)
+    if ticket["type"] != "map":
+        raise Refusal("#%s is a %s, not a map" % (number, ticket["type"]))
+    ready_tickets, unreadable = [], []
+    for row in gh_api_list("repos/{owner}/{repo}/issues/%s/sub_issues" % number):
+        if row["state"] != "open":
+            continue
+        try:
+            sub = read_ticket(rest_ticket(row))
+        except Refusal as refusal:
+            unreadable.append({"number": row["number"], "reason": str(refusal)})
+            continue
+        if sub["status"] != "todo":
+            continue
+        blockers = gh_api_list("repos/{owner}/{repo}/issues/%d/dependencies/blocked_by" % row["number"])
+        if all(is_done(blocker) for blocker in blockers):
+            ready_tickets.append({"number": sub["number"], "title": sub["title"]})
+    return {"map": ticket["number"], "frontier": sorted(ready_tickets, key=lambda t: t["number"]),
+            "unreadable": unreadable}
+
+
+def database_id(number):
+    return gh_json("api", "repos/{owner}/{repo}/issues/%s" % number)["id"]
+
+
+def add_sub_issue(map_number, number):
+    parent, child = fetch(map_number), fetch(number)
+    if parent["type"] != "map":
+        raise Refusal("#%s is a %s, not a map" % (map_number, parent["type"]))
+    if child["type"] != "decision":
+        raise Refusal("#%s is a %s; only decision tickets are a map's sub-issues" % (number, child["type"]))
+    gh("api", "-X", "POST", "repos/{owner}/{repo}/issues/%s/sub_issues" % map_number,
+       "-F", "sub_issue_id=%s" % database_id(number))
+    return {"map": parent["number"], "subIssue": child["number"]}
+
+
+def add_blocker(number, blocker):
+    blocked, blocking = fetch(number), fetch(blocker)
+    gh("api", "-X", "POST", "repos/{owner}/{repo}/issues/%s/dependencies/blocked_by" % number,
+       "-F", "issue_id=%s" % database_id(blocker))
+    return {"number": blocked["number"], "blockedBy": blocking["number"]}
+
+
+def replace_sections(body, replacements):
+    newline = "\r\n" if "\r\n" in body else "\n"
+    pending = dict(replacements)
+
+    def rendered(heading, text, tail):
+        return heading + newline + newline + text.strip().replace("\r\n", "\n").replace("\n", newline) + tail
+
+    preamble, sections = split_sections(body)
+    parts = [preamble]
+    for name, raw in sections:
+        if name in pending:
+            heading = raw.split("\n", 1)[0].rstrip("\r")
+            tail = raw[len(raw.rstrip()):] or newline
+            parts.append(rendered(heading, pending.pop(name), tail))
+        else:
+            parts.append(raw)
+    result = "".join(parts)
+    for name, text in pending.items():
+        if result and not result.endswith(newline):
+            result += newline
+        result += (newline if result else "") + rendered("## " + name, text, newline)
+    return result
+
+
+def write_sections(number, expected_at, replacements):
+    ticket = fetch(number)
+    if ticket["updatedAt"] != expected_at:
+        raise Refusal("#%s changed since it was read (updatedAt %s, read at %s); read it again before writing"
+                      % (number, ticket["updatedAt"], expected_at))
+    gh("issue", "edit", str(number), "--body-file", "-", stdin=replace_sections(ticket["body"], replacements))
+    return {"number": int(number), "updatedAt": gh_json("issue", "view", str(number), "--json", "updatedAt")["updatedAt"]}
+
+
+def read_sections_from_stdin():
+    try:
+        replacements = json.load(sys.stdin)
+    except json.JSONDecodeError as error:
+        raise Usage("stdin must be a JSON object of section name to text: %s" % error)
+    if not isinstance(replacements, dict) or not all(isinstance(v, str) for v in replacements.values()):
+        raise Usage("stdin must be a JSON object of section name to text")
+    return replacements
+
+
+def parser():
+    top = argparse.ArgumentParser(prog="ticket-tracker", description=__doc__.split("\n")[0])
+    verbs = top.add_subparsers(dest="verb", required=True)
+    verb = verbs.add_parser("show", help="read one ticket")
+    verb.add_argument("number")
+    verb = verbs.add_parser("move", help="move a ticket to another status in one edit")
+    verb.add_argument("number")
+    verb.add_argument("status")
+    verb = verbs.add_parser("write-sections", help="replace ## sections from a JSON object on stdin")
+    verb.add_argument("number")
+    verb.add_argument("--expect-updated-at", required=True)
+    verb = verbs.add_parser("label", help="set a ticket's context and/or type label")
+    verb.add_argument("number")
+    verb.add_argument("--context")
+    verb.add_argument("--type")
+    verb = verbs.add_parser("create", help="open one issue from .github/ISSUE_TEMPLATE/<template>.md")
+    verb.add_argument("--title", required=True)
+    verb.add_argument("--template", choices=sorted(TEMPLATES), default="ticket")
+    verb.add_argument("--context")
+    verb.add_argument("--type")
+    verb.add_argument("--status")
+    verb.add_argument("--notes")
+    verb = verbs.add_parser("ready", help="refuse unless a ticket may take refine, start or design")
+    verb.add_argument("number")
+    verb.add_argument("verb_name", choices=("refine", "start", "design"))
+    verb = verbs.add_parser("develop", help="branch from a ticket with gh issue develop")
+    verb.add_argument("number")
+    verb.add_argument("--checkout", action="store_true")
+    verb = verbs.add_parser("pr-create", help="open a pull request that closes, or only refs, a ticket")
+    verb.add_argument("--title", required=True)
+    verb.add_argument("--body-file", required=True)
+    verb.add_argument("--closes")
+    verb.add_argument("--refs")
+    verb = verbs.add_parser("pr-feedback", help="unresolved threads, comments, reviews and CI of a pull request")
+    verb.add_argument("number")
+    verb = verbs.add_parser("pr-reply", help="reply in a review thread, by its first comment's id")
+    verb.add_argument("number")
+    verb.add_argument("comment_id")
+    verb.add_argument("--body-file", required=True)
+    verb = verbs.add_parser("ci-log", help="the failed steps' log of a pull request's red checks, not the full log")
+    verb.add_argument("number")
+    verb = verbs.add_parser("done", help="after the merge: write Notes, clear labels, close what the keyword missed")
+    verb.add_argument("number")
+    verb.add_argument("--notes-file")
+    verb.add_argument("--expect-updated-at")
+    verb = verbs.add_parser("close", help="close a decision (resolved or ruled out) as completed")
+    verb.add_argument("number")
+    verbs.add_parser("board", help="open tickets by status, unreadable ones with their reason")
+    verbs.add_parser("notes", help="the Notes section of every issue, open and closed, for /debt")
+    verb = verbs.add_parser("frontier", help="a map's open todo sub-issues whose dependencies are all closed")
+    verb.add_argument("number")
+    verb = verbs.add_parser("add-sub-issue", help="make a decision ticket a sub-issue of a map")
+    verb.add_argument("map_number")
+    verb.add_argument("number")
+    verb = verbs.add_parser("add-blocker", help="make one ticket depend on another (native dependency)")
+    verb.add_argument("number")
+    verb.add_argument("blocker")
+    return top
+
+
+def run(args):
+    if args.verb == "show":
+        return public(show(args.number))
+    if args.verb == "move":
+        return move(args.number, args.status)
+    if args.verb == "write-sections":
+        return write_sections(args.number, args.expect_updated_at, read_sections_from_stdin())
+    if args.verb == "label":
+        if not (args.context or args.type):
+            raise Usage("label needs --context and/or --type")
+        return relabel(args.number, args.context, args.type)
+    if args.verb == "create":
+        return create(args.template, args.title, args.context, args.type, args.status, args.notes)
+    if args.verb == "ready":
+        return ready(args.number, args.verb_name)
+    if args.verb == "develop":
+        return develop(args.number, args.checkout)
+    if args.verb == "pr-create":
+        return create_pr(args.title, args.body_file, args.closes, args.refs)
+    if args.verb == "pr-feedback":
+        return pr_feedback(args.number)
+    if args.verb == "pr-reply":
+        return pr_reply(args.number, args.comment_id, args.body_file)
+    if args.verb == "ci-log":
+        return ci_log(args.number)
+    if args.verb == "done":
+        return finish(args.number, args.notes_file, args.expect_updated_at)
+    if args.verb == "close":
+        return close(args.number)
+    if args.verb == "board":
+        return board()
+    if args.verb == "notes":
+        return notes()
+    if args.verb == "frontier":
+        return frontier(args.number)
+    if args.verb == "add-sub-issue":
+        return add_sub_issue(args.map_number, args.number)
+    if args.verb == "add-blocker":
+        return add_blocker(args.number, args.blocker)
+    raise Usage("unknown verb " + args.verb)
+
+
+def main(argv):
+    result = run(parser().parse_args(argv))
+    if result is not None:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    try:
+        main(sys.argv[1:])
+    except Refusal as refusal:
+        print(refusal, file=sys.stderr)
+        sys.exit(refusal.exit_code)

@@ -1,6 +1,9 @@
 # review
 
-1. Set `status: in-review`.
+`ticket-tracker` below is `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`; it is the only way to
+reach GitHub.
+
+1. `ticket-tracker move <n> in-review`. It refuses a ticket it cannot read; stop there.
 2. Run `make verify`. Report what actually passed — not what should pass.
 
    `make verify` is the pipeline, and `make ci` is not: `ci` is the backend job's first
@@ -71,9 +74,12 @@
    `respond` has no comments to read, so the round is lost rather than paused. The PR is
    the channel between verbs, and a fork is answered by a human on it — which is what
    `respond` is for.
-6. Push and open a PR. Its body, briefly and in the glossary's words:
+6. Push and open a PR with `ticket-tracker pr-create --title "<the change, in words>" --body-file
+   <file> --closes <n>`. The title says the change and carries no ticket id; the script puts
+   `Closes #<n>` in the body if the file lacks it, which is what closes the issue at the merge and
+   makes it `done`. It refuses to close a map. Its body, briefly and in the glossary's words:
 
-   - **Summary** — the ticket link, then the smallest view that shows the change: a call
+   - **Summary** — the smallest view that shows the change: a call
      tree, a diff-shaped sketch of the package layout or the flow, or a few lines of
      pseudocode. Not a file list; the diff already is one.
    - **Criteria** — each acceptance criterion, ticked or not, with what demonstrated it:
@@ -90,13 +96,6 @@ Before ticking anything or reporting that a step passed, run the command that pr
 in this session and read its output — the exit code, the failure count, `Skipped:`.
 "Should pass", a run from before the last edit, or an agent saying it passed is not that.
 
-Tick an acceptance criterion only once something demonstrates it. An unticked box is
+Tick an acceptance criterion only once something demonstrates it, by rewriting the issue's
+*Acceptance criteria* section through `ticket-tracker write-sections`. An unticked box is
 information; a ticked one that nothing verifies is a lie the next reader will act on.
-
-## Vikunja
-
-Once `status: in-review` is written — step 1, not after `respond` — and only if
-`VIKUNJA_URL`, `VIKUNJA_TOKEN` and `VIKUNJA_PROJECT_ID` are all set, move the ticket's
-task to the bucket titled `in-review`. See the Vikunja section of `/ticket` itself for
-the lookup shape. Skip this section, and say so once, when any of the three variables is
-unset.

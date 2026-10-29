@@ -74,7 +74,7 @@ check it before writing `@ApiResponse` annotations.
 ## Where to look
 
 - `CLAUDE.md` — what this project is, and the hard rules; deliberately short
-- `docs/backlog/` — features to do and their status
+- GitHub Issues — features to do and their status, labelled `status:`, `context:` and `type:`
 - `docs/glossary.md` — the words the code uses
 - `docs/context-map.md` — contexts and their relationships
 - `docs/adr/` — why things are the way they are
@@ -87,6 +87,6 @@ check it before writing `@ApiResponse` annotations.
 /plugin install ddd-workflow@maxence-tools
 ```
 
-Then `/ticket` to see the backlog, `/ticket start <ID>` to work one, `/onboard` when
+Then `/ticket` to see the board, `/ticket start <number>` to work one, `/onboard` when
 returning to the project after a while. The conventions live in the `ddd-backend` skill
 so they load when relevant rather than on every request.
