@@ -19,6 +19,7 @@ VERBS = {
     "pr-create": (["pr-create", "--title", "t", "--body-file", "BODY", "--closes", "50"], ""),
     "pr-feedback": (["pr-feedback", "7"], ""),
     "pr-reply": (["pr-reply", "7", "11", "--body-file", "BODY"], ""),
+    "ci-log": (["ci-log", "7"], ""),
     "done": (["done", "50"], ""),
     "close": (["close", "50"], ""),
     "board": (["board"], ""),
@@ -55,6 +56,14 @@ class WithoutTheNetwork(TrackerCase):
         done = self.run_tracker("board", env_path=self.bin)
         self.assertEqual(done.returncode, 1)
         self.assertIn("gh is not installed", done.stderr)
+
+    def test_a_dropped_or_timed_out_connection_is_unreachable_too(self):
+        for message in ("read tcp 10.0.0.2:51234->140.82.121.6:443: read: connection reset by peer",
+                        "Post \"https://api.github.com/graphql\": context deadline exceeded"):
+            with self.subTest(message=message):
+                self.given(issue(51, labels=READY))
+                self.update(offline=message)
+                self.assertEqual(self.run_tracker("show", "51").returncode, 3, self.result.stderr)
 
 
 if __name__ == "__main__":

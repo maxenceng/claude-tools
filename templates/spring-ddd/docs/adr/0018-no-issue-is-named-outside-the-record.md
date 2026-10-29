@@ -19,9 +19,9 @@ Outside `docs/adr/`, `docs/research/`, `docs/endpoints/` and `scripts/`, no file
 `#n`, not an issue URL, open or closed. Those folders are exempt because they are meant to read as
 history. `make ticket-check` (`scripts/check-ticket-references.py`) enforces it and never calls GitHub.
 
-A bare `#n` is told apart from a hex colour by file type: in a stylesheet or a frontend source
-(`.css`, `.scss`, `.ts`, `.tsx`, `.js`, `.jsx`, `.html`) only an issue URL fails, since `#123` is a
-colour there. In Java and Markdown both fail, with a Markdown anchor (`#12-section`) and an HTML entity
+An issue URL fails in any text file. A bare `#n` fails only in Java and Markdown: in a stylesheet or a
+frontend source `#123` is a colour, and in a workflow, a Makefile or a build file `#` opens a comment.
+In Java and Markdown it fails, with a Markdown anchor (`#12-section`) and an HTML entity
 (`&#35;`) let through. A scan that matches no file fails. The guard has a fixture that trips it, with a
 stylesheet colour beside the references to prove the colour does not count (ADR 0015).
 

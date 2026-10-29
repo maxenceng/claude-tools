@@ -54,6 +54,12 @@ class WritingASection(TrackerCase):
         self.put(36, {"Notes": "new"})
         self.assertEqual(self.load()["issues"]["36"]["body"], "## Notes\n\nnew\n\n## Other\n\nx\n")
 
+    def test_a_fence_closes_only_on_its_own_marker(self):
+        body = "## Notes\n\n~~~\n```\n## Notes\n```\n~~~\n\n## Other\n\nx\n"
+        self.given(issue(38, labels=READY, body=body))
+        self.put(38, {"Notes": "new"})
+        self.assertEqual(self.load()["issues"]["38"]["body"], "## Notes\n\nnew\n\n## Other\n\nx\n")
+
     def test_an_unreadable_ticket_refuses_the_write(self):
         self.given(issue(37, labels=["status:todo", "type:feature"]))
         self.refused("write-sections", "37", "--expect-updated-at", READ_AT, stdin=json.dumps({"Notes": "x"}),

@@ -73,6 +73,25 @@ class Frontier(TrackerCase):
         self.assertEqual(sorted(self.load()["issues"]["163"]["labels"]),
                          ["context:board", "status:in-progress", "type:decision"])
 
+    def test_the_frontier_reads_every_page_of_sub_issues(self):
+        decisions = [issue(n, labels=DECISION) for n in range(181, 186)]
+        self.given(issue(180, labels=MAP, sub_issues=[d["number"] for d in decisions]), *decisions)
+        self.update(page_size=2)
+        self.assertEqual([t["number"] for t in self.ok("frontier", "180")["frontier"]], list(range(181, 186)))
+
+    def test_a_blocker_closed_as_not_planned_still_blocks(self):
+        self.given(issue(187, labels=MAP, sub_issues=[188]),
+                   issue(188, labels=DECISION, blocked_by=[189]),
+                   issue(189, state="CLOSED", reason="NOT_PLANNED", labels=DECISION))
+        self.assertEqual(self.ok("frontier", "187")["frontier"], [])
+
+    def test_the_frontier_reads_status_through_the_ticket_rules(self):
+        self.given(issue(190, labels=MAP, sub_issues=[191]),
+                   issue(191, labels=["status:todo", "status:in-progress", "type:decision", "context:board"]))
+        got = self.ok("frontier", "190")
+        self.assertEqual(got["frontier"], [])
+        self.assertEqual(got["unreadable"][0]["reason"], "#191 is unreadable: two status labels (todo, in-progress)")
+
 
 class Wiring(TrackerCase):
     def test_a_decision_becomes_a_sub_issue_of_its_map(self):

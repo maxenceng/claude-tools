@@ -15,7 +15,7 @@ Then:
 
 1. `ticket-tracker move <n> in-progress`.
 2. `ticket-tracker develop <n>`, which creates `<n>-<title-slug>` through GitHub's issue-branch linking, linked to
-   the issue by GitHub, and prints its name; `--checkout` also checks it out. Add a worktree on that
+   the issue by GitHub, and prints its name; `--checkout` also checks a new branch out, and `checkedOut` says whether it did. Add a worktree on that
    branch if the current one has uncommitted work worth keeping. If it reports the branch already
    existed (`"existing": true`), or a local branch of that name is already there, diff it against main
    before reusing it: an abandoned attempt that forked long ago will bring deleted files back. Rename

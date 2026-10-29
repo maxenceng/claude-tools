@@ -11,8 +11,8 @@ what was decided, a research note says for which issue it was researched, an end
 `tickets:` lists the issues that shaped it, and a check script's docstring names the incident
 that made the rule -- all of them are meant to read as history.
 
-A bare `#n` is told apart from a hex colour by file type: stylesheets and frontend sources are
-checked for issue URLs only, since `#123` is a colour there. Everywhere else both fail.
+An issue URL fails in any text file. A bare `#n` fails only in Java and Markdown: in a stylesheet
+or a frontend source it is a colour, and in a workflow, a Makefile or a script it is a comment.
 """
 import io
 import os
@@ -26,8 +26,7 @@ ISSUE_URL = re.compile(r"https?://github\.com/[^/\s]+/[^/\s]+/issues/[0-9]+")
 BARE_NUMBER = re.compile(r"(?<![\w/&#-])#[0-9]+(?![\w-])")
 EXEMPT = ("docs/adr/", "docs/research/", "docs/endpoints/", "scripts/")
 SKIPPED_DIRECTORIES = {"node_modules", "target", "dist", ".git", ".mvn", ".idea"}
-CHECKED_FOR_BOTH = (".java", ".md")
-CHECKED_FOR_URLS_ONLY = (".css", ".scss", ".ts", ".tsx", ".js", ".jsx", ".html")
+CHECKED_FOR_BARE_NUMBERS = (".java", ".md")
 
 
 def scanned():
@@ -35,13 +34,13 @@ def scanned():
         directories[:] = sorted(d for d in directories if d not in SKIPPED_DIRECTORIES)
         for name in sorted(files):
             relative = os.path.relpath(os.path.join(directory, name), ROOT).replace(os.sep, "/")
-            if not relative.startswith(EXEMPT) and name.endswith(CHECKED_FOR_BOTH + CHECKED_FOR_URLS_ONLY):
+            if not relative.startswith(EXEMPT):
                 yield relative
 
 
 def named(relative, line):
     found = ISSUE_URL.findall(line)
-    if relative.endswith(CHECKED_FOR_BOTH):
+    if relative.endswith(CHECKED_FOR_BARE_NUMBERS):
         found += BARE_NUMBER.findall(line)
     return found
 
@@ -54,10 +53,14 @@ def main():
 
     failures = []
     for relative in paths:
-        with io.open(os.path.join(ROOT, relative), encoding="utf-8") as handle:
-            for number, line in enumerate(handle, start=1):
-                for reference in named(relative, line):
-                    failures.append((relative, number, reference, line.strip()))
+        try:
+            with io.open(os.path.join(ROOT, relative), encoding="utf-8") as handle:
+                lines = handle.readlines()
+        except UnicodeDecodeError:
+            continue
+        for number, line in enumerate(lines, start=1):
+            for reference in named(relative, line):
+                failures.append((relative, number, reference, line.strip()))
 
     for relative, number, reference, line in failures:
         print("%s:%d: names %s, an issue outside the record" % (relative, number, reference))

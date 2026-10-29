@@ -20,9 +20,9 @@ the conversation does.
    comment's `databaseId` is the id step 8 replies to. `anchor` is the line the comment sits
    on, keeping only that line of the hunk: a leading `+` or `-` means it changed, a space
    means it is context. A `null` line means the thread is outdated. A red `ci` belongs on the list too — the
-   pipeline is a reviewer that always comments. Read it with `gh run view <run-id>
-   --log-failed`, not the full log: the failing step is the comment, the rest is noise
-   priced per line.
+   pipeline is a reviewer that always comments. Read it with `ticket-tracker ci-log <pr>`,
+   which returns only the failed steps of each red run, not the full log: the failing step is
+   the comment, the rest is noise priced per line.
 
 2. Then read the PR body for an `Open` section: the decisions `review` could not make.
    That is the other half of the round — not feedback waiting on the branch, but the

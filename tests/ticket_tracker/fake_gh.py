@@ -3,7 +3,7 @@
 
 FAKE_GH_STATE names the file. Every invocation is appended to its "calls" before anything
 else runs, offline or not, so a test can assert on what was attempted as well as on what
-changed. "offline" makes every call fail the way gh does without a network.
+changed. "offline" makes every call fail the way gh does without a network, with its text when it is one.
 """
 import json
 import os
@@ -75,7 +75,8 @@ def out(value):
 
 
 if state.get("offline"):
-    fail("error connecting to api.github.com\ncheck your internet connection or https://githubstatus.com")
+    fail(state["offline"] if isinstance(state["offline"], str)
+         else "error connecting to api.github.com\ncheck your internet connection or https://githubstatus.com")
 
 group, verb = args[0], (args[1] if len(args) > 1 else "")
 
@@ -151,6 +152,12 @@ if group == "pr" and verb == "list":
     head = option("--head")
     out([{"number": 7} for b in state["merged_heads"] if b == head])
 
+if group == "pr" and verb == "checks":
+    out(state.get("checks", []))
+
+if group == "run" and verb == "view":
+    out(state["run_logs"][args[2]])
+
 if group == "api":
     path = next(a for a in args[1:] if a == "graphql" or a.startswith("repos/"))
     method = option("-X", "GET")
@@ -168,8 +175,12 @@ if group == "api":
             by_id = {i["id"]: i["number"] for i in state["issues"].values()}
             issue.setdefault(key, []).append(by_id[wanted])
             out({})
-        rows = [public(issue_of(n), ["number", "title", "state", "labels"]) for n in issue.get(key, [])]
-        out([dict(row, state=row["state"].lower()) for row in rows])
+        rows = [public(issue_of(n), ["number", "title", "state", "stateReason", "labels"]) for n in issue.get(key, [])]
+        rows = [{"number": row["number"], "title": row["title"], "state": row["state"].lower(),
+                 "state_reason": (row["stateReason"] or "").lower() or None, "labels": row["labels"]} for row in rows]
+        page = state.get("page_size", 30)
+        pages = [rows[i:i + page] for i in range(0, len(rows), page)] or [[]]
+        out(pages if "--slurp" in args and "--paginate" in args else pages[0])
     reply = re.fullmatch(r"repos/\{owner\}/\{repo\}/pulls/(\d+)/comments/(\d+)/replies", path)
     if reply and method == "POST":
         state["replies"].append({"pr": reply.group(1), "comment": reply.group(2), "body": option("-f", "")})

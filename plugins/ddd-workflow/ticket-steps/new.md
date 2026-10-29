@@ -6,7 +6,7 @@ the modelling happens later, in `refine`, one ticket at a time.
 `ticket-tracker` below is `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`; it is the only way to
 reach GitHub.
 
-**One idea per line of the argument.** Six lines means six issues. Write each one down as close to
+**One idea per line of the argument.** Six lines means six tickets. Write each one down as close to
 the words used as the title allows — a captured ticket is a record of what someone asked for, and
 rephrasing it into what you think they meant is the one way this step can be wrong.
 
@@ -27,7 +27,7 @@ context, and it reads as unassigned until `refine` places it. Say so in your rep
 refuses a `context:` label that `docs/context-map.md` does not name, apart from `cross-context`,
 so a context is never invented here.
 
-## Writing the issues
+## Writing the tickets
 
 One call per line, in order:
 

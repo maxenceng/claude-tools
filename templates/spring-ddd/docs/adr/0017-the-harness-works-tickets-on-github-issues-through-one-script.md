@@ -22,10 +22,10 @@ before writing.
 
 - **A ticket is an issue, named by its number.** `status:draft|todo|in-progress|in-review`,
   `context:<name>` and `type:<feature|fix|chore|spike|map|decision>` are labels; the body keeps the
-  `##` sections and has no frontmatter. An open issue with no status label is a draft. From `todo` on,
-  an issue without exactly one `context:` and one `type:` label, with two status labels, or closed as
-  not planned, is unreadable and every verb refuses it with the reason. A closed-as-completed issue is
-  done whatever labels it still carries.
+  `##` sections and has no frontmatter. An open ticket with no status label is a draft. From `todo` on,
+  a ticket without exactly one `context:` and one `type:` label, with two status labels, or closed as
+  not planned, is unreadable and every verb refuses it with the reason; a move that would leave it so is
+  refused too. A ticket closed as completed is done whatever labels it still carries.
 - **One script carries every GitHub operation.** The plugin's `scripts/ticket-tracker` is Python,
   standard library only, over `gh`. Every `/ticket` step, `/wayfinder` and `/debt` calls it, and no
   step file carries a `gh issue` or `gh api` snippet. Rejected: a snippet per step, which drifts across

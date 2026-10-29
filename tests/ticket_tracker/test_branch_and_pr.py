@@ -26,6 +26,15 @@ class Branching(TrackerCase):
         self.assertEqual(made["existing"], True)
         self.assertEqual(self.writes(), [])
 
+    def test_a_branch_that_already_existed_says_it_was_not_checked_out(self):
+        self.given(issue(89, labels=TODO, branches=["89-old"]))
+        made = self.ok("develop", "89", "--checkout")
+        self.assertEqual((made["existing"], made["checkedOut"]), (True, False))
+
+    def test_a_new_branch_says_whether_it_was_checked_out(self):
+        self.given(issue(88, title="x", labels=TODO))
+        self.assertEqual(self.ok("develop", "88", "--checkout")["checkedOut"], True)
+
     def test_an_unreadable_ticket_gets_no_branch(self):
         self.given(issue(93, labels=["status:todo"]))
         self.refused("develop", "93", why="#93 is unreadable")
@@ -57,6 +66,17 @@ class OpeningAPullRequest(TrackerCase):
         body = self.load()["prs"][0]["body"]
         self.assertIn("Refs #96", body)
         self.assertNotIn("Closes", body)
+
+    def test_a_close_out_body_that_closes_by_issue_url_is_refused(self):
+        self.given(issue(87, state="CLOSED", reason="COMPLETED"))
+        body = self.body("Fixes https://github.com/o/r/issues/12\n")
+        self.refused("pr-create", "--title", "t", "--body-file", body, "--refs", "87", why="carries a closing keyword")
+        self.assertEqual(self.writes(), [])
+
+    def test_a_keyword_closing_a_longer_number_does_not_stand_in_for_this_one(self):
+        self.given(issue(5, labels=TODO))
+        self.ok("pr-create", "--title", "t", "--body-file", self.body("Summary\n\nCloses #50\n"), "--closes", "5")
+        self.assertRegex(self.load()["prs"][0]["body"], r"(?m)^Closes #5$")
 
     def test_a_close_out_body_that_carries_a_closing_keyword_is_refused(self):
         self.given(issue(97, state="CLOSED", reason="COMPLETED"))

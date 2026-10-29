@@ -50,6 +50,26 @@ class TheTicketReferenceCheck(unittest.TestCase):
     def test_an_issue_url_fails_whatever_the_file_type(self):
         self.fails_on("frontend/src/App.tsx", "// https://github.com/o/r/issues/12\n", "https://github.com/o/r/issues/12")
 
+    def test_an_issue_url_fails_in_a_workflow_a_makefile_and_a_build_file(self):
+        for relative in (".github/workflows/ci.yml", "Makefile", "pom.xml"):
+            with self.subTest(file=relative):
+                self.fails_on(relative, "# https://github.com/o/r/issues/12\n", "https://github.com/o/r/issues/12")
+                os.remove(os.path.join(self.root, relative))
+
+    def test_a_bare_number_outside_java_and_markdown_is_a_comment_not_an_issue(self):
+        self.put("Makefile", "# step #2 of the release\n")
+        self.put(".github/workflows/ci.yml", "# job #3\n")
+        done = self.run_check()
+        self.assertEqual(done.returncode, 0, done.stdout)
+
+    def test_a_binary_file_is_skipped_rather_than_failing_the_scan(self):
+        path = os.path.join(self.root, "frontend/public/logo.png")
+        os.makedirs(os.path.dirname(path))
+        with open(path, "wb") as handle:
+            handle.write(b"\x89PNG\r\n\x1a\n\xff\xfe")
+        done = self.run_check()
+        self.assertEqual(done.returncode, 0, done.stdout)
+
     def test_the_check_never_asks_github_whether_the_issue_is_open_or_closed(self):
         self.put("README.md", "#42\n")
         self.run_check()

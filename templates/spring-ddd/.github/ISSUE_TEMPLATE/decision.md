@@ -5,7 +5,7 @@ about: One question a map waits on, resolved by /wayfinder
 
 ## Question
 
-_The decision or investigation this issue resolves._
+_The decision or investigation this ticket resolves._
 
 ## Kind
 

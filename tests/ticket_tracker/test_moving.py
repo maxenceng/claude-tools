@@ -54,6 +54,11 @@ class MovingAStatus(TrackerCase):
         self.refused("move", "27", "todo", why="#27 is done")
         self.assertEqual(self.writes(), [])
 
+    def test_a_move_that_would_leave_the_ticket_unreadable_is_refused_and_writes_nothing(self):
+        self.given(issue(28, labels=["type:feature"]), labels=["status:todo"])
+        self.refused("move", "28", "todo", why="#28 is unreadable: no context: label, and a todo needs one")
+        self.assertEqual(self.writes(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

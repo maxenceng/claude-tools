@@ -10,7 +10,7 @@ finding its way to. One or two lines; every session orients to it before picking
 
 ## Notes
 
-_Domain, skills every session should consult, standing preferences for this effort._
+_Not analysed yet — domain, skills every session should consult, standing preferences for this effort._
 
 ## Decisions so far
 

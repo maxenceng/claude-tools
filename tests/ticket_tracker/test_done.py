@@ -90,6 +90,11 @@ class Closing(TrackerCase):
         self.given(issue(122, labels=["status:in-progress", "type:decision"]))
         self.refused("close", "122", why="#122 is unreadable")
 
+    def test_a_feature_is_not_closed_by_the_script_because_its_pull_request_closes_it(self):
+        self.given(issue(92, labels=["status:in-review", "type:feature", "context:board"]))
+        self.refused("close", "92", why="#92 is a feature; it is done when its pull request merges")
+        self.assertEqual(self.writes(), [])
+
 
 if __name__ == "__main__":
     unittest.main()
