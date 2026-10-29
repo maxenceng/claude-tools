@@ -58,4 +58,6 @@ before writing.
   would be a second copy of status.
 - Two sessions claiming the same frontier ticket in the same second both win; accepted for one
   developer.
+- The `updatedAt` refusal is checked before the write, not by it: `gh issue edit` has no conditional
+  write, so an edit landing between the read and the write is still lost. Accepted for the same reason.
 - A project upgrades to 3.0.0 only once its backlog is on Issues.
