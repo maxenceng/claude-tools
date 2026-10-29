@@ -33,8 +33,8 @@ should say which."
 
 ### Leave the coming concepts their words
 
-Before a new name settles, read the open tickets in `docs/backlog/` for the concept that
-will need the same word. A `PullRequestReviewManager` that only reads a diff takes the
+Before a new name settles, read the open tickets (`${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker board`, then
+`show <n>`) for the concept that will need the same word. A `PullRequestReviewManager` that only reads a diff takes the
 word *review* from the GitHub review that a later ticket submits. That ticket then has to
 pick a second-best name or rename this one. Name what the code does now
 (`PullRequestDiffManager`). When the screen and the coming concept share an everyday word,

@@ -71,26 +71,26 @@ the change fits the domain model.
 
 ### Commands
 
-- `/ticket` — work a backlog ticket end to end: capture, refine, start, design,
+- `/ticket` — work a ticket end to end: capture, refine, start, design,
   review, respond to feedback, close. `design` is the frontend loop between `start` and
   `review`: screenshot, impeccable critique, a named move you pick, repeat until you call
   it done. Capture and analysis are separate verbs on purpose: `new` writes a
   `draft` per line and asks almost nothing, `refine` is where the questions, the modelling
   and the acceptance criteria happen and the ticket becomes `todo`. That split is what
   lets a whole backlog be written in one sitting without deciding six designs at once.
-  Tickets are markdown in `docs/backlog/`, so status changes ride along in the branch and
-  the PR that caused them. Open the folder as an Obsidian vault for a board; nothing
-  depends on it. Each step names the agent or skill that owns it, so the reviewers are
+  A ticket is a GitHub issue named by its number, with labels for status, context and type;
+  every step reaches GitHub through the plugin's one `scripts/ticket-tracker`, and the merged
+  PR's `Closes #n` closes it. Each step names the agent or skill that owns it, so the reviewers are
   dispatched rather than suggested.
 - `/trace-endpoint` — trace one endpoint from controller to adapter and write its sequence
-  diagram to `docs/endpoints/`: Mermaid in Markdown for GitHub and Obsidian, and an
+  diagram to `docs/endpoints/`: Mermaid in Markdown for GitHub, and an
   interactive archify HTML beside it. `/ticket done` runs it on every endpoint the ticket
   touched, so the atlas grows with the work; `/onboard` reports diagrams whose code has
   moved since.
 - `/onboard` — understand a project and refresh its architecture docs.
 - `/find-duplication` — run the duplication detectors and propose extractions worth making.
 - `/debt` — collect the limits this project chose to live with, from `deferred:` markers in
-  code, ADR *Consequences* and ticket *Notes*, into one ledger. A deferral written down in
+  code, ADR *Consequences* and ticket *Notes* (read from the issues), into one ledger. A deferral written down in
   three places is written down nowhere.
 
 ### Template and archetype

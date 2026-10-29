@@ -2,17 +2,23 @@
 
 Turn a captured draft into a ticket someone can start. This is where the questions live.
 
-Refuse anything whose status is not `draft`, and say what it is instead. A ticket already
-in `todo` has been analysed and possibly argued over; re-running this would quietly
-overwrite that with a fresh opinion. If it genuinely needs rethinking, that is a human
-saying so, not a status this step infers.
+`ticket-tracker` below is `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`; it is the only way to
+reach GitHub.
+
+Run `ticket-tracker ready <n> refine` first. It refuses anything whose status is not `draft`, and
+says what it is instead. A ticket already in `todo` has been analysed and possibly argued over;
+re-running this would quietly overwrite that with a fresh opinion. If it genuinely needs rethinking,
+that is a human saying so, not a status this step infers. Then `ticket-tracker show <n>`: its
+`updatedAt` is what the write below must quote.
 
 Two things must be settled before the file is worth saving, and both are modelling
 questions rather than clerical ones:
 
-**Which context.** `new` guessed it from the words available, or left it `unassigned`.
-Confirm it or correct it now — this is the last cheap moment to move a ticket, because the
-id is in the filename and the branch name after this.
+**Which context.** `new` guessed it from the words available, or left it off. Confirm it or
+correct it now. The ticket's id is its issue number and does not depend on the context, so a wrong
+guess is cheap to fix here and later alike; `ticket-tracker label <n> --context <name>` sets it, and
+refuses a context `docs/context-map.md` does not name (`cross-context` excepted, which is deliberately
+awkward to write: a ticket that spans contexts is a modelling event).
 
 **Where the behaviour belongs.** Fill in *Model decision*: new behaviour on an existing
 aggregate, a new aggregate, or a new context. If it is a new context, stop and raise it;
@@ -61,7 +67,12 @@ into *Design direction*. For a ticket that does not touch the frontend, write `n
 ## What to write
 
 Fill *Acceptance criteria*, *Model decision*, *Design direction* and *Glossary impact*, replacing the
-_not analysed yet_ markers. Then set `status: todo`.
+_not analysed yet_ markers, in one call: a JSON object of section name to text on stdin of
+`ticket-tracker write-sections <n> --expect-updated-at <updatedAt>`. It replaces those sections and
+nothing else, and refuses, changing nothing, if the issue moved since you read it. Make sure the
+ticket has its `type:` label (`ticket-tracker label <n> --type <type>`; `new` defaulted it to
+`feature`) and its `context:` label, then `ticket-tracker move <n> todo`. A `todo` without both is
+unreadable, so the move refuses it.
 
 Do not invent detail the request does not contain — an acceptance criterion nobody asked
 for is a requirement nobody agreed to. What a draft says is the whole of what was asked;
@@ -95,15 +106,3 @@ of the request.
 
 Refine one ticket per invocation. A batch of drafts is exactly the situation where
 answering six sets of questions at once produces six designs nobody separately agreed to.
-
-## Vikunja
-
-Once `status: todo` is written, and only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
-`VIKUNJA_PROJECT_ID` are all set: if the ticket already has a `tracker_id`, move that
-task to the bucket titled `todo` — see the Vikunja section of `/ticket` itself for the
-lookup shape. If it has none — captured before this existed, or captured while these
-variables were unset — create it now instead, the way `new` does, straight into the
-`todo` bucket, and write the returned id into `tracker_id`. This is the adoption path for
-a backlog that predates tracker sync; there is nothing to migrate ahead of time.
-
-Skip this section, and say so once, when any of the three variables is unset.

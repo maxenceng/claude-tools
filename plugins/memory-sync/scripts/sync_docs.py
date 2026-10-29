@@ -9,7 +9,7 @@ project's collection and from claude_memory.
 
 A doc is split into markdown-aware chunks (heading/paragraph/table/code-fence
 boundaries) sized against the embedding model's real tokenizer via its
-/tokenize endpoint, so a long ADR or backlog ticket is embedded as several
+/tokenize endpoint, so a long ADR or ticket is embedded as several
 chunks that each fit the model's input window instead of one oversized
 string the service would silently truncate. Each chunk is prefixed with its
 nearest heading(s) so it stays legible on its own in a search result.
@@ -20,9 +20,11 @@ anyway, and a fixed chunk count per file would otherwise leave stale chunks
 behind whenever a file shrinks. Point ids are still derived deterministically
 from (path, chunk index) for traceability, not for upsert safety.
 """
+import datetime
 import glob
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -39,9 +41,7 @@ DOC_GLOBS = [
     ("docs/glossary.md", "glossary"),
     ("docs/context-map.md", "context-map"),
     ("docs/adr/*.md", "adr"),
-    ("docs/backlog/*.md", "backlog"),
 ]
-EXCLUDE_BASENAMES = {"_template.md"}
 
 # Leaves headroom under the model's real cap (checked per assembled chunk
 # below) for the [CLS]/[SEP] specials and the token-count approximation
@@ -99,9 +99,34 @@ def recreate_collection(collection, vector_size):
 def find_files(project_root):
     for pattern, doc_type in DOC_GLOBS:
         for path in sorted(glob.glob(os.path.join(project_root, pattern))):
-            if os.path.basename(path) in EXCLUDE_BASENAMES:
-                continue
             yield path, doc_type
+
+
+def issue_documents(project_root):
+    """Every issue of the project's GitHub repository, open and closed, as (path, type, text, mtime).
+
+    A ticket is a GitHub issue, so the backlog is read through `gh` and not from files. When gh
+    cannot be run or cannot reach GitHub the issues are skipped and the run says so on stderr: the
+    docs are still worth indexing, and an index silently lacking its tickets must not read as complete.
+    """
+    fields = "number,title,body,state,stateReason,labels,updatedAt"
+    try:
+        done = subprocess.run(
+            ["gh", "issue", "list", "--state", "all", "--limit", "1000", "--json", fields],
+            cwd=project_root, capture_output=True, text=True,
+        )
+    except FileNotFoundError:
+        done = None
+    if done is None or done.returncode != 0:
+        reason = "gh is not installed" if done is None else done.stderr.strip()
+        print(f"warning: tickets skipped, GitHub issues could not be read: {reason}", file=sys.stderr)
+        return
+    for row in json.loads(done.stdout or "[]"):
+        labels = ", ".join(label["name"] for label in row["labels"])
+        state = row["state"].lower() + (f" ({row['stateReason'].lower()})" if row.get("stateReason") else "")
+        text = f"# #{row['number']} {row['title']}\n\nstate: {state}\nlabels: {labels}\n\n{row['body'] or ''}"
+        updated = datetime.datetime.fromisoformat(row["updatedAt"].replace("Z", "+00:00")).timestamp()
+        yield f"issues/{row['number']}", "ticket", text, updated
 
 
 def split_blocks(text):
@@ -220,9 +245,13 @@ def main():
         )
         sys.exit(1)
 
-    files = list(find_files(project_root))
-    if not files:
-        print(f"no docs found under {project_root}")
+    documents = []
+    for path, doc_type in find_files(project_root):
+        with open(path, encoding="utf-8") as handle:
+            documents.append((os.path.relpath(path, project_root), doc_type, handle.read(), os.path.getmtime(path)))
+    documents.extend(issue_documents(project_root))
+    if not documents:
+        print(f"no docs or tickets found under {project_root}")
         return
 
     probe_vector = embed("dimension probe")
@@ -230,9 +259,7 @@ def main():
 
     points = []
     chunked_files = 0
-    for path, doc_type in files:
-        text = open(path, encoding="utf-8").read()
-        rel_path = os.path.relpath(path, project_root)
+    for rel_path, doc_type, text, mtime in documents:
         chunks = chunk_document(text)
         if len(chunks) > 1:
             chunked_files += 1
@@ -254,7 +281,7 @@ def main():
                         "path": rel_path,
                         "project": project,
                         "doc_type": doc_type,
-                        "mtime": os.path.getmtime(path),
+                        "mtime": mtime,
                         "chunk_index": i,
                         "chunk_count": len(chunks),
                         "content": chunk,
@@ -264,7 +291,7 @@ def main():
 
     qdrant("PUT", f"/collections/{collection}/points?wait=true", {"points": points})
     print(
-        f"synced {len(points)} chunks from {len(files)} docs "
+        f"synced {len(points)} chunks from {len(documents)} docs and tickets "
         f"({chunked_files} split into multiple chunks) from {project} "
         f"into collection '{collection}'"
     )

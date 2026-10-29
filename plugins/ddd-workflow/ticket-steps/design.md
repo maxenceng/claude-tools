@@ -4,8 +4,9 @@ Iterate on a frontend ticket's UI with the human until they call it done. This i
 verb that never decides for itself when it is finished: taste is the judgement nothing
 else in this workflow can make, and a loop that stops on its own is making it.
 
-Refuse a ticket that is not `in-progress`, or that does not touch `frontend/**`. Status
-does not change here; this sits between `start` and `review`.
+Run `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker ready <n> design` first: it refuses a ticket that is
+not `in-progress`, or that does not touch `frontend/**`, with the reason. Status does not change here;
+this sits between `start` and `review`.
 
 ## Setup
 
@@ -38,8 +39,8 @@ nobody saw separately is a design nobody chose.
 ## Before handing over
 
 If the direction itself moved — not a tweak, a different answer to what the screen is
-for — update *Design direction* and add one line to *Notes* saying what changed and why.
-That section is what `review` and the next ticket read.
+for — update *Design direction* and add one line to *Notes* saying what changed and why (both through
+`ticket-tracker write-sections`). That section is what `review` and the next ticket read.
 
 Stop the background `make run` and `dev` servers once the loop ends.
 

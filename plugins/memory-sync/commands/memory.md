@@ -7,10 +7,9 @@ Memory lives at `~/.claude/projects/*/memory/*.md` — one directory per project
 with a `MEMORY.md` index and individual files carrying frontmatter (`name`,
 `description`, `metadata.type`) and free-text content. Those files stay authoritative;
 this command mirrors them into a Qdrant collection so they're searchable by meaning
-across every project at once, the same way `/ticket` mirrors backlog status to Vikunja
-without the markdown stopping being the source of truth.
+across every project at once, without the markdown stopping being the source of truth.
 
-A project's own knowledge — glossary, ADRs, context map, CLAUDE.md, backlog — is a
+A project's own knowledge — glossary, ADRs, context map, CLAUDE.md, tickets — is a
 different kind of thing (domain/architecture knowledge, not "how Claude should
 behave") and lives in the project's own repo, not under `~/.claude/projects/`.
 `sync-docs` mirrors that into a Qdrant collection dedicated to the one project, kept
@@ -18,7 +17,7 @@ separate from `claude_memory` and from every other project's docs.
 
 Requires `QDRANT_URL`, `QDRANT_API_KEY` and `EMBEDDINGS_URL` in the shell environment.
 Where any is unset, say so and stop — there is nothing useful to fall back to for this
-command, unlike `/ticket`'s sync, since mirroring is the entire point.
+command, since mirroring is the entire point.
 
 `sync` and `search` are also available as MCP tools (`memory_sync`, `memory_search`) —
 call those directly rather than shelling out through this command when the MCP server
@@ -48,9 +47,10 @@ Dispatch on the first word:
 
 - **`sync-docs <project-path>`** — run
   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sync_docs.py <project-path>`. It globs
-  `CLAUDE.md`, `docs/glossary.md`, `docs/context-map.md`, `docs/adr/*.md` and
-  `docs/backlog/*.md` under the given project path (skipping `_template.md`), splits
-  each into markdown-aware chunks (heading/paragraph/table/code-fence boundaries) sized
+  `CLAUDE.md`, `docs/glossary.md`, `docs/context-map.md`, `docs/adr/*.md` under
+  the given project path, and reads the project's GitHub issues, open and closed, through `gh`
+  run in that path (a ticket is an issue; a failing `gh` skips the tickets with a warning on
+  stderr and still indexes the docs), then splits each into markdown-aware chunks (heading/paragraph/table/code-fence boundaries) sized
   against the embedding model's real tokenizer so no chunk exceeds its input window,
   and upserts into a collection named after the project directory with hyphens folded
   to underscores (`next-suggestions` → `next_suggestions`) — created on first run with

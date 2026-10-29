@@ -28,9 +28,16 @@ grep -rn 'deferred:' src/main
 ```
 
 - `docs/adr/` — *Consequences* is where a decision records what it did not close
-- `docs/backlog/` — *Notes* is where a ticket records what it knowingly left
+- the tickets — *Notes* is where a ticket records what it knowingly left. Every issue, open and
+  closed, comes from `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker notes`: a JSON list of number,
+  title, state and the *Notes* text, with empty and unanalysed ones already dropped.
 
-Read those two sections, not the whole file. The rest of an ADR is the decision; only its
+`notes` needs GitHub. When it refuses (exit code 3 means GitHub is unreachable, anything else says
+why in its message), sweep the other two sources anyway and report the ticket source as
+**skipped**, with the reason, instead of passing it off as empty: a ledger that silently lacks a
+source reads as a clean one. Nothing is cached, so there is no older answer to fall back on.
+
+Read the *Consequences* section of an ADR, not the whole file. The rest of an ADR is the decision; only its
 consequences are the price.
 
 Read them rather than grepping them for phrases. "Deliberately not" matches an ADR
@@ -48,14 +55,14 @@ raised as one instead.
 
 ## Report
 
-One row per item, grouped by source:
+One row per item, grouped by source (a ticket is named by its number, `#<n>`):
 
 ```
 <file>:<line> — <what is limited>. ceiling: <what it cannot do>. trigger: <what makes it worth closing>.
 ```
 
 Tag `no-trigger` where nothing says when to revisit; those are the rows worth reading
-twice. Close with `<N> deferrals, <M> with no trigger.` Finding none is a result — say so
+twice. Name any skipped source. Close with `<N> deferrals, <M> with no trigger.` Finding none is a result — say so
 rather than padding the ledger with things nobody deferred.
 
 Read and report only. Write the ledger to a file if asked, and say plainly that a file

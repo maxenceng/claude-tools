@@ -59,6 +59,12 @@ class CreatingATicket(TrackerCase):
         self.refused("create", "--template", "decision", "--title", "x", why="a todo needs a context")
         self.assertEqual(self.writes(), [])
 
+    def test_a_doubt_said_in_passing_lands_in_the_notes_section_and_nothing_else_changes(self):
+        made = self.ok("create", "--title", "Two things?", "--context", "board", "--notes", "Might be two tickets.")
+        body = self.load()["issues"][str(made["number"])]["body"]
+        self.assertTrue(body.endswith("## Notes\n\nMight be two tickets.\n"), body)
+        self.assertEqual(body.count("_Not analysed yet"), 4)
+
 
 if __name__ == "__main__":
     unittest.main()

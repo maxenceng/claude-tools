@@ -62,7 +62,7 @@ adr-check: ## Fail on a duplicate or missing ADR number
 test-comment-check: ## Fail on a comment under src/test, where the test name is the explanation
 	@python3 scripts/check-test-comments.py
 
-ticket-check: ## Fail on a reference to a ticket that has already landed
+ticket-check: ## Fail on an issue number or URL named outside the record, with no network
 	@python3 scripts/check-ticket-references.py
 
 round-trip-check: ## Fail on an integration test that reads back its own persistence context

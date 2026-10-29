@@ -1,11 +1,11 @@
 ---
-description: Chart a fuzzy effort too big for one session as a map of decision tickets in docs/backlog/, then resolve them one at a time until the way is clear
+description: Chart a fuzzy effort too big for one session as a map of decision tickets on GitHub Issues, then resolve them one at a time until the way is clear
 argument-hint: "[loose idea to chart] | [map id to work]  (no args: show the open map, if any)"
 ---
 
 A loose idea has arrived, too big for one session, wrapped in fog: the way from here to
 the **destination** isn't visible yet. Wayfinding finds that way — it doesn't charge at
-the destination. It charts the way as a **map** in `docs/backlog/`, then works its
+the destination. It charts the way as a **map**, an issue, then works its
 **decision tickets** (questions whose resolution is a decision, not slices of a build to
 execute) one at a time until the route is clear.
 
@@ -13,18 +13,20 @@ Requires the `mattpocock-skills` plugin (`claude plugins install mattpocock-skil
 installed alongside this one — both modes below call `mattpocock-skills:grilling` by
 name.
 
-Lives in `docs/backlog/`, same files-with-frontmatter convention `/ticket` uses (see that
-folder's `README.md`), with `type: map` and `type: decision` added to the vocabulary and
-a `blocked_by:` field carrying the dependency edges `/ticket`'s single-tracker world
-doesn't need. A map is not a ticket queue: **plan, don't do**. Each decision ticket
-resolves a decision, and the map is done when nothing is left to decide before someone
-goes and does the thing. The pull to just do the work is usually the signal you've
+Maps and decisions are GitHub issues like any ticket (see `/ticket`), labelled `type:map` and
+`type:decision`. Every GitHub operation goes through
+`${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`, called `ticket-tracker` below, and no other way; it
+refuses with a reason when a ticket is unreadable or GitHub is unreachable, and then this command
+does nothing. A decision's dependencies are GitHub's native ones (`add-blocker`), and a map's
+decisions are its sub-issues (`add-sub-issue`). A map is not a ticket queue: **plan, don't do**.
+Each decision ticket resolves a decision, and the map is done when nothing is left to decide before
+someone goes and does the thing. The pull to just do the work is usually the signal you've
 reached the edge of the map and it's time to hand off.
 
 ## The map
 
-One file, `type: map`, named for its destination (`<CONTEXT>-<n>-<slug>.md`, same
-numbering as any ticket). Its body:
+One issue, `type:map`, titled for its destination. `ticket-tracker create --template map --title
+"<destination>" --context <context>` opens it from `.github/ISSUE_TEMPLATE/map.md`. Its body:
 
 ```markdown
 ## Destination
@@ -42,7 +44,7 @@ picking a ticket.>
 <!-- One line per closed decision ticket: enough to judge relevance, then follow the
      link for the detail the ticket holds. -->
 
-- [<title>](<file>): <one-line gist of the answer>
+- #<n>: <one-line gist of the answer>
 
 ## Not yet specified
 
@@ -54,17 +56,17 @@ picking a ticket.>
 ```
 
 The map is an index, not a store: a decision lives in exactly one place, its ticket, and
-the map only gists it and links. Open tickets aren't listed on the map either — find
-them by grepping `docs/backlog/` for `blocked_by:` referencing this map plus
-`status: todo` for the frontier, `status: in-progress` for claimed-but-unresolved.
+the map only gists it and links. Open tickets aren't listed on the map either — they are its
+sub-issues; `ticket-tracker frontier <map>` lists the ones ready to work.
 
 ## Decision tickets
 
-A ticket per decision, `type: decision`, same frontmatter as any backlog ticket plus
-`blocked_by: [<ids>]` for every ticket that must be `done` first. A ticket is
-**unblocked** when everything in its `blocked_by` list has `status: done`; the
-**frontier** is every unblocked, unclaimed, `status: todo` decision ticket — the edge of
-the known. Body:
+A ticket per decision, `type:decision`, a sub-issue of its map, with a native dependency on every
+decision that must be closed first. `ticket-tracker create --template decision --title "<question>"
+--context <context>` opens it from `.github/ISSUE_TEMPLATE/decision.md` already `status:todo`. A
+ticket is **unblocked** when every issue it depends on is closed; the **frontier**, from
+`ticket-tracker frontier <map>`, is the map's open `status:todo` sub-issues whose dependencies are
+all closed — the edge of the known. Body:
 
 ```markdown
 ## Question
@@ -80,9 +82,13 @@ the known. Body:
 _Not resolved yet._
 ```
 
-A session **claims** a ticket by setting `status: in-progress` before any work, so a
-concurrent session skips it. `status: done` plus a filled-in `## Resolution` is how it
-resolves — the answer isn't part of the body until then.
+A session **claims** a ticket with `ticket-tracker move <n> in-progress` before any work, which
+adds `status:in-progress` and removes `status:todo` in one edit, so a concurrent session's
+frontier skips it. It resolves by writing the *Resolution* section
+(`ticket-tracker write-sections`) and then `ticket-tracker close <n>`, which closes it as
+completed — the answer isn't part of the body until then. A feature ticket that graduates out of a
+decision is an ordinary ticket and is **not** a sub-issue: `add-sub-issue` refuses anything but a
+decision.
 
 ### Kinds
 
@@ -122,11 +128,12 @@ graduate into several tickets, or none, once the frontier reaches it.
 ## Out of scope
 
 The destination fixes the scope, so work beyond it is out of scope, not fog: give it its
-own line in **Out of scope**, gist plus why, linking the closed ticket. Out-of-scope work
+own line in **Out of scope**, gist plus why, naming the closed ticket's number. Out-of-scope work
 never graduates — it returns only if the destination is redrawn, as a fresh effort. If an
-existing ticket turns out to sit past the destination, close it (`status: done` with a
-`## Resolution` saying why it was ruled out, not what was decided) rather than resolving
-it on the route; it stays out of **Decisions so far**, which records the route actually
+existing ticket turns out to sit past the destination, close it as completed
+(`ticket-tracker close <n>`, with a *Resolution* saying why it was ruled out, not what was decided)
+rather than resolving it on the route; there is no dropped status, so a ruled-out decision closes
+the way a resolved one does. It stays out of **Decisions so far**, which records the route actually
 walked.
 
 ## Invocation
@@ -142,54 +149,47 @@ Never resolve more than one decision ticket per session, except research tickets
    than deep on one thread, surfacing open decisions and the first steps takeable now.
    **If this surfaces no fog** — the way is already clear, small enough for one session —
    you don't need a map; say so and stop.
-3. **Create the map** ticket, `status: in-progress` from the start — charting is
-   analysis, so there's no `draft` to pass through: Destination and Notes filled in,
-   Decisions-so-far empty, the fog sketched into Not yet specified.
-4. **Create the decision tickets you can specify now**, `status: todo` (also skipping
-   `draft` for the same reason), then wire `blocked_by` in a second pass — ids exist only
-   once the files do. Everything not yet specifiable stays in the fog.
+3. **Create the map** — `ticket-tracker create --template map`, `status:in-progress` from the
+   start; charting is analysis, so there's no `draft` to pass through. Fill Destination and Notes,
+   leave Decisions-so-far empty, and sketch the fog into Not yet specified
+   (`ticket-tracker write-sections`).
+4. **Create the decision tickets you can specify now**, `status:todo` (also skipping
+   `draft` for the same reason), then in a second pass make each a sub-issue of the map
+   (`ticket-tracker add-sub-issue <map> <n>`) and wire its dependencies
+   (`ticket-tracker add-blocker <n> <blocker>`) — numbers exist only once the issues do.
+   Everything not yet specifiable stays in the fog.
 5. **Fire research sub-agents** in parallel for each `research` ticket just created,
    each calling the Skill tool with `research`.
 6. Stop — charting is one session's work, and hand-resolves nothing.
 
 ### Work through the map (`$ARGUMENTS` is a map's id, optionally plus a ticket id)
 
-1. Load the map file — the low-res view, not every ticket body.
-2. Choose the ticket: the one named, or the first frontier ticket by id order. **Claim
-   it** (`status: in-progress`) before any work.
+1. Load the map (`ticket-tracker show <map>`) — the low-res view, not every ticket body — and
+   its frontier (`ticket-tracker frontier <map>`).
+2. Choose the ticket: the one named, or the first frontier ticket by number. **Claim
+   it** (`ticket-tracker move <n> in-progress`) before any work. Two sessions claiming in the same
+   second both win; that is accepted for one developer.
 3. Resolve it, zooming into any related or closed ticket's body on demand, and calling
    whatever skills the map's `## Notes` names. Default to `mattpocock-skills:grilling` plus
    `ddd-workflow:domain-modeling` when in doubt.
-4. Record the resolution in the ticket, set `status: done`, and append a
-   **Decisions so far** line to the map.
-5. Add newly-surfaced tickets (create, then wire `blocked_by`); graduate any fog the
+4. Record the resolution in the ticket's *Resolution* section, `ticket-tracker close <n>`, and
+   append a **Decisions so far** line to the map (read the map again for its `updatedAt`, then
+   `write-sections`).
+5. Add newly-surfaced tickets (create, then sub-issue and dependencies); graduate any fog the
    answer made specifiable, removing it from **Not yet specified** so it lives only as
    its new ticket. If the answer reveals a ticket sits beyond the destination, rule it
    **out of scope** rather than resolving it. Update or delete map parts the decision
-   invalidates. Push any newly-surfaced ticket that belongs to `/ticket`'s own vocabulary
-   — see Vikunja below.
+   invalidates. A newly-surfaced ticket of `/ticket`'s own vocabulary (`feature`, `fix`, `chore`,
+   `spike`) is a real ticket `/ticket start` will pick up, not a wayfinder artifact: create it
+   with the ticket template, `--status todo`, and no `add-sub-issue` — it is not part of the map.
+6. A map's file changes — a glossary term, an ADR a decision produced — go on one branch and
+   **one pull request** that refs the map (`ticket-tracker pr-create --refs <map>`), never one per
+   decision, and closing nothing. **The map is closed by hand**, once its destination is reached
+   and no decision ticket remains open; `ticket-tracker close` refuses a map on purpose.
 
 Other sessions may be working unblocked tickets concurrently — expect the tracker to
-move under you between reads.
-
-## Vikunja
-
-A `map` or `decision` ticket is this skill's own bookkeeping and never reaches
-Vikunja — the tracker has buckets for work, not for questions. A newly-surfaced ticket
-can be different: when its `type` is one of `/ticket`'s own vocabulary (`feature`,
-`fix`, `chore`, `spike` — `docs/backlog/README.md`), it is a real backlog item that
-`/ticket start` will pick up next, not a wayfinder artifact, so push it the way `new`
-does. Wayfinder tickets skip `draft`, so push straight into the `todo` bucket instead —
-see the Vikunja section of `/ticket` itself for the lookup shape — and write the
-returned id into that ticket's `tracker_id`.
-
-Only if `VIKUNJA_URL`, `VIKUNJA_TOKEN` and `VIKUNJA_PROJECT_ID` are all set; skip this,
-and say so once, when any of the three is unset. A push that fails does not fail the
-step — say which ids failed and leave `tracker_id` off them; `/ticket refine` cannot
-adopt them later because they are already past `draft`, so retry the push by hand.
+move under you between reads; a section write that refuses because the issue changed is that.
 
 Adapted from [mattpocock/skills](https://github.com/mattpocock/skills)'s `wayfinder`
-(MIT), retargeted at `docs/backlog/` instead of a general issue-tracker abstraction; the
-upstream skill's optional real-tracker native-blocking path was dropped for now —
-decision and map tickets stay local-markdown only, and only a graduated backlog ticket
-reaches Vikunja, as above.
+(MIT), retargeted at GitHub Issues, whose native sub-issues and dependencies carry the map's
+structure.

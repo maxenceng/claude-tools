@@ -78,7 +78,7 @@ REGISTRY = {
     ),
     "check-ticket-references.py": FixtureTree(
         "ticket-references",
-        "reference(s) to a landed ticket",
+        "2 reference(s) to an issue outside the record",
     ),
     "check-openapi.sh": ProvenByItsOwnBoot(
         "compares a mutated copy of the committed schema inside the boot it already does -- see ADR 0015",

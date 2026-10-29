@@ -230,7 +230,7 @@ def template_body(kind):
     return text.lstrip("\n")
 
 
-def create(kind, title, context, kind_of_work, status):
+def create(kind, title, context, kind_of_work, status, notes):
     default_type, default_status = TEMPLATES[kind]
     if kind_of_work and kind != "ticket":
         raise Usage("the %s template fixes the type; --type is for the ticket template" % kind)
@@ -243,6 +243,8 @@ def create(kind, title, context, kind_of_work, status):
     if context:
         check_context(context)
     body = template_body(kind)
+    if notes:
+        body = replace_sections(body, {"Notes": notes}).rstrip() + "\n"
     labels = ["status:" + status, "type:" + work] + (["context:" + context] if context else [])
     for label in labels:
         ensure_label(label)
@@ -543,6 +545,7 @@ def parser():
     verb.add_argument("--context")
     verb.add_argument("--type")
     verb.add_argument("--status")
+    verb.add_argument("--notes")
     verb = verbs.add_parser("ready", help="refuse unless a ticket may take refine, start or design")
     verb.add_argument("number")
     verb.add_argument("verb_name", choices=("refine", "start", "design"))
@@ -591,7 +594,7 @@ def run(args):
             raise Usage("label needs --context and/or --type")
         return relabel(args.number, args.context, args.type)
     if args.verb == "create":
-        return create(args.template, args.title, args.context, args.type, args.status)
+        return create(args.template, args.title, args.context, args.type, args.status, args.notes)
     if args.verb == "ready":
         return ready(args.number, args.verb_name)
     if args.verb == "develop":

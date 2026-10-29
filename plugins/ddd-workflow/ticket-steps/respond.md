@@ -6,38 +6,18 @@ the conversation does.
 
 1. Collect all of it before changing anything, in one call. Feedback lives in three
    places — inline threads, top-level comments, review summaries — and reading one of
-   them silently drops the rest. Fetch them through GraphQL rather than the three REST
+   them silently drops the rest. The script fetches them through GraphQL rather than the three REST
    endpoints: REST returns every comment wrapped in its diff hunk, a full user object and
    a dozen URLs, which is most of what this step used to cost, and it cannot tell a
    resolved thread from a live one — `isResolved` exists in GraphQL alone.
 
-   ```bash
-   gh api graphql -F owner='{owner}' -F repo='{repo}' -F n=<n> -f query='
-   query($owner: String!, $repo: String!, $n: Int!) {
-     repository(owner: $owner, name: $repo) {
-       pullRequest(number: $n) {
-         body
-         reviewThreads(first: 100) { nodes { isResolved path line
-           comments(first: 20) { nodes { databaseId author { login } body diffHunk } } } }
-         comments(first: 100) { nodes { author { login } body } }
-         reviews(first: 50) { nodes { author { login } state body } }
-         commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
-       }
-     }
-   }' --jq '.data.repository.pullRequest | {
-     ci: .commits.nodes[0].commit.statusCheckRollup.state,
-     threads: [.reviewThreads.nodes[] | select(.isResolved | not) | {
-       path, line,
-       anchor: (.comments.nodes[0].diffHunk | split("\n") | last),
-       comments: [.comments.nodes[] | del(.diffHunk)] }],
-     comments: .comments.nodes,
-     reviews: [.reviews.nodes[] | select(.body != "")],
-     body
-   }'
-   ```
+   `ticket-tracker pr-feedback <pr-number>` (`${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`, the only
+   way to reach GitHub) returns it as one JSON object: `ci` (the state of the last commit's checks),
+   `threads` (unresolved only, each with `path`, `line`, `anchor` and its `comments`), top-level
+   `comments`, `reviews` with a body, and the PR `body`.
 
-   Answer unresolved threads only; the filter already drops the rest. A thread's
-   `databaseId` is the REST id step 8 replies to. `anchor` is the line the comment sits
+   Answer unresolved threads only; the filter already drops the rest. A thread's first
+   comment's `databaseId` is the id step 8 replies to. `anchor` is the line the comment sits
    on, keeping only that line of the hunk: a leading `+` or `-` means it changed, a space
    means it is context. A `null` line means the thread is outdated. A red `ci` belongs on the list too — the
    pipeline is a reviewer that always comments. Read it with `gh run view <run-id>
@@ -126,9 +106,8 @@ the conversation does.
    quietly re-earning it. Say which ones and what would re-earn them.
 
 8. Reply in each comment's own thread rather than as a new top-level comment:
-   `gh api repos/{owner}/{repo}/pulls/<n>/comments/<id>/replies -f body=...`, where
-   `<id>` is the `databaseId` of the thread's first comment — GitHub refuses a reply to a
-   reply. One or two sentences:
+   `ticket-tracker pr-reply <pr-number> <id> --body-file <file>`, where `<id>` is the
+   `databaseId` of the thread's first comment — GitHub refuses a reply to a reply. One or two sentences:
    what changed, or why nothing did. A silent fix leaves the reviewer diffing the branch
    to work out whether they were heard, and a disagreement that is never written down
    gets raised again by the next reader.

@@ -39,10 +39,9 @@ npx skills add vercel-labs/agent-skills@vercel-react-best-practices -g
 npx skills add vercel-labs/agent-skills@vercel-composition-patterns -g
 ```
 
-Optionally, if a Vikunja instance is available, set `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
-`VIKUNJA_PROJECT_ID` in your shell profile. `/ticket` mirrors status to Vikunja's Kanban
-board when these are set and runs exactly as before when they are not — nothing here is
-required to use the command.
+`/ticket`, `/wayfinder` and `/debt` work tickets on GitHub Issues through the `gh` CLI, so
+`gh auth status` must pass in the project's repository. They need the network: without it
+they refuse and write nothing, and `/debt` reports its ticket source as skipped.
 
 If you forked, use `<your-owner>/<your-repo>` instead. Everything below works the same
 from a fork, with one thing to change: the archetype's coordinates are `dev.maxenceng`
@@ -147,19 +146,22 @@ Run it again whenever you come back to a project after a few weeks.
 
 ## 5. The daily loop
 
-Tickets are markdown in `docs/backlog/` with YAML frontmatter. Status changes ride along
-in the branch and the PR that caused them, so "what state was this in when we merged" is
-a question history answers.
+A ticket is a GitHub issue, named by its number. Its status, context and type are labels
+(`status:todo`, `context:billing`, `type:feature`), its body holds the `##` sections, and the
+pull request's `Closes #14` closes it at the merge. Every step reaches GitHub through the
+plugin's `scripts/ticket-tracker`, which refuses a ticket it cannot read (two status labels, a
+`todo` with no context or type, an issue closed as not planned) and says why. "What state was
+this in when we merged" is answered by the issue's timeline.
 
 ```
 /ticket                     # the board: what is draft, todo, in progress, in review
 /ticket new <description>   # capture only: one draft per line, asks almost nothing
-/ticket refine BILLING-14   # the questions, the model decision, the criteria
-/ticket start BILLING-14    # branch, then implement test-first
-/ticket design BILLING-14   # frontend only: critique, pick a move, repeat until done
-/ticket review BILLING-14   # make verify, architecture review, code review, PR
-/ticket respond BILLING-14  # act on PR comments; repeat as often as needed
-/ticket done BILLING-14     # after merge; notes, retro, ADR if warranted
+/ticket refine 14   # the questions, the model decision, the criteria
+/ticket start 14    # branch, then implement test-first
+/ticket design 14   # frontend only: critique, pick a move, repeat until done
+/ticket review 14   # make verify, architecture review, code review, PR
+/ticket respond 14  # act on PR comments; repeat as often as needed
+/ticket done 14     # after merge; notes, retro, ADR if warranted
 
 /debt                       # the ledger: limits this project chose to live with
 /find-duplication           # copy-pasted code, and whether it is worth extracting
@@ -191,12 +193,14 @@ and asks you to pick a move. The direction it builds toward was settled at `refi
 `PRODUCT.md` — run `/impeccable init` once per project to write that.
 
 `done` also writes the endpoint atlas: every endpoint the ticket touched gets its sequence
-diagram re-traced into `docs/endpoints/`, from the merged code. Open that folder in the
-same vault as the backlog.
+diagram re-traced into `docs/endpoints/`, from the merged code. `done` runs after the merge: it
+writes *Notes* into the issue, clears leftover labels, closes an issue the pull request's
+keyword missed, and opens a pull request only for files it changed.
 
-The prefix is the bounded context the work sits in, so a ticket you cannot prefix is
+The `context:` label is the bounded context the work sits in, and the script refuses one that
+`docs/context-map.md` does not name (`cross-context` excepted). A ticket you cannot place is
 usually two tickets — or a context you have not named yet. Either is worth discovering
-before the code, which is the whole reason the prefix is not free-form.
+before the code, which is the whole reason the label is not free-form.
 
 Between `start` and `review` you mostly read and answer questions. That is the intended
 shape, not a sign something is wrong.
@@ -205,8 +209,8 @@ Of everything here this is the least exercised part, and unlike the template and
 archetype nothing in CI can check it — a command is prose, and prose only fails when a
 person runs it. Read what it proposes before agreeing, at least for the first few.
 
-Open `docs/backlog/` as an Obsidian vault for a board view. Nothing depends on Obsidian —
-the files are plain markdown, and `/ticket` reads and writes them directly.
+`/ticket` with no argument is the board. Because every ticket is an issue, GitHub's own issue
+list, labels and search work on the same data from anywhere, a phone included.
 
 ---
 
@@ -299,7 +303,7 @@ Yours, and it is about five minutes of material:
 - `docs/glossary.md` — the words
 - `docs/context-map.md` — the contexts
 - `docs/adr/` — why things are as they are
-- `docs/backlog/` — what is in flight
+- GitHub Issues — what is in flight
 
 Not yours: `skills/ddd-backend/SKILL.md`, several hundred lines written for the agent.
 That asymmetry is the design — prose for the machine, enforcement for the build, a small
@@ -383,8 +387,7 @@ the repo, never reaches any other project using the plugin, and is gone the next
 copying. This had already happened once — see the ticket-close step's own reminder to carry a
 project's learning back here rather than into the cache.
 
-**Ticket-tracker integration is optional and one-directional in authority.** `/ticket`
-mirrors status to a Vikunja board when `VIKUNJA_URL`, `VIKUNJA_TOKEN` and
-`VIKUNJA_PROJECT_ID` are set in the shell; the markdown in `docs/backlog/` stays the
-source of truth, and Vikunja is a live view over it, never a second place to edit from.
-Unset any of the three and every step runs exactly as it did before this existed.
+**The ticket loop needs the network, on purpose.** There is no cache and no offline mode: a second
+copy of status is what the move to Issues removed. The build never needs the network, so `make
+verify` still runs on a plane, and `make ticket-check` fails on any `#n` or issue URL outside
+`docs/adr/`, `docs/research/`, `docs/endpoints/` and `scripts/` without asking GitHub.
