@@ -21,6 +21,9 @@ STATUSES = ("draft", "todo", "in-progress", "in-review")
 TYPES = ("feature", "fix", "chore", "spike", "map", "decision")
 NOT_COMPLETED = ("NOT_PLANNED", "DUPLICATE")
 ISSUE_FIELDS = "number,title,body,labels,state,stateReason,updatedAt,url"
+# deferred: a list stops at this many issues or labels, with no paging past it, so a larger
+# repository loses the rest silently — page with gh api once a project nears it
+LIST_LIMIT = "1000"
 HEADING = re.compile(r"^## (.+?)\s*$")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 
@@ -147,7 +150,7 @@ LABEL_COLOURS = {"status": "ededed", "type": "c5def5", "context": "bfd4f2"}
 
 
 def ensure_label(name):
-    existing = {label["name"] for label in gh_json("label", "list", "--json", "name", "--limit", "1000")}
+    existing = {label["name"] for label in gh_json("label", "list", "--json", "name", "--limit", LIST_LIMIT)}
     if name not in existing:
         gh("label", "create", name, "--color", LABEL_COLOURS[name.split(":")[0]])
 
@@ -407,9 +410,7 @@ def finish(number, notes_file, expected_at):
         raise Refusal("#%d is not merged: no branch gh issue develop linked to it has a merged pull request" % n)
     edit, body = ["issue", "edit", str(number)], None
     if notes_file:
-        if ticket["updatedAt"] != expected_at:
-            raise Refusal("#%d changed since it was read (updatedAt %s, read at %s); read it again before writing"
-                          % (n, ticket["updatedAt"], expected_at))
+        refuse_if_moved(ticket, expected_at)
         with open(notes_file, encoding="utf-8") as handle:
             body = replace_sections(ticket["body"], {"Notes": handle.read()})
         edit += ["--body-file", "-"]
@@ -442,7 +443,7 @@ def close(number):
 
 
 def board():
-    rows = gh_json("issue", "list", "--state", "open", "--json", ISSUE_FIELDS, "--limit", "1000")
+    rows = gh_json("issue", "list", "--state", "open", "--json", ISSUE_FIELDS, "--limit", LIST_LIMIT)
     tickets, unreadable = {status: [] for status in STATUSES}, []
     for raw in sorted(rows, key=lambda row: row["number"]):
         try:
@@ -455,7 +456,7 @@ def board():
 
 
 def notes():
-    rows = gh_json("issue", "list", "--state", "all", "--json", ISSUE_FIELDS, "--limit", "1000")
+    rows = gh_json("issue", "list", "--state", "all", "--json", ISSUE_FIELDS, "--limit", LIST_LIMIT)
     found = []
     for raw in sorted(rows, key=lambda row: row["number"]):
         if raw["state"] == "CLOSED" and raw.get("stateReason") in NOT_COMPLETED:
@@ -547,11 +548,17 @@ def replace_sections(body, replacements):
     return result
 
 
+# deferred: read-then-write, since gh issue edit has no conditional write, so an edit landing
+# between this check and the write is lost — close it if a second writer ever works one repository
+def refuse_if_moved(ticket, expected_at):
+    if ticket["updatedAt"] != expected_at:
+        raise Refusal("#%d changed since it was read (updatedAt %s, read at %s); read it again before writing"
+                      % (ticket["number"], ticket["updatedAt"], expected_at))
+
+
 def write_sections(number, expected_at, replacements):
     ticket = fetch(number)
-    if ticket["updatedAt"] != expected_at:
-        raise Refusal("#%s changed since it was read (updatedAt %s, read at %s); read it again before writing"
-                      % (number, ticket["updatedAt"], expected_at))
+    refuse_if_moved(ticket, expected_at)
     gh("issue", "edit", str(number), "--body-file", "-", stdin=replace_sections(ticket["body"], replacements))
     return {"number": int(number), "updatedAt": gh_json("issue", "view", str(number), "--json", "updatedAt")["updatedAt"]}
 
