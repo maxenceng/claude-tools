@@ -66,6 +66,14 @@ class WiringTest(MigrationCase):
         self.migrated()
         self.assertEqual(self.by_old_id("PROJ-1")["sub_issues"], [self.number("PROJ-3")])
 
+    def test_a_decision_blocked_by_one_map_is_its_sub_issue_though_another_map_body_links_it(self):
+        self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="PROJ-3\n"),
+                     ticket("PROJ-2", type="map", status="in-progress"),
+                     ticket("PROJ-3", type="decision", blocked_by=["PROJ-2"]))
+        self.migrated()
+        self.assertEqual(self.by_old_id("PROJ-2")["sub_issues"], [self.number("PROJ-3")])
+        self.assertNotIn("sub_issues", self.by_old_id("PROJ-1"))
+
     def test_a_feature_linked_from_a_map_body_gets_no_sub_issue_wiring(self):
         self.backlog(ticket("PROJ-1", type="map", status="in-progress", body="PROJ-2\n"), ticket("PROJ-2"))
         self.migrated()
