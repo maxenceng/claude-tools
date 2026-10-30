@@ -392,9 +392,17 @@ def ci_log(number):
             "logs": [{"run": run, "log": gh("run", "view", str(run), "--log-failed")} for run in runs]}
 
 
+def names_ticket(body, number):
+    return re.search(r"\b(refs|close[sd]?|fix(e[sd])?|resolve[sd]?)\s*:?\s+#%s(?!\d)" % number, body or "",
+                     re.IGNORECASE) is not None
+
+
 def has_merged_pull_request(number):
     branches = [line.split("\t")[0] for line in gh("issue", "develop", "--list", str(number)).splitlines() if line.strip()]
-    return any(gh_json("pr", "list", "--state", "merged", "--head", branch, "--json", "number") for branch in branches)
+    if any(gh_json("pr", "list", "--state", "merged", "--head", branch, "--json", "number") for branch in branches):
+        return True
+    found = gh_json("pr", "list", "--state", "merged", "--search", "%s in:body" % number, "--json", "number,body")
+    return any(names_ticket(pr["body"], number) for pr in found)
 
 
 def status_labels(ticket):
@@ -407,7 +415,8 @@ def finish(number, notes_file, expected_at):
     ticket = fetch(number)
     n = ticket["number"]
     if not has_merged_pull_request(number):
-        raise Refusal("#%d is not merged: no branch gh issue develop linked to it has a merged pull request" % n)
+        raise Refusal("#%d is not merged: no branch gh issue develop linked to it has a merged pull request, "
+                      "and no merged pull request names it with Refs or a closing keyword" % n)
     edit, body = ["issue", "edit", str(number)], None
     if notes_file:
         refuse_if_moved(ticket, expected_at)
@@ -422,7 +431,7 @@ def finish(number, notes_file, expected_at):
     closed_here = ticket["state"] == "OPEN"
     if closed_here:
         gh("issue", "close", str(number), "--reason", "completed")
-    message = ("#%d was still open: the pull request's closing keyword was missed, so it is closed as completed now" % n
+    message = ("#%d was still open after its pull request merged, so it is closed as completed now" % n
                if closed_here else "#%d was already closed as completed by the merge" % n)
     return {"number": n, "closedByDone": closed_here, "labelsRemoved": leftover, "notesWritten": bool(notes_file),
             "message": message}
@@ -614,7 +623,7 @@ def parser():
     verb.add_argument("--body-file", required=True)
     verb = verbs.add_parser("ci-log", help="the failed steps' log of a pull request's red checks, not the full log")
     verb.add_argument("number")
-    verb = verbs.add_parser("done", help="after the merge: write Notes, clear labels, close what the keyword missed")
+    verb = verbs.add_parser("done", help="after the merge: write Notes, clear labels, close what the merge left open")
     verb.add_argument("number")
     verb.add_argument("--notes-file")
     verb.add_argument("--expect-updated-at")

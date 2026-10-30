@@ -21,7 +21,7 @@ class Done(TrackerCase):
     def calls(self, *kind):
         return [c for c in self.load()["calls"] if c[:2] == list(kind)]
 
-    def test_done_writes_notes_clears_labels_in_one_edit_and_closes_an_issue_the_keyword_missed(self):
+    def test_done_writes_notes_clears_labels_in_one_edit_and_closes_an_issue_the_merge_left_open(self):
         self.merged(110)
         said = self.ok("done", "110", "--notes-file", self.notes("Rejected X."), "--expect-updated-at",
                        "2026-10-28T09:00:00Z")
@@ -32,7 +32,7 @@ class Done(TrackerCase):
         self.assertEqual(stored["labels"], ["type:feature", "context:board"])
         self.assertEqual((stored["state"], stored["stateReason"]), ("CLOSED", "COMPLETED"))
         self.assertTrue(said["closedByDone"])
-        self.assertIn("closing keyword", said["message"])
+        self.assertIn("still open after its pull request merged", said["message"])
 
     def test_done_on_an_issue_the_merge_already_closed_clears_labels_and_does_not_close_again(self):
         self.merged(111, state="CLOSED", reason="COMPLETED")
@@ -56,6 +56,20 @@ class Done(TrackerCase):
     def test_done_refuses_an_issue_with_no_linked_branch(self):
         self.given(issue(114, labels=REVIEW))
         self.refused("done", "114", why="#114 is not merged")
+
+    def test_done_closes_an_issue_a_merged_pull_request_refs_from_a_branch_develop_never_linked(self):
+        self.given(issue(118, labels=REVIEW))
+        self.update(merged_prs=[{"number": 159, "body": "Refs #118 (LAZY-44). The ticket stays open."}])
+        said = self.ok("done", "118")
+        stored = self.load()["issues"]["118"]
+        self.assertEqual((stored["state"], stored["stateReason"]), ("CLOSED", "COMPLETED"))
+        self.assertTrue(said["closedByDone"])
+
+    def test_done_refuses_when_a_merged_pull_request_only_mentions_the_issue_in_passing(self):
+        self.given(issue(119, labels=REVIEW))
+        self.update(merged_prs=[{"number": 160, "body": "Closes #1190. Unlike #119, this one is done."}])
+        self.refused("done", "119", why="no merged pull request names it with Refs or a closing keyword")
+        self.assertEqual(self.writes(), [])
 
     def test_done_refuses_notes_when_the_issue_moved_since_they_were_read(self):
         self.merged(115, updatedAt="2026-10-28T09:45:00Z")

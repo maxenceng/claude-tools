@@ -5,7 +5,8 @@ reach GitHub. This step runs after the merge. Its first move is `ticket-tracker 
 `updatedAt` it returns for the write in step 3.
 
 1. Confirm the work is merged. The `ticket-tracker done` call in step 3 is that check: it refuses
-   when no branch that `develop` linked to the ticket has a merged pull request, and says so;
+   when no branch that `develop` linked to the ticket has a merged pull request and no merged pull
+   request names it with `Refs #<n>` or a closing keyword, and says so;
    then stop. Make that call before steps 4 to 7: the rest of this step writes a record of what
    landed, and nothing has landed yet.
 2. There is no status to set. The merge's `Closes #<n>` closed the issue as completed, and a
@@ -17,7 +18,8 @@ reach GitHub. This step runs after the merge. Its first move is `ticket-tracker 
    reading the section. Put the text in a file and run
    `ticket-tracker done <n> --notes-file <file> --expect-updated-at <updatedAt>`. In one edit it
    writes the *Notes* section into the issue and removes every leftover `status:` label; if the
-   merge's keyword was missed and the issue is still open, it closes it as completed and says so.
+   issue is still open — the keyword was missed, or the pull request said `Refs` because the ticket
+   had steps left after the merge — it closes it as completed and says so.
    With nothing to write, run `ticket-tracker done <n>` alone for the labels and the close.
 4. Invoke the `project-retro` skill if anything during the ticket was done by hand more
    than twice, or if the same correction came up repeatedly.
