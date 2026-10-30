@@ -20,7 +20,7 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor build test test-one arch diagrams docs docs-serve fmt lint dup config-check adr-check
+.PHONY: help doctor build test test-one arch diagrams docs docs-serve fmt lint dup config-check adr-check adr-index
 .PHONY: ticket-check round-trip-check guard-fixtures guard-harness
 .PHONY: no-skipped-tests test-comment-check run openapi openapi-check ci verify verify-report pr-checks clean
 .PHONY: fe-install fe-check fe-lint fe-ci fe-build openapi-client
@@ -66,8 +66,11 @@ dup: ## Fail on copy-pasted code
 config-check: ## Fail on a config comment that explains the tool rather than the choice
 	@python3 scripts/check-config-comments.py
 
-adr-check: ## Fail on a duplicate or missing ADR number
+adr-check: ## Fail on a duplicate or missing ADR number, or a stale docs/adr/README.md
 	@python3 scripts/check-adr-numbers.py
+
+adr-index: ## Write docs/adr/README.md, the index of every ADR
+	@python3 scripts/write-adr-index.py
 
 test-comment-check: ## Fail on a comment under src/test, where the test name is the explanation
 	@python3 scripts/check-test-comments.py

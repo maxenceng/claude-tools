@@ -1,44 +1,58 @@
 #!/usr/bin/env python3
-"""Fail on a duplicate or missing ADR number.
+"""Fail on a duplicate or missing ADR number, or an ADR index that is not current.
 
 Numbering by hand collides whenever `main` moves during a ticket: two branches each pick
 the next free number, both are right when written, and only one can be right on merge.
 Nothing says so until a human notices, because two files with the same number are two
 valid files.
+
+The index, docs/adr/README.md, is compared with what write-adr-index.py would write and
+never edited here: a check that repairs what it checks hides the branch that forgot.
 """
-import glob
 import os
-import re
 import sys
 
-# Anchored to the repo rather than to the working directory. Globbed relative to wherever
-# it was invoked, this found no ADRs and reported success -- a check that passes when it
-# cannot see its input is worse than no check.
-# CHECK_ROOT is how guard-fixtures.py points this at a fixture tree; nothing else sets it.
-ROOT = os.environ.get("CHECK_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import adr_folder
 
-ADR_DIR = os.path.join(ROOT, "docs", "adr")
 
-ADRS = os.path.join(ADR_DIR, "*.md")
+def shown(lines, number):
+    """Line `number` as written, with a missing final newline said rather than invisible."""
+    if number > len(lines):
+        return "(end of file)"
+    line = lines[number - 1]
+    return line[:-1] if line.endswith("\n") else f"{line} (no newline at end of file)"
 
-NUMBERED = re.compile(r"^(\d{4})-[a-z0-9-]+\.md$")
+
+def stale_index(numbered):
+    expected, problems = adr_folder.index(numbered)
+    if problems:
+        return problems
+    index = adr_folder.relative(adr_folder.INDEX)
+    if not os.path.isfile(adr_folder.INDEX):
+        return [f"{index} is missing; run make adr-index"]
+    with open(adr_folder.INDEX, encoding="utf-8") as handle:
+        actual = handle.read()
+    if actual == expected:
+        return []
+    wanted = expected.splitlines(keepends=True)
+    found = actual.splitlines(keepends=True)
+    line = next(
+        (number for number, pair in enumerate(zip(wanted, found), start=1) if pair[0] != pair[1]),
+        min(len(wanted), len(found)) + 1,
+    )
+    return [
+        f"{index} is stale at line {line}; run make adr-index",
+        f"    expected: {shown(wanted, line)}",
+        f"    found:    {shown(found, line)}",
+    ]
 
 
 def main():
-    if not os.path.isdir(ADR_DIR):
-        print(f"no ADR directory at {os.path.relpath(ADR_DIR, ROOT)}")
+    if not os.path.isdir(adr_folder.ADR_DIR):
+        print(f"no ADR directory at {adr_folder.relative(adr_folder.ADR_DIR)}")
         return 1
 
-    numbers = {}
-    unnumbered = []
-
-    for path in sorted(glob.glob(ADRS)):
-        name = os.path.basename(path)
-        match = NUMBERED.match(name)
-        if not match:
-            unnumbered.append(name)
-            continue
-        numbers.setdefault(int(match.group(1)), []).append(name)
+    numbers, unnumbered = adr_folder.files()
 
     problems = []
 
@@ -54,10 +68,12 @@ def main():
         for missing in sorted(expected - set(numbers)):
             problems.append(f"{missing:04d} is missing — numbers are a sequence, not an id space")
 
+    problems.extend(stale_index(numbers))
+
     if not problems:
         return 0
 
-    print("ADR numbering is wrong:")
+    print("The ADR folder is wrong:")
     for problem in problems:
         print(f"  {problem}")
     if numbers:

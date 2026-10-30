@@ -84,7 +84,8 @@ Offer one only when all three hold:
 Missing any of the three, skip it — most decisions aren't ADRs, and an ADR ledger nobody
 trusts is as useless as a glossary nobody trusts. When you do write one, follow the
 existing shape (context, decision, consequences) and let `scripts/check-adr-numbers.py`
-catch a collided number rather than hand-picking one under time pressure.
+catch a collided number rather than hand-picking one under time pressure. Then run
+`make adr-index`: the ADR index is generated, and `make adr-check` fails until it lists the new one.
 
 Adapted from [mattpocock/skills](https://github.com/mattpocock/skills)'s `domain-modeling`
 (MIT), retargeted at this repo's existing glossary/ADR conventions instead of introducing

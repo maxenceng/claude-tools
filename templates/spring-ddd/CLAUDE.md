@@ -29,7 +29,8 @@ Use `make`, never `mvn` directly — the Makefile selects the Java 25 toolchain.
 - `make test` — all tests, architecture rules included
 - `make test-one T=SomeTest` — one class or method, when the full run is too slow to iterate on
 - `make fmt` / `make lint` — apply / verify formatting
-- `make adr-check` — fail on a duplicate or missing ADR number; run it before choosing one
+- `make adr-check` — fail on a duplicate or missing ADR number, or a stale ADR index; run it before choosing one
+- `make adr-index` — rewrite `docs/adr/README.md` after adding or superseding an ADR
 - `make verify` — everything CI runs, in CI's order; `make ci` is the backend half of it
 - `make verify-report` — the same run, into a log, printing the exit code and the totals
 - `make pr-checks` — wait for CI on this branch's PR and exit on its verdict
