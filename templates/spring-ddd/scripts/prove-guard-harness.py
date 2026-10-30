@@ -15,6 +15,7 @@ import contextlib
 import importlib.util
 import io
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -51,7 +52,7 @@ def expect_rejected(label, module, expected):
 def a_message_no_branch_prints(module):
     module.discovered_guards = lambda: ["check-adr-numbers.py"]
     module.REGISTRY = {
-        "check-adr-numbers.py": module.FixtureTree("adr-numbers", "NO BRANCH PRINTS THIS")
+        "check-adr-numbers.py": [module.FixtureTree("adr-numbers", "NO BRANCH PRINTS THIS")]
     }
 
 
@@ -59,21 +60,37 @@ def a_fixture_that_does_not_trip(module, adr_dir):
     fixture = module.FixtureTree("adr-numbers", "0001 used 2 times")
     fixture.directory = adr_dir
     module.discovered_guards = lambda: ["check-adr-numbers.py"]
-    module.REGISTRY = {"check-adr-numbers.py": fixture}
+    module.REGISTRY = {"check-adr-numbers.py": [fixture]}
+
+
+def a_second_fixture_that_does_not_trip(module, adr_dir):
+    passing = module.FixtureTree("adr-numbers", "0001 used 2 times")
+    passing.directory = adr_dir
+    module.discovered_guards = lambda: ["check-adr-numbers.py"]
+    module.REGISTRY = {
+        "check-adr-numbers.py": [module.FixtureTree("adr-numbers", "0001 used 2 times"), passing]
+    }
+
+
+def a_guard_with_no_fixture_tree(module):
+    module.discovered_guards = lambda: ["check-adr-numbers.py"]
+    module.REGISTRY = {"check-adr-numbers.py": []}
 
 
 def a_guard_nobody_registered(module):
     module.discovered_guards = lambda: ["check-adr-numbers.py", "check-brand-new.py"]
     module.REGISTRY = {
-        "check-adr-numbers.py": module.FixtureTree(
-            "adr-numbers", "0001 used 2 times: 0001-first-decision.md, 0001-second-decision.md"
-        )
+        "check-adr-numbers.py": [
+            module.FixtureTree(
+                "adr-numbers", "0001 used 2 times: 0001-first-decision.md, 0001-second-decision.md"
+            )
+        ]
     }
 
 
 def a_registration_whose_guard_is_gone(module):
     module.discovered_guards = lambda: []
-    module.REGISTRY = {"check-deleted.py": module.FixtureTree("adr-numbers", "anything")}
+    module.REGISTRY = {"check-deleted.py": [module.FixtureTree("adr-numbers", "anything")]}
 
 
 def a_proof_that_is_not_there(module):
@@ -104,11 +121,19 @@ def main():
     with tempfile.TemporaryDirectory() as passing:
         os.makedirs(os.path.join(passing, "docs", "adr"))
         with open(os.path.join(passing, "docs", "adr", "0001-only.md"), "w", encoding="utf-8") as handle:
-            handle.write("# 1. Only\n")
+            handle.write("# 1. Only\n\n## Status\n\nAccepted.\n")
+        subprocess.run(
+            ["python3", os.path.join(REPO_ROOT, "scripts", "write-adr-index.py")],
+            env={**os.environ, "CHECK_ROOT": passing},
+            capture_output=True,
+            check=True,
+        )
 
         cases = [
             ("a message no branch prints", a_message_no_branch_prints, (), "did not contain"),
             ("a fixture that does not trip its guard", a_fixture_that_does_not_trip, (passing,), "did not fail it (exit 0)"),
+            ("a second fixture that does not trip its guard", a_second_fixture_that_does_not_trip, (passing,), "did not fail it (exit 0)"),
+            ("a guard with no fixture tree", a_guard_with_no_fixture_tree, (), "registered with no fixture tree"),
             ("a guard nobody registered", a_guard_nobody_registered, (), "has no fixture registered"),
             ("a registration whose guard is gone", a_registration_whose_guard_is_gone, (), "no longer has it"),
             ("a proof that is not there", a_proof_that_is_not_there, (), "is what proves it, and is not there"),
