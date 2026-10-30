@@ -345,7 +345,7 @@ FEEDBACK_QUERY = """
 query($owner: String!, $repo: String!, $n: Int!) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $n) {
-      body
+      body updatedAt
       reviewThreads(first: 100) { nodes { isResolved path line
         comments(first: 20) { nodes { databaseId author { login } body diffHunk } } } }
       comments(first: 100) { nodes { author { login } body } }
@@ -371,7 +371,8 @@ def pr_feedback(number):
             "anchor": first["diffHunk"].split("\n")[-1],
             "comments": [{k: v for k, v in c.items() if k != "diffHunk"} for c in thread["comments"]["nodes"]]})
     return {"ci": rollup["state"] if rollup else None, "threads": threads, "comments": pr["comments"]["nodes"],
-            "reviews": [r for r in pr["reviews"]["nodes"] if r["body"]], "body": pr["body"]}
+            "reviews": [r for r in pr["reviews"]["nodes"] if r["body"]], "body": pr["body"],
+            "updatedAt": pr.get("updatedAt")}
 
 
 def pr_reply(number, comment_id, body_file):
@@ -533,7 +534,7 @@ def add_blocker(number, blocker):
     return {"number": blocked["number"], "blockedBy": blocking["number"]}
 
 
-def replace_sections(body, replacements):
+def replace_sections(body, replacements, dropped=frozenset()):
     newline = "\r\n" if "\r\n" in body else "\n"
     pending = dict(replacements)
 
@@ -543,6 +544,8 @@ def replace_sections(body, replacements):
     preamble, sections = split_sections(body)
     parts = [preamble]
     for name, raw in sections:
+        if name in dropped:
+            continue
         if name in pending:
             heading = raw.split("\n", 1)[0].rstrip("\r")
             tail = raw[len(raw.rstrip()):] or newline
@@ -551,9 +554,9 @@ def replace_sections(body, replacements):
             parts.append(raw)
     result = "".join(parts)
     for name, text in pending.items():
-        if result and not result.endswith(newline):
-            result += newline
-        result += (newline if result else "") + rendered("## " + name, text, newline)
+        if result:
+            result = result.rstrip("\r\n") + newline + newline
+        result += rendered("## " + name, text, newline)
     return result
 
 
@@ -572,13 +575,43 @@ def write_sections(number, expected_at, replacements):
     return {"number": int(number), "updatedAt": gh_json("issue", "view", str(number), "--json", "updatedAt")["updatedAt"]}
 
 
-def read_sections_from_stdin():
+REFERENCE = re.compile(r"\b(refs|close[sd]?|fix(e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)(?!\d)", re.IGNORECASE)
+TRAILING_REFERENCES = re.compile(r"(?:\s*^[ \t]*%s[ \t]*$)+\s*\Z" % REFERENCE.pattern, re.IGNORECASE | re.MULTILINE)
+
+
+def references(body):
+    return {(found.group(1).lower(), found.group(3)) for found in REFERENCE.finditer(body)}
+
+
+def write_pr_sections(number, expected_at, replacements):
+    """A null drops its section. The closing lines at the end stay at the end, outside any section."""
+    pr = gh_json("pr", "view", str(number), "--json", "body,updatedAt")
+    if pr["updatedAt"] != expected_at:
+        raise Refusal("pull request #%s changed since it was read (updatedAt %s, read at %s); read it again before"
+                      " writing" % (number, pr["updatedAt"], expected_at))
+    body = pr["body"] or ""
+    trailing = TRAILING_REFERENCES.search(body)
+    sections, keywords = (body[:trailing.start()].rstrip() + "\n", trailing.group(0).strip()) if trailing else (body, "")
+    written = replace_sections(sections, {k: v for k, v in replacements.items() if v is not None},
+                               dropped={k for k, v in replacements.items() if v is None})
+    if keywords:
+        written = written.rstrip("\r\n") + "\n\n" + keywords + "\n"
+    lost = references(body) - references(written)
+    if lost:
+        raise Refusal("that write drops its closing keyword (%s); nothing was written"
+                      % ", ".join("%s #%s" % one for one in sorted(lost)))
+    gh("pr", "edit", str(number), "--body-file", "-", stdin=written)
+    return {"pr": int(number), "updatedAt": gh_json("pr", "view", str(number), "--json", "updatedAt")["updatedAt"]}
+
+
+def read_sections_from_stdin(dropping=False):
     try:
         replacements = json.load(sys.stdin)
     except json.JSONDecodeError as error:
         raise Usage("stdin must be a JSON object of section name to text: %s" % error)
-    if not isinstance(replacements, dict) or not all(isinstance(v, str) for v in replacements.values()):
-        raise Usage("stdin must be a JSON object of section name to text")
+    allowed = (str, type(None)) if dropping else (str,)
+    if not isinstance(replacements, dict) or not all(isinstance(v, allowed) for v in replacements.values()):
+        raise Usage("stdin must be a JSON object of section name to text" + (" or null" if dropping else ""))
     return replacements
 
 
@@ -621,6 +654,9 @@ def parser():
     verb.add_argument("number")
     verb.add_argument("comment_id")
     verb.add_argument("--body-file", required=True)
+    verb = verbs.add_parser("pr-write-sections", help="replace or drop (null) a pull request's ## sections from JSON on stdin")
+    verb.add_argument("number")
+    verb.add_argument("--expect-updated-at", required=True)
     verb = verbs.add_parser("ci-log", help="the failed steps' log of a pull request's red checks, not the full log")
     verb.add_argument("number")
     verb = verbs.add_parser("done", help="after the merge: write Notes, clear labels, close what the merge left open")
@@ -665,6 +701,8 @@ def run(args):
         return pr_feedback(args.number)
     if args.verb == "pr-reply":
         return pr_reply(args.number, args.comment_id, args.body_file)
+    if args.verb == "pr-write-sections":
+        return write_pr_sections(args.number, args.expect_updated_at, read_sections_from_stdin(dropping=True))
     if args.verb == "ci-log":
         return ci_log(args.number)
     if args.verb == "done":

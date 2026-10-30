@@ -19,6 +19,7 @@ VERBS = {
     "pr-create": (["pr-create", "--title", "t", "--body-file", "BODY", "--closes", "50"], ""),
     "pr-feedback": (["pr-feedback", "7"], ""),
     "pr-reply": (["pr-reply", "7", "11", "--body-file", "BODY"], ""),
+    "pr-write-sections": (["pr-write-sections", "7", "--expect-updated-at", AT], json.dumps({"Open": None})),
     "ci-log": (["ci-log", "7"], ""),
     "done": (["done", "50"], ""),
     "close": (["close", "50"], ""),

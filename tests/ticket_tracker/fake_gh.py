@@ -156,6 +156,18 @@ if group == "pr" and verb == "list":
     head = option("--head")
     out([{"number": 7} for b in state["merged_heads"] if b == head])
 
+if group == "pr" and verb == "view":
+    pull_request = state.get("pull_requests", {}).get(args[2])
+    if pull_request is None:
+        fail("GraphQL: Could not resolve to a PullRequest with the number of %s." % args[2])
+    out({f: pull_request[f] for f in option("--json").split(",")})
+
+if group == "pr" and verb == "edit":
+    pull_request = state["pull_requests"][args[2]]
+    pull_request["body"] = read_file(option("--body-file"))
+    touch(pull_request)
+    out("https://github.com/o/r/pull/%s" % args[2])
+
 if group == "pr" and verb == "checks":
     out(state.get("checks", []))
 
