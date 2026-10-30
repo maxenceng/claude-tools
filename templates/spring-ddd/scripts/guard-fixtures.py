@@ -61,7 +61,7 @@ REGISTRY = {
     ),
     "check-config-comments.py": FixtureTree(
         "config-comments",
-        "Makefile:1: comment runs 3 lines, limit is 2",
+        "2 comment(s) over the limit",
     ),
     "check-no-skipped-tests.py": FixtureTree(
         "no-skipped-tests",

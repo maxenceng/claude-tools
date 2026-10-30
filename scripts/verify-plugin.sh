@@ -268,7 +268,7 @@ for folder in ("commands", "ticket-steps"):
 
 def retired_sweep(base, skip):
     for dirpath, dirnames, filenames in os.walk(base):
-        dirnames[:] = [d for d in dirnames if d not in {"node_modules", "target", "dist", ".git", "__pycache__"}]
+        dirnames[:] = [d for d in dirnames if d not in {"node_modules", "target", "dist", "site", ".cache", ".git", "__pycache__"}]
         for name in filenames:
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, root)

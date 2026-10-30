@@ -82,6 +82,9 @@ if grep -rn "com\.example\.app" . --exclude-dir=target --exclude-dir=node_module
 fi
 grep -qx "# $ARTIFACT_ID" README.md  || { echo "FAIL: README title not substituted" >&2; exit 1; }
 grep -qx "# $ARTIFACT_ID" CLAUDE.md  || { echo "FAIL: CLAUDE.md title not substituted" >&2; exit 1; }
+grep -qx "# $ARTIFACT_ID" docs/README.md || { echo "FAIL: docs/README.md title not substituted" >&2; exit 1; }
+grep -qx "site_name: $ARTIFACT_ID" mkdocs.yml || { echo "FAIL: mkdocs.yml site_name not substituted" >&2; exit 1; }
+[[ -f .github/workflows/docs.yml ]] || { echo "FAIL: the Pages workflow was not shipped" >&2; exit 1; }
 grep -q "packages = \"$PACKAGE\""  src/test/java/${PACKAGE//.//}/ArchitectureTest.java \
 	|| { echo "FAIL: ArchitectureTest does not scan the generated package" >&2; exit 1; }
 echo "ok: package, titles and scanned package all substituted"

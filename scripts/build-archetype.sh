@@ -50,7 +50,7 @@ def is_filtered(rel):
         return True
     if rel.startswith(("src/main/resources/", "docs/")):
         return True
-    return rel in ("CLAUDE.md", "README.md")
+    return rel in ("CLAUDE.md", "README.md", "mkdocs.yml")
 
 
 TOKEN = re.compile(r"(\$\{(?:package|artifactId)\})")
@@ -119,6 +119,11 @@ text = open(props, encoding="utf-8").read()
 text = re.sub(r"^spring\.application\.name=.*$", "spring.application.name=${artifactId}",
               text, count=1, flags=re.M)
 open(props, "w", encoding="utf-8").write(text)
+
+site = os.path.join(res, "mkdocs.yml")
+text = open(site, encoding="utf-8").read()
+text = re.sub(r"^site_name: app$", "site_name: ${artifactId}", text, count=1, flags=re.M)
+open(site, "w", encoding="utf-8").write(text)
 
 # Escaping runs last, after every rewrite above. Done inline it would have to reason
 # about line anchors inside a literal block, and the properties rewrite would silently
@@ -192,6 +197,7 @@ cat > "$OUT/src/main/resources/META-INF/maven/archetype-metadata.xml" <<'XML'
 			<includes>
 				<include>CLAUDE.md</include>
 				<include>README.md</include>
+				<include>mkdocs.yml</include>
 			</includes>
 		</fileSet>
 

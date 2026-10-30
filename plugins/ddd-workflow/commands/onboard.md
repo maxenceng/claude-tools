@@ -20,7 +20,7 @@ everything — each returns a summary, and the summaries are what you keep.
 Regenerate the derived documentation:
 
 ```bash
-make docs
+make diagrams
 ```
 
 Then compare what the explorer found against what the project claims:

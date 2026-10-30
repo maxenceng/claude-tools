@@ -4,6 +4,10 @@
 SHELL := /bin/bash
 MVN   := ./mvnw -B
 
+# Zensical is 0.x and ignores an unknown plugin silently, so a bump is a deliberate edit (ADR 0019).
+ZENSICAL_VERSION := 0.0.73
+ZENSICAL := uvx zensical==$(ZENSICAL_VERSION)
+
 # Keep an already-correct JAVA_HOME (CI sets one), else find a local JDK 25. A JRE is
 # skipped because it looks fine until compilation starts.
 JAVAC_OK := $(shell [ -x "$(JAVA_HOME)/bin/javac" ] && "$(JAVA_HOME)/bin/javac" -version 2>&1 | grep -q '^javac 25' && echo yes)
@@ -16,7 +20,7 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help doctor build test test-one arch docs fmt lint dup config-check adr-check
+.PHONY: help doctor build test test-one arch diagrams docs docs-serve fmt lint dup config-check adr-check
 .PHONY: ticket-check round-trip-check guard-fixtures guard-harness
 .PHONY: no-skipped-tests test-comment-check run openapi openapi-check ci verify verify-report pr-checks clean
 .PHONY: fe-install fe-check fe-lint fe-ci fe-build openapi-client
@@ -41,8 +45,14 @@ test-one: ## Run one test class or method, e.g. make test-one T=SomeTest
 arch: ## Run architecture and modularity tests only
 	$(MVN) test -Dtest='ArchitectureTest,ModularityTest' -DfailIfNoSpecifiedTests=false
 
-docs: arch ## Regenerate diagrams into target/spring-modulith-docs
+diagrams: arch ## Regenerate diagrams into target/spring-modulith-docs
 	@echo "diagrams written to target/spring-modulith-docs"
+
+docs: ## Build the docs into site/, failing on a broken link or anchor
+	$(ZENSICAL) build
+
+docs-serve: ## Serve the docs on localhost with reload
+	$(ZENSICAL) serve
 
 fmt: ## Apply formatting
 	$(MVN) spotless:apply
@@ -114,6 +124,7 @@ ci: lint config-check adr-check ticket-check round-trip-check test-comment-check
 # makes "it passed locally" stop meaning anything.
 verify: ## Everything CI runs, backend and frontend, in the order CI runs it
 	$(MAKE) ci
+	$(MAKE) docs
 	$(MAKE) no-skipped-tests
 	$(MAKE) openapi-check
 	$(MAKE) fe-ci

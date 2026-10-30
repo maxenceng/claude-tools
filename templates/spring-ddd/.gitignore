@@ -41,3 +41,7 @@ build/
 # config.local.json is per-developer by name.
 .impeccable/critique/
 **/.impeccable/config.local.json
+
+### Docs site ###
+site/
+.cache/

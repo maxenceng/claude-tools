@@ -21,6 +21,7 @@ ROOT = os.environ.get("CHECK_ROOT") or os.path.dirname(os.path.dirname(os.path.a
 TARGETS = [
     "pom.xml",
     "Makefile",
+    "mkdocs.yml",
     "frontend/Makefile",
     "src/main/resources/application.properties",
 ]
