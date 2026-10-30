@@ -304,6 +304,6 @@ PY
 # The tests of what the plugins ship as code. They run here so that CI's plugin job and a local
 # run of this script are the same command.
 cd "$ROOT"
-for tests in tests/ticket_tracker tests/check_ticket_references tests/memory_sync; do
+for tests in tests/ticket_tracker tests/check_ticket_references tests/memory_sync tests/migrate_backlog; do
   python3 -m unittest discover -s "$tests"
 done
