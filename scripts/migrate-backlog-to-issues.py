@@ -121,7 +121,7 @@ def read_tickets():
 
 
 def map_candidates(tickets):
-    """Decision id -> the maps it belongs to: those whose body links it, and those it is blocked_by."""
+    """Decision id -> the maps it belongs to: those it is blocked_by, or, when it is blocked_by none, those whose body links it."""
     by_id = {t["id"]: t for t in tickets}
     rewriter = Rewriter(tickets, {t["id"]: 0 for t in tickets}, repository_files(), "")
     found = {t["id"]: set() for t in tickets if t["type"] == "decision"}
@@ -133,7 +133,8 @@ def map_candidates(tickets):
         for id in rewriter.seen & found.keys():
             found[id].add(ticket["id"])
     for id in found:
-        found[id] |= {b for b in by_id[id]["blocked_by"] if b in by_id and by_id[b]["type"] == "map"}
+        declared = {b for b in by_id[id]["blocked_by"] if b in by_id and by_id[b]["type"] == "map"}
+        found[id] = declared or found[id]
     return {id: sorted(maps) for id, maps in found.items()}
 
 
@@ -152,7 +153,7 @@ def refusals(tickets, problems):
         if ticket["type"] == "decision":
             maps = candidates[ticket["id"]]
             if len(maps) != 1:
-                found.append("%s: decision %s reaches %s (blocked_by or linked from its body); it needs exactly one"
+                found.append("%s: decision %s reaches %s (blocked_by, else linked from a map body); it needs exactly one"
                              % (ticket["path"], ticket["id"], "no map" if not maps else "%s maps (%s)" % ("two" if len(maps) == 2 else len(maps), ", ".join(maps))))
     return found
 
