@@ -31,6 +31,12 @@ pipeline runs, in the pipeline's order.** Adding a step to a workflow means addi
 stops carrying information — and a check that lives only in the workflow is one nobody can
 run before pushing, while one that lives only in `verify` is one that never gates a merge.
 
+A new config file — a workflow, a tool's YAML, a second Makefile — joins every guard that
+reads config files, in the same change. A guard that names its files in a list checks
+nothing about a file it was never told about, and passes. Grep `scripts/check-*` for a
+sibling file's name and add the new one beside it, then watch the guard fail on that
+file once before trusting it.
+
 Pin versions — action refs, base images, tool versions. An unpinned pipeline changes
 behaviour on days you did not touch it, and debugging that is miserable.
 

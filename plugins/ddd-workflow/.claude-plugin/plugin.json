@@ -1,7 +1,7 @@
 {
   "name": "ddd-workflow",
   "description": "Role agents and skills for DDD/hexagonal Spring Boot projects with a typed frontend",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "author": {
     "name": "maxenceng"
   }
