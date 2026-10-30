@@ -148,6 +148,10 @@ if group == "pr" and verb == "create":
     state["prs"].append({"title": option("--title"), "body": read_file(option("--body-file"))})
     out("https://github.com/o/r/pull/%d" % (100 + len(state["prs"])))
 
+if group == "pr" and verb == "list" and "--search" in args:
+    term = option("--search").split()[0]
+    out([pr for pr in state.get("merged_prs", []) if term in pr["body"]])
+
 if group == "pr" and verb == "list":
     head = option("--head")
     out([{"number": 7} for b in state["merged_heads"] if b == head])

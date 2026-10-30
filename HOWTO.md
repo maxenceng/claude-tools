@@ -194,8 +194,8 @@ and asks you to pick a move. The direction it builds toward was settled at `refi
 
 `done` also writes the endpoint atlas: every endpoint the ticket touched gets its sequence
 diagram re-traced into `docs/endpoints/`, from the merged code. `done` runs after the merge: it
-writes *Notes* into the issue, clears leftover labels, closes an issue the pull request's
-keyword missed, and opens a pull request only for files it changed.
+writes *Notes* into the issue, clears leftover labels, closes an issue the merge left
+open, and opens a pull request only for files it changed.
 
 The `context:` label is the bounded context the work sits in, and the script refuses one that
 `docs/context-map.md` does not name (`cross-context` excepted). A ticket you cannot place is
