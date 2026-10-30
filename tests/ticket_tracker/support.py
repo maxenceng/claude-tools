@@ -149,7 +149,7 @@ class TrackerCase(unittest.TestCase):
 
     def writes(self):
         verbs = {("issue", "edit"), ("issue", "create"), ("issue", "close"), ("issue", "develop"),
-                 ("label", "create"), ("pr", "create")}
+                 ("label", "create"), ("pr", "create"), ("pr", "edit")}
         return [c for c in self.load()["calls"]
                 if tuple(c[:2]) in verbs and "--list" not in c
                 or c[:1] == ["api"] and "-X" in c]

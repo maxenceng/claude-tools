@@ -14,7 +14,7 @@ the conversation does.
    `ticket-tracker pr-feedback <pr-number>` (`${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker`, the only
    way to reach GitHub) returns it as one JSON object: `ci` (the state of the last commit's checks),
    `threads` (unresolved only, each with `path`, `line`, `anchor` and its `comments`), top-level
-   `comments`, `reviews` with a body, and the PR `body`.
+   `comments`, `reviews` with a body, the PR `body` and its `updatedAt`.
 
    Answer unresolved threads only; the filter already drops the rest. A thread's first
    comment's `databaseId` is the id step 8 replies to. `anchor` is the line the comment sits
@@ -41,6 +41,10 @@ the conversation does.
 
    When the answer comes back in the session rather than on the PR, put it on the PR as
    well. A decision that lives only in a transcript is one the next reader re-asks.
+   `ticket-tracker pr-write-sections <pr-number> --expect-updated-at <updatedAt>` takes a JSON
+   object on stdin: `{"Open": null, "Decided": "- **<item>.** <the answer, and why>"}` drops
+   the answered items and records them, leaving the rest of the body and its `Closes` line as
+   they were. Keep any `Open` item still unanswered rather than dropping the whole section.
 
    Only when threads, comments and reviews are all empty, CI is green and nothing is open is the round genuinely
    empty. Say so and stop; inventing something to change is worse than reporting it.

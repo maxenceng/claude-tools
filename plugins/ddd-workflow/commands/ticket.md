@@ -57,6 +57,6 @@ no file names an issue, so code and living documents say what the behaviour is i
 
 `board`, `show <n>`, `create`, `label <n>`, `move <n> <status>`, `write-sections <n>`,
 `ready <n> <refine|start|design>`, `develop <n>`, `pr-create`, `pr-feedback <n>`,
-`pr-reply <n> <id>`, `done <n>`, `close <n>`, `frontier <map>`, `add-sub-issue`, `add-blocker`,
+`pr-reply <n> <id>`, `pr-write-sections <n>`, `done <n>`, `close <n>`, `frontier <map>`, `add-sub-issue`, `add-blocker`,
 `notes`. Each step names the ones it uses; `ticket-tracker --help` and `<verb> --help` list the
 rest.
