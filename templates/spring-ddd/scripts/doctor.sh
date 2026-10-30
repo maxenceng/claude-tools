@@ -55,7 +55,7 @@ else
 	report "node" "not on PATH"
 fi
 
-for tool in docker gh; do
+for tool in docker gh uv; do
 	if command -v "${tool}" >/dev/null 2>&1; then
 		report "${tool}" "$("${tool}" --version 2>&1 | head -1)"
 	else

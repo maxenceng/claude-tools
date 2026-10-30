@@ -133,4 +133,4 @@ to carve out an exception to hold.
 - `docs/glossary.md` — ubiquitous language; use these words in code
 - `docs/context-map.md` — contexts and their relationships
 - `docs/adr/` — why things are the way they are
-- `target/spring-modulith-docs/` — generated diagrams, refreshed by `make docs`
+- `target/spring-modulith-docs/` — generated diagrams, refreshed by `make diagrams`

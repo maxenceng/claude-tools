@@ -75,6 +75,10 @@ jobs:
           cache: npm
           cache-dependency-path: templates/spring-ddd/frontend/package-lock.json
 
+      # The template's `make verify` builds its docs site through uvx.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
+
       - name: Install frontend dependencies
         run: make -C frontend install
 
@@ -103,6 +107,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: templates/spring-ddd/frontend/.nvmrc
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
 
       # Generates the archetype, installs it, generates a project, asserts the things the
       # archetype format cannot express, then builds both halves. Identical to what runs

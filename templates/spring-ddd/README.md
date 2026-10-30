@@ -78,7 +78,7 @@ check it before writing `@ApiResponse` annotations.
 - `docs/glossary.md` — the words the code uses
 - `docs/context-map.md` — contexts and their relationships
 - `docs/adr/` — why things are the way they are
-- `target/spring-modulith-docs/` — generated diagrams, refreshed by `make docs`
+- `target/spring-modulith-docs/` — generated diagrams, refreshed by `make diagrams`
 
 ## Working with Claude Code
 

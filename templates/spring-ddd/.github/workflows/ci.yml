@@ -32,6 +32,12 @@ jobs:
       - name: Lint, guards, tests and duplication
         run: make ci
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Docs build with no broken link
+        run: make docs
+
       # A Testcontainers test skips rather than fails when Docker is missing, so the suite
       # can go green having proved far less than it looks.
       - name: Nothing was skipped

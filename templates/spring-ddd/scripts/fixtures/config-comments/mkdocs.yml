@@ -1,0 +1,4 @@
+# This comment explains what the tool does instead of the choice made, on purpose,
+# spanning three lines so this fixture proves the guard reads mkdocs.yml and does not
+# skip it as a file outside its list.
+site_name: fixture
