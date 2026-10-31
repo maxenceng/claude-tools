@@ -116,6 +116,22 @@ The primitives carry the announcements: `Status` is the `role="status"` busy ind
 the screen.
 Each later lookup shows its loading state again — no `keepPreviousData`.
 
+What each state looks like on screen:
+
+- **Loading** holds the populated layout. Where the result has a shape (rows, figures), the
+  placeholders sit at their real size with labels and headers already shown, so nothing
+  shifts when the data lands; no shimmer. A single lookup's `Status` line is enough.
+- **Empty** keeps the region's frame and heading and adds one sentence saying what belongs
+  there and, where there is one, the action that fills it.
+- **Error** renders inside the region that failed, never as a whole-screen replacement: what
+  failed, and the Retry `Button` for a 5xx.
+- **Zero is data, absence is not**: a real zero prints as `0`; a value that is missing or
+  does not apply is a muted dash.
+- **Counts follow the view**: a count shown beside a filter or tab is computed from the rows
+  in that view and recomputed when it changes.
+
+Read `references/data-display.md` before laying out figures, deltas, tables or a dashboard.
+
 ## Design system
 
 - Screens compose primitives from `src/design-system/` (`Page`, `Stack`, `Heading`, `Text`,
@@ -186,6 +202,11 @@ Appearance follows the ticket's *Design direction* and is iterated with `/ticket
 `make fe-ci` runs impeccable's detector (`make design-check` in `frontend/`), so its
 findings fail CI, not review. Do not restyle anything outside the ticket. A change of look
 lands in a token or a primitive, so it changes every screen that uses it.
+
+State a user would share or come back to — a filter, the selected tab, the page — lives in
+the URL's search params, not in `useState`, so a reload or a pasted link lands on the same
+view. Navigation starts as a top bar; a sidebar is earned by more than
+about seven destinations.
 
 Semantic HTML from the start: a button is a `<button>`, every input has a `<label>`, and
 everything interactive is reachable by keyboard. The primitives do this for what they

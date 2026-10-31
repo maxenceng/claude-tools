@@ -68,13 +68,23 @@ contradicts ADR-0007, worth reopening because…"). Don't list every theoretical
 an ADR already forbids.
 
 Do not propose interfaces yet. Once the file is written, ask which candidate to
-explore.
+explore through `AskUserQuestion`: up to four candidates, the one you would pick first
+marked `(Recommended)`, each description naming its files and the depth it would gain.
+
+**Asking.** Put a question to the human through the `AskUserQuestion` tool, not as prose,
+whenever its answers can be named in advance: two to four options, your recommendation first
+with `(Recommended)` at the end of its label, each option's trade-off in its description. The
+dialog may hide everything written before it, so each question carries the context it depends
+on. Up to four independent questions go in one call; a round with more takes several calls.
+The human can always answer in their own words, so never add an "Other" option. A question
+with no options worth naming — describe the destination, what is wrong with it — stays prose.
 
 ## 3. Grilling loop
 
 Once a candidate is picked, call the Skill tool with `mattpocock-skills:grilling` to walk the
-decision tree: constraints, dependencies, the shape of the deepened module, what sits
-behind the seam, which tests survive.
+decision tree, asking each of its questions through `AskUserQuestion`: constraints,
+dependencies, the shape of the deepened module, what sits behind the seam, which tests
+survive.
 
 Handle side effects inline as decisions crystallise, using `ddd-workflow:domain-modeling`'s
 discipline to keep `docs/glossary.md` and `docs/adr/` current:

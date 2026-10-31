@@ -95,4 +95,5 @@ the list short and ranked by how often the repetition actually occurred — thre
 automations beat twelve speculative ones.
 
 Then apply the ones that are clearly right, and ask about the ones that are judgement
-calls.
+calls through `AskUserQuestion`, one question per finding with its fix as the recommended
+option.

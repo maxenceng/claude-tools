@@ -138,7 +138,13 @@ whole body into every run to contribute a handful of rules. The handful that wer
 having are adapted into the steps, along with a few from
 [mattpocock/skills](https://github.com/mattpocock/skills) (MIT): `refine`'s question
 rounds from `grilling`, `start`'s one-test-at-a-time loop and the tautological-assertion
-rule from `tdd`, and the PR body's *Merge danger* from `pr`. Qualify
+rule from `tdd`, and the PR body's *Merge danger* from `pr`. The app-screen rules in `ddd-frontend` — what
+the four states look like, `references/data-display.md`, and `refine`'s question, finding
+and job lines — are adapted from [taste-skill](https://github.com/Leonxlnx/taste-skill)
+(MIT), with two lines from [hallmark](https://github.com/Nutlope/hallmark) (MIT): view
+state in the URL, and a sidebar earned by more than about seven destinations. Both were
+inspected as dependencies and left out: they build standalone pages from their own token
+scaffolds, which the design system and impeccable already own. Qualify
 an outside reference with its plugin: `verify-plugin.sh` accepts a `plugin:` prefix as a
 declared dependency and lists it, and rejects a bare name this plugin does not define,
 because unqualified there is no way to tell deliberate reuse from a typo.

@@ -26,7 +26,10 @@ reach GitHub.
 
    For a diff touching `frontend/**`, add a third: invoke the `impeccable:impeccable`
    skill with `audit`, scoped to the changed frontend files. Design quality is its own
-   axis and neither of the other two reads for it.
+   axis and neither of the other two reads for it. When the diff lays out figures, tables
+   or a dashboard, also check it against the *Signs of a generated dashboard* table in
+   `${CLAUDE_PLUGIN_ROOT}/skills/ddd-frontend/references/data-display.md` and the four
+   states' appearance in `ddd-frontend`'s `SKILL.md`; impeccable reads neither.
 
    Scope both, because a reviewer is a cold start: it re-reads what this session already
    knows, and it costs the running sum of everything it opens rather than the last file.

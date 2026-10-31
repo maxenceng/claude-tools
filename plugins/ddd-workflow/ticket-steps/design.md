@@ -23,10 +23,11 @@ ticket changes from its criteria and the diff; ask only if neither says.
 2. Screenshot the route through `claude-in-chrome`. If it (or a local Chrome) is
    unavailable, say so and stop: a critique without a screenshot is guessing.
 3. Invoke the `impeccable:impeccable` skill with `critique`.
-4. Show the human the screenshot and the critique together, and offer the named moves the
-   critique points at — `quieter`, `bolder`, `polish`, `distill`, `typeset`, `layout`,
-   `colorize`, `animate` — with a recommendation. They pick one, or say something in
-   their own words.
+4. Show the human the screenshot and the critique together, then ask through
+   `AskUserQuestion` which move to make: the two to four named moves the critique points
+   at — from `quieter`, `bolder`, `polish`, `distill`, `typeset`, `layout`, `colorize`,
+   `animate` — your recommendation first, each description saying what it would change on
+   this screen. They pick one, or answer in their own words.
 5. Apply it: a named move through the `impeccable:impeccable` skill, free-form feedback
    by hand. Either way the change lands in `frontend/src/design-system/` — a token in
    `tokens.css`, or a primitive's variant or module — never in the screen, which may not

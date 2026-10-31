@@ -112,6 +112,17 @@ agent that answers its own HITL questions has broken this.
   not by delivering the destination. Resolution records what was done and any resulting
   facts (a credential's location, a new URL, a row count) later tickets depend on.
 
+**Asking.** Put a question to the human through the `AskUserQuestion` tool, not as prose,
+whenever its answers can be named in advance: two to four options, your recommendation first
+with `(Recommended)` at the end of its label, each option's trade-off in its description. The
+dialog may hide everything written before it, so each question carries the context it depends
+on. Up to four independent questions go in one call; a round with more takes several calls.
+The human can always answer in their own words, so never add an "Other" option. A question
+with no options worth naming — describe the destination, what is wrong with it — stays prose.
+
+`mattpocock-skills:grilling` asks one question at a time with a recommended answer; ask each
+of those through `AskUserQuestion` too, its recommendation as the first option.
+
 ## Fog of war
 
 The map is deliberately incomplete: don't chart what you can't yet see. Beyond the live
