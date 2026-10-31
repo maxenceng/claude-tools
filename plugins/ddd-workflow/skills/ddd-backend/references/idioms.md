@@ -82,6 +82,21 @@ a variable here?". A local copy of a field is justified only when the field can 
 between the reads in a way that matters. Say which way in the code, or read the field
 directly.
 
+## No copy of a collection a class was given
+
+`this.items = List.copyOf(items)` in a constructor reads as a guarantee: this type, unlike
+its neighbours, cannot see its list change. The guarantee is partial and the copy hides
+the question it answers. Whether a list can change after it is handed over is the
+caller's, and a record states what it was given. An input that has to hold (not empty,
+no duplicates) is checked through `Assert`, not repaired by copying.
+
+The callers then make the copy unnecessary. State that is handed out is an immutable list
+reassigned on each change, never mutated, so the receiver holds a value that cannot move.
+A collection built for one caller is handed over as built. A caller holding another
+shape (a map's values) streams it into the list the callee takes. One ArchUnit rule over
+every main class, not just the domain, keeps a copy from creeping into an adapter or a
+wire record. Tests stay outside it, because a test may copy to compare.
+
 ## Strings
 
 A text block for anything spanning lines — OpenAPI descriptions (a trailing `\` keeps one

@@ -62,6 +62,15 @@ simplify? Can more complexity move inside?
   to test *past* the interface usually means the module is the wrong shape.
 - **One adapter means a hypothetical seam. Two adapters means a real one.** Don't
   introduce a seam unless something actually varies across it.
+- **Depth is not size.** A deep module that has grown one class saying several things
+  (a schema writer that states the envelope, maps types, owns shared definitions, and
+  builds nodes) splits by what each part says. The interface stays the same, and the
+  parts become internal seams.
+- **One declaration per member, not N parallel registries.** When every group adds itself
+  to several lists kept in step (its methods to one, its inputs to a second, its
+  notifications to a third), the shared module repeats itself once per kind and a group
+  can be half-registered. Give each group one value declaring all of its parts, and
+  merge those values in one place.
 
 ## Designing for testability
 

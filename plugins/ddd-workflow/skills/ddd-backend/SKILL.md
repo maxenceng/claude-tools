@@ -451,6 +451,8 @@ always build the subject), and what earns a test at all.
   fill, and changing state is an immutable value replaced whole.
 - A worker loop is `while (!Thread.currentThread().isInterrupted())`, never `while (true)`.
 - No local copy of a field unless the field can change between reads in a way that matters.
+- No `List.copyOf`, `Set.copyOf` or `Map.copyOf` of a collection a class was given. An input
+  that has to hold goes through `Assert`; state handed out is an immutable value replaced whole.
 - A text block for a multi-line string and `formatted` for interpolation. Never `+`.
 - A string literal is a named `static final` constant, except in an annotation, an enum
   constant, an exception message, an `Assert` field or a `formatted` template. A count is
