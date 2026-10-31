@@ -204,6 +204,17 @@ class WritingAPullRequestSection(TrackerCase):
         self.assertEqual(self.load()["pull_requests"]["7"]["body"],
                          "## Summary\n\nIt works.\n\n## Decided\n\n- **A title.** Kept.\n\nCloses #77\n")
 
+    def test_a_closing_keyword_repeated_at_the_end_is_written_back_once(self):
+        self.given_pr(body=self.BODY + "\nCloses #77\n")
+        self.put({"Summary": "It works."})
+        self.assertEqual(self.load()["pull_requests"]["7"]["body"], self.BODY)
+
+    def test_a_closing_keyword_line_inside_a_written_section_is_left_to_the_end(self):
+        self.given_pr()
+        self.put({"Open": None, "Decided": "- **A title.** Kept.\n\nCloses #77\n- **Another.** Also kept."})
+        self.assertEqual(self.load()["pull_requests"]["7"]["body"],
+                         "## Summary\n\nIt works.\n\n## Decided\n\n- **A title.** Kept.\n\n- **Another.** Also kept.\n\nCloses #77\n")
+
     def test_a_write_reports_the_updated_at_to_expect_next(self):
         self.given_pr()
         written = json.loads(self.put({"Summary": "a"}).stdout)

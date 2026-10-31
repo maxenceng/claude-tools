@@ -604,6 +604,17 @@ def write_sections(number, expected_at, replacements):
 
 REFERENCE = re.compile(r"\b(refs|close[sd]?|fix(e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)(?!\d)", re.IGNORECASE)
 TRAILING_REFERENCES = re.compile(r"(?:\s*^[ \t]*%s[ \t]*$)+\s*\Z" % REFERENCE.pattern, re.IGNORECASE | re.MULTILINE)
+REFERENCE_LINE = re.compile(r"^[ \t]*%s[ \t]*$" % REFERENCE.pattern, re.IGNORECASE)
+
+
+def without_reference_lines(text):
+    """A closing keyword belongs at the end of the body, so a line of one written into a section is left to that end."""
+    return "\n".join(line for line in text.splitlines() if not REFERENCE_LINE.match(line))
+
+
+def once_each(trailing):
+    """The closing lines at the end, each kept once, in the order they first appear."""
+    return "\n".join(dict.fromkeys(line.strip() for line in trailing.splitlines() if line.strip()))
 
 
 def references(body):
@@ -618,8 +629,8 @@ def write_pr_sections(number, expected_at, replacements):
                       " writing" % (number, pr["updatedAt"], expected_at))
     body = pr["body"] or ""
     trailing = TRAILING_REFERENCES.search(body)
-    sections, keywords = (body[:trailing.start()].rstrip() + "\n", trailing.group(0).strip()) if trailing else (body, "")
-    written = replace_sections(sections, {k: v for k, v in replacements.items() if v is not None},
+    sections, keywords = (body[:trailing.start()].rstrip() + "\n", once_each(trailing.group(0))) if trailing else (body, "")
+    written = replace_sections(sections, {k: without_reference_lines(v) for k, v in replacements.items() if v is not None},
                                dropped={k for k, v in replacements.items() if v is None})
     if keywords:
         written = written.rstrip("\r\n") + "\n\n" + keywords + "\n"
