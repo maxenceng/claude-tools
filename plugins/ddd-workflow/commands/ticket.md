@@ -53,6 +53,14 @@ A commit subject says the change in words and carries no ticket id; the pull req
 `Closes #<n>`. Outside the record (`docs/adr/`, `docs/research/`, `docs/endpoints/`, `scripts/`)
 no file names an issue, so code and living documents say what the behaviour is instead.
 
+**Asking.** Put a question to the human through the `AskUserQuestion` tool, not as prose,
+whenever its answers can be named in advance: two to four options, your recommendation first
+with `(Recommended)` at the end of its label, each option's trade-off in its description. The
+dialog may hide everything written before it, so each question carries the context it depends
+on. Up to four independent questions go in one call; a round with more takes several calls.
+The human can always answer in their own words, so never add an "Other" option. A question
+with no options worth naming — describe the destination, what is wrong with it — stays prose.
+
 ## The verbs of `ticket-tracker`
 
 `board`, `show <n>`, `create`, `label <n>`, `move <n> <status>`, `write-sections <n>`,

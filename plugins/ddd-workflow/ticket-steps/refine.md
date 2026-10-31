@@ -29,10 +29,11 @@ ticket written from an ambiguous sentence looks precise and misleads everyone wh
 afterwards.
 
 Ask in rounds. A round is every question you can ask now without guessing at an answer
-not yet given — numbered, each with the options and your recommendation. List the
-whole option space, including the conventional middle a competent engineer would reach
-for first; where you exclude one, say why in a line rather than leave it off. A question that
-depends on another one still open belongs to the next round, not this one: answered
+not yet given, asked through `AskUserQuestion` (see *Asking* in `/ticket`), each with the
+options and your recommendation. List the whole option space, including the conventional
+middle a competent engineer would reach for first; where you exclude one, or it does not
+fit in the tool's four, say why in the question text rather than leave it off. A question
+that depends on another one still open belongs to the next round, not this one: answered
 together, the first answer would have changed the second question. Wait for the answers,
 then ask whatever they unblocked.
 
@@ -63,6 +64,16 @@ a decision.
 
 Otherwise invoke the `impeccable:impeccable` skill with `shape` and write what it settles
 into *Design direction*. For a ticket that does not touch the frontend, write `n/a`.
+
+A screen someone works in — a list, a table, a form, a dashboard — also gets three lines
+there, because `shape` leaves them implicit and the build then falls back on the stock
+order of figures, chart, table:
+
+- **The question** the screen answers first, in one line ("which deploy broke?"). Its
+  biggest block answers it; a block that answers no question is left out.
+- **The finding**: the fact in the data that most needs attention, and where it is read
+  first — the line under the title, or beside the action it drives.
+- **The job** done most often on it, and the control one click away that does it.
 
 ## What to write
 
