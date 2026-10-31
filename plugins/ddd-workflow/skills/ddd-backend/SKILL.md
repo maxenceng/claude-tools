@@ -264,6 +264,14 @@ its source.
 **Primary** adapters translate an external protocol into a use-case call and back.
 Request/response records live beside the controller, not in the domain.
 
+**Every primary adapter reads the same wiring.** When a second entry point appears (a CLI
+runner, a message consumer, a sidecar beside the HTTP API), it takes the use cases the first one
+already uses. It never builds its own subset with `new`. In Spring the container does this as
+long as nothing bypasses it. Without a framework, one composition root builds every context
+once and hands the whole set to whichever frontend runs, and an architecture rule refuses a
+`*Query`/`*Command` constructor call anywhere else. Two wirings drift: a port gets a different
+adapter in each, or a context ends up available to only one frontend.
+
 **Secondary** adapters implement domain ports. Persistence entities are mapped to domain
 types, never annotated `@Entity` directly. A context's persistence is three types in
 `infrastructure.secondary`:
@@ -385,6 +393,12 @@ The schema states what the wire carries only when both are produced by the same 
   its names. It also reads a `Path` holding a `:` (`/tmp/a:b`) as a URI with a scheme and refuses
   it. Read enums by name and paths through `Path.of`, and pin each with a test that deserialises
   the literal JSON a client sends.
+- **A request the schema does not state is refused, not tolerated.** A property the schema does
+  not list (`additionalProperties: false`), a `null` inside a list, and a sealed type's missing or
+  unknown discriminator are each an invalid request, answered as the 400 the handler already
+  emits. A reader that drops what it does not recognise accepts a client the schema calls wrong,
+  and a misspelt field becomes a silently absent value. Check the mapper's
+  `FAIL_ON_UNKNOWN_PROPERTIES` rather than assuming it, and pin each refusal with a test.
 
 The generated client goes stale silently, because regenerating is two steps and only the
 second is obvious:
