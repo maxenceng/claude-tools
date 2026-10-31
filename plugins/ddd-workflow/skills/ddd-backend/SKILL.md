@@ -361,6 +361,31 @@ controller class once; springdoc applies it to every operation. Each route keeps
 Mark each response record component `@Schema(requiredMode = RequiredMode.REQUIRED)`, or
 the generated client types every field optional.
 
+The schema states what the wire carries only when both are produced by the same rules:
+
+- **The declared success type is the returned type.** A route returns
+  `ResponseEntity<CourseResponse>`, never `ResponseEntity<?>` or `Object` with
+  `@Schema(implementation = CourseResponse.class)` added. The annotation can name a type the method
+  no longer returns, and nothing fails. The typed return lets springdoc infer the schema, and the
+  compiler enforces it. The same holds for any contract declared away from its handler: bind it
+  through a typed declaration the handler answers through (`Method<Payload, View>`), so a wrong
+  type does not compile.
+- **One set of serialisation rules, read by both.** springdoc reads Jackson's annotations, not a
+  custom `ValueSerializer` registered on a module, so a rule written only there is a shape the
+  schema never shows. Express it as something the generator reads (`@JsonValue`, `@JsonTypeInfo`
+  for a sealed type's discriminator), or, for a protocol springdoc does not describe, generate the
+  schema from the code that writes the messages. Do not add a second schema library with one
+  override per rule: each override restates a rule, and the copies drift.
+- **A shape the generator cannot state fails, not degrades.** `Object`, a raw `Map`, or an
+  interface whose implementations serialise differently becomes a free-form object, so the
+  client gets `any` where it needed a type. Response records hold none of them. A hand-written
+  generator throws on them rather than describing them as a string.
+- **A request is read as the schema states it.** Jackson 3, Spring Boot 4's, reads an enum by
+  its `toString()` by default (`EnumFeature.READ_ENUMS_USING_TO_STRING`), while the schema lists
+  its names. It also reads a `Path` holding a `:` (`/tmp/a:b`) as a URI with a scheme and refuses
+  it. Read enums by name and paths through `Path.of`, and pin each with a test that deserialises
+  the literal JSON a client sends.
+
 The generated client goes stale silently, because regenerating is two steps and only the
 second is obvious:
 
