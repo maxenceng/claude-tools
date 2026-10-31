@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import unittest
 
 from support import TrackerCase, issue
@@ -43,6 +44,25 @@ class Branching(TrackerCase):
 
 
 class OpeningAPullRequest(TrackerCase):
+    BRANCH = "94-show-the-board"
+
+    def setUp(self):
+        super().setUp()
+        self.origin = os.path.join(self.dir, "origin.git")
+        self.git("init", "--quiet", "--bare", self.origin, cwd=self.dir)
+        self.git("init", "--quiet", "--initial-branch", "main")
+        self.git("remote", "add", "origin", self.origin)
+        self.git("add", ".")
+        self.git("commit", "--quiet", "-m", "start")
+        self.git("checkout", "--quiet", "-b", self.BRANCH)
+
+    def git(self, *args, cwd=None):
+        return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=cwd or self.project,
+                              check=True, capture_output=True, text=True).stdout
+
+    def pushed(self):
+        return self.git("ls-remote", "--heads", self.origin)
+
     def body(self, text):
         path = os.path.join(self.dir, "body.md")
         with open(path, "w", encoding="utf-8") as handle:
@@ -55,6 +75,34 @@ class OpeningAPullRequest(TrackerCase):
         pr = self.load()["prs"][0]
         self.assertTrue(pr["body"].rstrip().endswith("Closes #94"), pr["body"])
         self.assertEqual(pr["title"], "Show the board")
+
+    def test_the_branch_is_pushed_with_its_upstream_before_the_pr_is_opened(self):
+        self.given(issue(94, labels=TODO))
+        self.ok("pr-create", "--title", "t", "--body-file", self.body("Summary"), "--closes", "94")
+        self.assertIn("refs/heads/" + self.BRANCH, self.pushed())
+        self.assertEqual(self.git("rev-parse", "--abbrev-ref", "@{upstream}").strip(), "origin/" + self.BRANCH)
+
+    def test_a_pr_from_the_default_branch_is_refused_and_nothing_is_pushed(self):
+        self.given(issue(94, labels=TODO))
+        self.git("checkout", "--quiet", "main")
+        self.refused("pr-create", "--title", "t", "--body-file", self.body("x"), "--closes", "94",
+                     why="main is the default branch")
+        self.assertEqual(self.pushed(), "")
+        self.assertEqual(self.load()["prs"], [])
+
+    def test_a_pr_from_a_detached_head_is_refused_and_nothing_is_pushed(self):
+        self.given(issue(94, labels=TODO))
+        self.git("checkout", "--quiet", "--detach")
+        self.refused("pr-create", "--title", "t", "--body-file", self.body("x"), "--closes", "94",
+                     why="HEAD is detached")
+        self.assertEqual(self.pushed(), "")
+
+    def test_a_push_that_fails_opens_no_pr(self):
+        self.given(issue(94, labels=TODO))
+        self.git("remote", "set-url", "origin", os.path.join(self.dir, "missing.git"))
+        self.refused("pr-create", "--title", "t", "--body-file", self.body("x"), "--closes", "94",
+                     why="git push failed")
+        self.assertEqual(self.load()["prs"], [])
 
     def test_a_body_that_already_closes_the_issue_gains_no_second_keyword(self):
         self.given(issue(95, labels=TODO))
