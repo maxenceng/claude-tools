@@ -74,8 +74,9 @@ reach GitHub.
    `respond` has no comments to read, so the round is lost rather than paused. The PR is
    the channel between verbs, and a fork is answered by a human on it — which is what
    `respond` is for.
-6. Push and open a PR with `ticket-tracker pr-create --title "<the change, in words>" --body-file
-   <file> --closes <n>`. The title says the change and carries no ticket id; the script puts
+6. Open a PR with `ticket-tracker pr-create --title "<the change, in words>" --body-file
+   <file> --closes <n>`. It pushes the checked-out branch first, and refuses on the default branch
+   or a detached HEAD. The title says the change and carries no ticket id; the script puts
    `Closes #<n>` in the body if the file lacks it, which is what closes the issue at the merge and
    makes it `done`. It refuses to close a map. Its body, briefly and in the glossary's words:
 

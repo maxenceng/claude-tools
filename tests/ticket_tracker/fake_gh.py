@@ -144,6 +144,9 @@ if group == "label" and verb == "create":
     state["labels"].append(args[2])
     out("created")
 
+if group == "repo" and verb == "view":
+    out({"defaultBranchRef": {"name": state.get("default_branch", "main")}})
+
 if group == "pr" and verb == "create":
     state["prs"].append({"title": option("--title"), "body": read_file(option("--body-file"))})
     out("https://github.com/o/r/pull/%d" % (100 + len(state["prs"])))

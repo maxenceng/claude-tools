@@ -57,6 +57,32 @@ def gh(*args, stdin=None):
     return done.stdout
 
 
+def git(*args):
+    try:
+        done = subprocess.run(["git", *args], capture_output=True, text=True)
+    except FileNotFoundError:
+        raise Refusal("git is not installed; pr-create pushes the branch with it")
+    if done.returncode != 0:
+        if any(sign in done.stderr.lower() for sign in UNREACHABLE):
+            raise Offline("GitHub is unreachable, and no ticket verb works offline; nothing was written")
+        raise Refusal("git %s failed: %s" % (args[0], done.stderr.strip()))
+    return done.stdout
+
+
+def push_branch():
+    """Push the checked-out branch, so gh pr create has a head; never the default branch, which takes no direct push."""
+    try:
+        branch = git("symbolic-ref", "--quiet", "--short", "HEAD").strip()
+    except Refusal:
+        raise Refusal("HEAD is detached; check out the ticket's branch before opening its pull request")
+    default = gh_json("repo", "view", "--json", "defaultBranchRef")["defaultBranchRef"]["name"]
+    if branch == default:
+        raise Refusal("%s is the default branch; a pull request comes from the ticket's branch, and nothing was pushed"
+                      % branch)
+    git("push", "--quiet", "--set-upstream", "origin", branch)
+    return branch
+
+
 def gh_json(*args):
     return json.loads(gh(*args) or "null")
 
@@ -337,6 +363,7 @@ def create_pr(title, body_file, closes, refs):
     line = ("Closes #%s" if closes else "Refs #%s") % number
     if not re.search(r"(?m)^%s(?!\d)" % re.escape(line), body):
         body += "\n\n" + line
+    push_branch()
     url = gh("pr", "create", "--title", title, "--body-file", "-", stdin=body + "\n").strip()
     return {"number": ticket["number"], "url": url}
 
@@ -643,7 +670,7 @@ def parser():
     verb = verbs.add_parser("develop", help="branch from a ticket with gh issue develop")
     verb.add_argument("number")
     verb.add_argument("--checkout", action="store_true")
-    verb = verbs.add_parser("pr-create", help="open a pull request that closes, or only refs, a ticket")
+    verb = verbs.add_parser("pr-create", help="push the branch and open a pull request that closes, or only refs, a ticket")
     verb.add_argument("--title", required=True)
     verb.add_argument("--body-file", required=True)
     verb.add_argument("--closes")
