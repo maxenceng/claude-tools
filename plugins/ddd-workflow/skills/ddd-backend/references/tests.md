@@ -235,6 +235,11 @@ Test the boundary, not the middle. A capacity rule covered at 0-of-10 and 10-of-
 with an off-by-one still in it — 9-of-10 is the case that catches it. Whenever a rule has
 a threshold, the tests that matter are the ones either side of it.
 
+A rule keyed on a name has the same kind of edge. When a rule gives one name a special place
+(a `README.md` that heads its folder, a `main` branch, a reserved key), test that name in a
+position the rule does not mean: a folder called `README.md`, a path segment that only
+starts with the name. That is the case a rule matching on the bare string gets wrong.
+
 Before trusting a test you just wrote, break the code it covers and watch it fail. This is
 not ceremony: a test that asserts on a mock's return value frequently passes whether or
 not the thing it claims to check is wired at all, and it will keep passing after someone

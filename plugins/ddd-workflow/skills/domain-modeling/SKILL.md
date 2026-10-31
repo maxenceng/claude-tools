@@ -87,6 +87,12 @@ existing shape (context, decision, consequences) and let `scripts/check-adr-numb
 catch a collided number rather than hand-picking one under time pressure. Then run
 `make adr-index`: the ADR index is generated, and `make adr-check` fails until it lists the new one.
 
+State a decision as a rule of its own, not as a copy of how some tool happens to be set up today.
+"A folder's `README.md` comes first" holds in every project. "A folder's `README.md` comes first
+because the site is built from it" stops making sense the day the site is reconfigured, or in a
+project that has no site. Give the tool as the reason in *Context*, and keep it out of the rule in
+*Decision*.
+
 Adapted from [mattpocock/skills](https://github.com/mattpocock/skills)'s `domain-modeling`
 (MIT), retargeted at this repo's existing glossary/ADR conventions instead of introducing
 a competing `CONTEXT.md` format.
