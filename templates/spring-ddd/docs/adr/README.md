@@ -22,3 +22,4 @@
 - 0018 [No issue is named outside the record](0018-no-issue-is-named-outside-the-record.md) — Accepted.
 - 0019 [The docs build on a pinned Zensical from a mkdocs.yml both tools read, and deploy only when enabled](0019-the-docs-build-on-a-pinned-zensical-from-a-mkdocs-yml-both-tools-read-and-deploy-only-when-enabled.md) — Accepted.
 - 0020 [The ADR index is written by a script, and a stale one fails the build](0020-the-adr-index-is-written-by-a-script-and-a-stale-one-fails-the-build.md) — Accepted.
+- 0021 [The docs open in dark mode, through a theme block both tools read](0021-the-docs-open-in-dark-mode-through-a-theme-block-both-tools-read.md) — Accepted.
