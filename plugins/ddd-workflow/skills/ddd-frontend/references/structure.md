@@ -41,6 +41,13 @@ import from itself and from a shared folder, never from another context. Files d
 `src/` (`App.tsx`, `main.tsx`) are composition: they may import any context, because
 putting contexts side by side on a page is their job.
 
+Composition sometimes outgrows those files: one window-level key handler binding every
+context's keys, a screen shown before any context loads. Such a folder goes in a
+`compositionFolders` list, and the test adds one rule: no context and no shared folder
+imports a composition folder. A folder a context reads stays shared; a folder that only
+reads contexts joins the composition side. Leaving it as a context would let another
+context import it, and the composition would leak into the parts it composes.
+
 ## Adding a context
 
 1. Create `src/<context>/`, named like the backend context.
