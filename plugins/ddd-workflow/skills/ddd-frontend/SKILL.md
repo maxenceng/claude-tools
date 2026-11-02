@@ -39,6 +39,12 @@ Types reach a context by inference from `api`, or by name through `Schema<'Name'
 `src/api/client.ts` — never by redeclaration. A field that is `undefined` at runtime while
 the types insist it exists is a stale schema, every time.
 
+The client never re-derives a rule the domain owns. If a screen needs a value the backend
+computes — whether a thing is overdue, which of several states wins — the response carries
+it as a field. Working it out again from the raw fields writes the rule twice, and the two
+copies drift the first time the domain changes. Missing a field is a backend change, not
+a helper in the context.
+
 ## Layout
 
 ```
@@ -62,6 +68,10 @@ eslint/                  the project's own lint rules, each with its RuleTester 
 - `api`, `design-system`, `i18n` and `test` are shared folders, listed in the test's
   `sharedFolders`. The design system imports no context and never `api`; i18n imports no
   context.
+- A folder that only composes contexts — app-wide key handling, a connection screen — is
+  the composition side, listed in the test's `compositionFolders`. No context and no shared
+  folder imports it; only the files directly in `src/` do. It is the frontend's twin of
+  "nothing depends on the shell".
 
 Read `references/structure.md` before adding a context or extracting shared code.
 
@@ -132,6 +142,19 @@ What each state looks like on screen:
 
 Read `references/data-display.md` before laying out figures, deltas, tables or a dashboard.
 
+## State shapes
+
+A state the project writes by hand — a screen's four states, a connection's phases — is a
+set of classes discriminated by an enum `kind`, not a union of object literals. The union
+of the classes keeps `switch` narrowing; each class answers the questions its callers ask
+(`isReady()`, `shown()`), so no caller compares a kind to reach a field. Behaviour is a
+prototype method, not an arrow field, so two equal states compare equal.
+
+- A closed set of names that means something (an action, a cause) is an enum. A design
+  token prop stays a literal union: it names a token, not a meaning.
+- Generated types stay plain objects. A store turns a response into a state class at the
+  boundary.
+
 ## Design system
 
 - Screens compose primitives from `src/design-system/` (`Page`, `Stack`, `Heading`, `Text`,
@@ -152,6 +175,9 @@ skill when they are installed.
 
 ## i18n
 
+- i18n stays even when the product ships one language. A single-language project drops
+  the second locale and the parity test, never the catalogue: copy written inline is
+  scattered across screens, and every screen added later makes the move dearer.
 - No user-facing literal in a component: copy comes from `t()`, with
   `useTranslation('<context>')` — one namespace per bounded context, `common` for the shell.
 - Keys say what the text is for (`popularity.notFound`), not what it says. They are typed:
