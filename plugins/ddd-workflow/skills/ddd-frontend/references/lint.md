@@ -70,6 +70,25 @@ const STYLING_ON_ELEMENTS = {
 The styling selector looks only at lowercase (HTML) elements. A component's `className`
 prop would pass it, which is why no primitive declares one (`design-system.md`).
 
+A fourth came later, from "Magic string, what does this mean?" about a slug's character
+class written inline in a `.replace`. A pattern is no easier to read than a string, so it is
+named the same way: a regular expression literal is only ever the initialiser of a
+module-level `const` whose name says what it matches (`NOT_IN_SLUG`, `TABLE_ROW`), with a doc
+comment when the name cannot say it all.
+
+```js
+// eslint.config.js
+const NAMED_PATTERNS = [
+  {
+    selector: 'Literal[regex]:not(Program > VariableDeclaration > VariableDeclarator > Literal, Program > ExportNamedDeclaration > VariableDeclaration > VariableDeclarator > Literal)',
+    message: 'Name this pattern in a module-level const that says what it matches.',
+  },
+]
+```
+
+It applies to `src/` outside tests: a `getByText(/…/)` matcher is the assertion itself, and
+naming it says nothing more. `new RegExp(…)` is not checked.
+
 Magic conditions — the review's "avoid magic string and weird conditions" — have no rule.
 `no-magic-numbers` flags every index and every `1`, and is ignored within a week. That one
 stays a convention: name the condition (`errors.md`, `queries.md`).

@@ -94,6 +94,9 @@ Read `references/structure.md` before adding a context or extracting shared code
   `retriesOnlyUnansweredRequests` — never an inline condition or lambda.
 - Never retry an answered request: retry only a network failure, `NETWORK_RETRIES` times,
   and let the UI offer Retry for the rest.
+- A refetch replaces what is shown, never where the user is. Scroll and selection move
+  only on the user's own open or select; a default selection is settled on the first read
+  and kept, not re-derived ("the first row") from every later one.
 
 Read `references/queries.md` before writing a hook — it has the reasoning, the `enabled`
 and `retry` choices, and mutations (which the template does not have yet).
@@ -198,6 +201,8 @@ const NO_NESTED_FUNCTIONS = [
   names (`gap="md"`, `tone="muted"`) — never a boolean mode, never `string`, never a
   `className` pass-through.
 - A primitive owns its accessibility: labels, roles, live regions, `aria-invalid`.
+- A primitive is named for what it renders, never for the screen it was written for. One
+  that began as `TicketList` is renamed `Rows` in the change that gives it a second caller.
 - When nothing fits, extend a primitive (a new value on an axis) or add one — in the same
   change, never by restyling in the screen.
 
@@ -229,8 +234,9 @@ Read `references/i18n.md` before adding a namespace, a language or a key with a 
   everything else; inside `frontend/` they are `make lint` and `make ci`. The root's own
   `make lint` is the backend's formatting check, not ESLint. Every rule is at `error`, so
   any finding fails the build.
-- Beyond Vercel's rules, three enforce the review: `local/no-literal-copy`,
-  `local/no-jsx-comments`, and styling only inside `src/design-system/`.
+- Beyond Vercel's rules, four enforce the review: `local/no-literal-copy`,
+  `local/no-jsx-comments`, styling only inside `src/design-system/`, and a regular
+  expression only as the value of a module-level `const` whose name says what it matches.
 - Fix the code, not the rule. An inline disable is the last resort and states its reason:
   `// eslint-disable-next-line <rule> -- <why>`. One without a reason fails, and so does
   one that no longer suppresses anything.
@@ -296,5 +302,7 @@ browser through TanStack Query.
   none fits.
 - An inline condition or a magic status number in a component (`title.trim() !== ''`,
   `error.status === 404`) — name it as a predicate in `queries.ts` or `problem.ts`.
+- A shared primitive still named for its first caller (`TicketList` rendering documents
+  too) — rename it for what it renders when the second caller arrives.
 - A new token prop typed `string` instead of a literal union — the compiler accepts any
   value, and the copy rule reads every literal passed to it as copy.

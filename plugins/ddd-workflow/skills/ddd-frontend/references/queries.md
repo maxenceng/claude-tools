@@ -20,6 +20,19 @@ is not: it is never put into `useState`, because then there are two copies, and 
 the query refetches, retries or is invalidated, the local copy is the stale one and nothing
 says so. Deriving from the query result on each render costs nothing and cannot drift.
 
+Where the user is — the selected row, the scroll position — is local state too, and a
+refetch must not move it. Two ways it does by accident:
+
+- **Scrolling on every render of the content.** An effect that scrolls to a heading (or the
+  top) whenever the document changes sends the reader back each time the file is saved.
+  Scroll from the user's open, keyed on that action, not on the data.
+- **A default re-derived from each read.** "Select the first row" written as
+  `selected ?? rows[0]` follows whatever comes first in the newest answer. Settle the
+  default once, on the first read that has rows, and keep it as an explicit selection.
+
+When the selected item disappears from a read, choosing its replacement is a decision made
+once, against the rows that read returned — not left to the fallback.
+
 ## The key factory
 
 ```ts
