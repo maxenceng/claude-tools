@@ -48,6 +48,10 @@ imports a composition folder. A folder a context reads stays shared; a folder th
 reads contexts joins the composition side. Leaving it as a context would let another
 context import it, and the composition would leak into the parts it composes.
 
+The files directly in `src/` get the same rule: no context and no shared folder imports
+one. Without it, a type declared in `App.tsx` or a wiring file is imported by the first
+context that needs it, and the root becomes a shared folder nobody listed.
+
 ## Adding a context
 
 1. Create `src/<context>/`, named like the backend context.
