@@ -224,6 +224,13 @@ The reliable smell is a conditional in an application service that encodes a pol
 `if (course.enrolledSeats() >= course.seats().get())` in a service means the rule
 escaped the aggregate — move it to `Course.enroll()` and let it throw.
 
+The same rule escapes outward too: a client deciding something the context should decide.
+Once a second client — another frontend, a CLI, a second screen — would repeat a decision
+(which action to offer, where to resume), move it into the context and serve the answer
+through one use case both clients call. Do this even when the ticket said "no backend
+change", and record the reversal in an ADR. Two copies of a rule in two clients drift
+apart the first time the rule changes, and nothing fails when they do.
+
 They return the aggregate. That is safe here because aggregates are immutable records,
 so an adapter cannot mutate what it is handed. The wire format still stays independent:
 the primary adapter owns a response record and maps to it (`CourseResponse.from(course)`).

@@ -72,6 +72,9 @@ eslint/                  the project's own lint rules, each with its RuleTester 
   the composition side, listed in the test's `compositionFolders`. No context and no shared
   folder imports it; only the files directly in `src/` do. It is the frontend's twin of
   "nothing depends on the shell".
+- The files directly in `src/` (`App.tsx`, `main.tsx`, any `app.ts` wiring them) compose
+  too, so no context and no shared folder imports one either. A type or helper a context
+  wants from there belongs in that context or a shared folder.
 
 Read `references/structure.md` before adding a context or extracting shared code.
 
@@ -154,6 +157,35 @@ prototype method, not an arrow field, so two equal states compare equal.
   token prop stays a literal union: it names a token, not a meaning.
 - Generated types stay plain objects. A store turns a response into a state class at the
   boundary.
+
+## Stateful pieces
+
+Anything that keeps state and acts on it — a store, a controller, the client, a key
+handler, a test fake — is a class with private fields and methods. It is never a factory
+that returns an object of closures over its local variables. A factory hides its state
+where neither a type nor a test can name it, and it keeps growing: the first one becomes
+the 300-line closure every feature is added to. A named helper sits at module level, never
+inside another function. A callback passed inline (a listener, a `map`, a JSX handler)
+stays an inline arrow.
+
+A method passed as a value loses its `this`, so wrap it in an arrow where it is handed over
+(`useSyncExternalStore((l) => store.subscribe(l), () => store.snapshot())`).
+
+ESLint enforces it in source and tests alike, through two more `no-restricted-syntax`
+entries:
+
+```js
+const NO_NESTED_FUNCTIONS = [
+  {
+    selector: ':function VariableDeclarator > :matches(ArrowFunctionExpression, FunctionExpression)',
+    message: 'Declare the helper at module level, or make this a class with a private method.',
+  },
+  {
+    selector: ':matches(:function ReturnStatement, ArrowFunctionExpression) > ObjectExpression > Property > :function',
+    message: 'An object of closures is a class: give it private state and methods.',
+  },
+]
+```
 
 ## Design system
 
