@@ -214,6 +214,12 @@ A primitive speaks no domain language — `TextField`, never `CourseTitleField` 
 architecture test keeps it from importing a context or `api`. If a primitive needs data,
 the screen passes it in.
 
+A name drifts the same way a dependency does. A list written for one screen and moved into
+`src/design-system/` keeps that screen's name (`TicketList`), and the second context to use
+it reads as borrowing another's component. Rename it for what it renders (`Rows`) in the
+change that adds the second caller, and name its parts the same way (`DocsTreeRow`, not
+`DocRow` beside a `TicketRow` that means something else). No rule catches this; review does.
+
 ## Component API advice
 
 For component API design beyond this file — compound components, lifting state, context
