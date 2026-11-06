@@ -100,6 +100,10 @@ Read `references/structure.md` before adding a context or extracting shared code
 - A refetch replaces what is shown, never where the user is. Scroll and selection move
   only on the user's own open or select; a default selection is settled on the first read
   and kept, not re-derived ("the first row") from every later one.
+- A failed refetch keeps the last answer shown, the failure beside it. A failed read is not
+  an empty one: an item whose ask failed never reads as "none" or drops from the list.
+- A read per row (one request for each item, to join something onto it) runs over the rows
+  drawn — after the cut, the page or the window — never over the whole list they came from.
 
 Read `references/queries.md` before writing a hook — it has the reasoning, the `enabled`
 and `retry` choices, and mutations (which the template does not have yet).
@@ -206,6 +210,8 @@ const NO_NESTED_FUNCTIONS = [
   HTML element and no stylesheet import — lint fails the build.
 - Tokens in `tokens.css` are the only raw values. A primitive's CSS Module reads
   `var(--…)`; a value with no token gets a token first.
+- A new or changed token pair — text or a mark on its ground — meets WCAG AA before review:
+  4.5:1 for text, 3:1 for large text and for marks. Dimmed text is still text.
 - A primitive takes one prop per visual axis, typed as a string literal union of token
   names (`gap="md"`, `tone="muted"`) — never a boolean mode, never `string`, never a
   `className` pass-through.
@@ -266,6 +272,9 @@ do not catch.
   screen is translated.
 - Named predicates get plain unit tests (`problem.test.ts`, `queries.test.ts`); a local
   lint rule gets a RuleTester test beside it.
+- jsdom lays nothing out, so a criterion about how a screen looks — a line clamp, an
+  overflow, a wrap — is not proved by a test. Say so in the pull request and tick it only
+  once a screenshot of the rendered screen shows it.
 
 Read `references/tests.md` before writing one — it also explains the MSW setup in
 `src/test/setup.ts`, which looks wrong and is not.
@@ -285,6 +294,10 @@ about seven destinations.
 Semantic HTML from the start: a button is a `<button>`, every input has a `<label>`, and
 everything interactive is reachable by keyboard. The primitives do this for what they
 render; the screen's own structure (`<section aria-labelledby>`, `<form>`) stays semantic.
+
+A shortcut on a digit or a punctuation key matches `KeyboardEvent.code` (`Digit1`), never
+`key`: on AZERTY a bare digit key's `key` is `&`. A letter stays on `key`, which follows the
+layout the user reads.
 
 ## General React advice
 
