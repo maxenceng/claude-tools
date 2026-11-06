@@ -33,6 +33,10 @@ Then:
    Hand the `frontend` agent the ticket's *Design direction* along with its criteria.
 4. Write the boundary case first where the ticket has one. A rule tested only in the
    middle of its range passes with an off-by-one in it.
+   A `fix` ticket reproduces its failure before any code changes, and records the command
+   and what it printed for the PR. Pick the form of the command that cannot act: no
+   arguments, a dry run, a throwaway directory. A reproduction that runs the real step can
+   write the very state the fix is about, and then the evidence is gone.
 5. If the API surface changed, recapture the schema: `make run`, `make openapi`,
    `make openapi-client`. Running only the last regenerates types from a stale schema.
 6. Apply the *Glossary impact* to `docs/glossary.md` in this change, not later.
