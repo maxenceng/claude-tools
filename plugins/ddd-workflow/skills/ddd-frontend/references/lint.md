@@ -51,7 +51,7 @@ it (below).
 
 ## The review, as rules
 
-Three comments in the review became three rules, scoped by file:
+Three comments in the review became three rules, scoped by file; two more came later:
 
 | Rule | Fails on | Applies to |
 |---|---|---|
@@ -88,6 +88,29 @@ const NAMED_PATTERNS = [
 
 It applies to `src/` outside tests: a `getByText(/…/)` matcher is the assertion itself, and
 naming it says nothing more. `new RegExp(…)` is not checked.
+
+A fifth came from "magic string" and "use enums", said four times in one review about sets
+of values written as unions of string literal types (`kind: 'thread' | 'pending'`), each
+member spelled again at every comparison. A set of values with a meaning is an enum, and the
+code compares and passes its members:
+
+```js
+// eslint.config.js
+const NAMED_VALUE_SETS = [
+  {
+    selector: ':not(TSTypeParameterInstantiation, TSTypeParameter) > TSUnionType > TSLiteralType > Literal[value=/[A-Za-z]/]',
+    message: 'A set of string values is an enum: declare one and compare against its members.',
+  },
+]
+```
+
+It applies to `src/` outside tests and outside `src/design-system/`, where a union is a
+token axis (`Space`, `tone`) and stays one (`design-system.md`). A type argument
+(`Pick<T, 'a' | 'b'>`, property names) and a type parameter's constraint are not sets of
+values and pass. Generated types keep their unions: comparing against a member of one
+(`view.kind === 'unavailable'`) is checked by the compiler and allowed. Write the selector as
+a child chain, as above. `:has(> …)` matched nothing in ESLint 9, so watch the rule fail on
+a planted union before trusting it.
 
 Magic conditions — the review's "avoid magic string and weird conditions" — have no rule.
 `no-magic-numbers` flags every index and every `1`, and is ignored within a week. That one
