@@ -306,8 +306,13 @@ def is_analysed(ticket, section):
     return bool(text) and not text.startswith(UNANALYSED)
 
 
+NO_DESIGN = "n/a"
+
+
 def touches_frontend(ticket):
-    return "frontend/" in ticket["body"]
+    """Refine writes n/a as the Design direction of a ticket that leaves the frontend alone, so any other analysed one says it does."""
+    direction = ticket["sections"].get("Design direction", "").strip()
+    return "frontend/" in ticket["body"] or (is_analysed(ticket, "Design direction") and direction.lower() != NO_DESIGN)
 
 
 def ready(number, verb):

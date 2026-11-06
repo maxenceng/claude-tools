@@ -73,6 +73,16 @@ class RefineStartAndDesignKeepTheirRefusals(TrackerCase):
         self.given(issue(83, labels=["status:in-progress", "type:feature", "context:board"], body=body))
         self.assertEqual(self.ok("ready", "83", "design")["status"], "in-progress")
 
+    def test_design_accepts_a_ticket_whose_design_direction_is_written_without_naming_frontend(self):
+        body = with_section("Design direction", "Inside the incumbent world: existing tokens.")
+        self.given(issue(85, labels=["status:in-progress", "type:feature", "context:desktop"], body=body))
+        self.assertEqual(self.ok("ready", "85", "design")["number"], 85)
+
+    def test_design_refuses_a_ticket_whose_design_direction_is_na_in_any_case(self):
+        body = with_section("Design direction", "N/A")
+        self.given(issue(86, labels=["status:in-progress", "type:feature", "context:board"], body=body))
+        self.refused("ready", "86", "design", why="#86 does not touch frontend/**")
+
     def test_an_unreadable_ticket_is_refused_by_every_verb_with_the_reason(self):
         self.given(issue(84, labels=["status:todo", "type:feature"]))
         for verb in ("refine", "start", "design"):
