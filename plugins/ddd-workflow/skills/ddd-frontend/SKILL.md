@@ -36,7 +36,10 @@ The generated client in `src/api/generated/` is the whole truth about the API.
   `src/api/client.ts`. `architecture.test.ts` fails the build otherwise.
 
 Types reach a context by inference from `api`, or by name through `Schema<'Name'>` from
-`src/api/client.ts` — never by redeclaration. A field that is `undefined` at runtime while
+`src/api/client.ts` — never by redeclaration, and never through a hand-kept list of aliases
+that renames them (`type Ticket = BoardTicketView`). A rename list has to be updated with
+every schema change and tells the reader nothing the generated name does not. Use the name
+the generator gives. A field that is `undefined` at runtime while
 the types insist it exists is a stale schema, every time.
 
 The client never re-derives a rule the domain owns. If a screen needs a value the backend
@@ -118,6 +121,10 @@ state, not to one generic error screen:
 
 Never retry an answered request automatically — any `ApiError`, whatever the status.
 
+A Retry `Button` re-sends a read. After a failed write, offer it only when the write is
+known not to have landed (the server refused it before writing). A write whose call failed
+may have landed, so read the state again and show what is there; a Retry there writes twice.
+
 Read `references/errors.md` before rendering a failure.
 
 ## The four states
@@ -156,8 +163,10 @@ of the classes keeps `switch` narrowing; each class answers the questions its ca
 (`isReady()`, `shown()`), so no caller compares a kind to reach a field. Behaviour is a
 prototype method, not an arrow field, so two equal states compare equal.
 
-- A closed set of names that means something (an action, a cause) is an enum. A design
-  token prop stays a literal union: it names a token, not a meaning.
+- A closed set of names that means something (an action, a cause, a panel, a kind of
+  comment) is an enum, compared and passed by its members, never a union of string
+  literals. Lint refuses the union outside `src/design-system/`. A design token prop stays a
+  literal union: it names a token, not a meaning.
 - Generated types stay plain objects. A store turns a response into a state class at the
   boundary.
 
@@ -234,9 +243,10 @@ Read `references/i18n.md` before adding a namespace, a language or a key with a 
   everything else; inside `frontend/` they are `make lint` and `make ci`. The root's own
   `make lint` is the backend's formatting check, not ESLint. Every rule is at `error`, so
   any finding fails the build.
-- Beyond Vercel's rules, four enforce the review: `local/no-literal-copy`,
-  `local/no-jsx-comments`, styling only inside `src/design-system/`, and a regular
-  expression only as the value of a module-level `const` whose name says what it matches.
+- Beyond Vercel's rules, five enforce the review: `local/no-literal-copy`,
+  `local/no-jsx-comments`, styling only inside `src/design-system/`, a regular
+  expression only as the value of a module-level `const` whose name says what it matches,
+  and no union of string literal types outside the design system (an enum instead).
 - Fix the code, not the rule. An inline disable is the last resort and states its reason:
   `// eslint-disable-next-line <rule> -- <why>`. One without a reason fails, and so does
   one that no longer suppresses anything.
@@ -306,3 +316,6 @@ browser through TanStack Query.
   too) — rename it for what it renders when the second caller arrives.
 - A new token prop typed `string` instead of a literal union — the compiler accepts any
   value, and the copy rule reads every literal passed to it as copy.
+- A set of values with a meaning written as a string union outside the design system
+  (`'diff' | 'comments' | 'files'`) — it is an enum.
+- A hand-kept list of aliases renaming generated types — import the generated name.
