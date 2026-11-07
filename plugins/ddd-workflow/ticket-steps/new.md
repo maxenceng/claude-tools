@@ -45,5 +45,10 @@ The issue number GitHub allocates is the ticket's id, and `create` prints it. A 
 (an unknown context, a missing template, no network) wrote nothing; say which line it was and
 carry on with the rest.
 
+When the human asks for a captured ticket to be folded into another — too small to stand alone, or
+the same idea twice — write what it said into the other's *Notes* with `write-sections`, then
+`ticket-tracker fold <n> --into <m>`, which closes it as a duplicate. Only an open draft folds: once
+refined, its analysis is worth a `refine` of its own.
+
 Report what you captured as a list of number and title, and say which ones need a context decision.
 Then stop — do not offer to refine one, and do not refine the first because it looks easy.

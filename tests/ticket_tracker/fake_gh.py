@@ -125,7 +125,8 @@ if group == "issue" and verb == "create":
 if group == "issue" and verb == "close":
     issue = issue_of(args[2])
     issue["state"] = "CLOSED"
-    issue["stateReason"] = {"completed": "COMPLETED", "not planned": "NOT_PLANNED"}[option("--reason", "completed")]
+    reason = "duplicate" if option("--duplicate-of", None) else option("--reason", "completed")
+    issue["stateReason"] = {"completed": "COMPLETED", "not planned": "NOT_PLANNED", "duplicate": "DUPLICATE"}[reason]
     touch(issue)
     out("closed")
 
