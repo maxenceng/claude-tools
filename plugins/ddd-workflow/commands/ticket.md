@@ -65,6 +65,6 @@ with no options worth naming — describe the destination, what is wrong with it
 
 `board`, `show <n>`, `create`, `label <n>`, `move <n> <status>`, `write-sections <n>`,
 `ready <n> <refine|start|design>`, `develop <n>`, `pr-create`, `pr-feedback <n>`,
-`pr-reply <n> <id>`, `pr-write-sections <n>`, `done <n>`, `close <n>`, `frontier <map>`, `add-sub-issue`, `add-blocker`,
+`pr-reply <n> <id>`, `pr-write-sections <n>`, `done <n>`, `close <n>`, `fold <n> --into <m>`, `frontier <map>`, `add-sub-issue`, `add-blocker`,
 `notes`. Each step names the ones it uses; `ticket-tracker --help` and `<verb> --help` list the
 rest.

@@ -110,5 +110,34 @@ class Closing(TrackerCase):
         self.assertEqual(self.writes(), [])
 
 
+class Folding(TrackerCase):
+    DRAFT = ["status:draft", "type:fix", "context:board"]
+    TARGET = ["status:draft", "type:feature", "context:board"]
+
+    def test_a_draft_folds_into_another_ticket_as_its_duplicate_and_loses_its_status_label(self):
+        self.given(issue(130, labels=self.DRAFT), issue(131, labels=self.TARGET))
+        said = self.ok("fold", "130", "--into", "131")
+        stored = self.load()["issues"]["130"]
+        self.assertEqual((stored["state"], stored["stateReason"]), ("CLOSED", "DUPLICATE"))
+        self.assertEqual(stored["labels"], ["type:fix", "context:board"])
+        self.assertEqual(said, {"number": 130, "into": 131, "labelsRemoved": ["status:draft"]})
+
+    def test_a_refined_ticket_is_not_folded_because_its_analysis_would_be_lost(self):
+        self.given(issue(132, labels=["status:todo", "type:fix", "context:board"]), issue(133, labels=self.TARGET))
+        self.refused("fold", "132", "--into", "133", why="#132 is not an open draft")
+        self.assertEqual(self.writes(), [])
+
+    def test_a_draft_is_not_folded_into_a_closed_ticket(self):
+        self.given(issue(134, labels=self.DRAFT),
+                   issue(135, labels=["type:feature", "context:board"], state="CLOSED", reason="COMPLETED"))
+        self.refused("fold", "134", "--into", "135", why="#135 is closed")
+        self.assertEqual(self.writes(), [])
+
+    def test_a_draft_is_not_folded_into_itself(self):
+        self.given(issue(136, labels=self.DRAFT))
+        self.refused("fold", "136", "--into", "136", why="cannot be folded into itself")
+        self.assertEqual(self.writes(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
