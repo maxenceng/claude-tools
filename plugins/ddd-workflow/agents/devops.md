@@ -57,3 +57,9 @@ Pin base images by tag and digest so a rebuild produces the same thing.
 You cannot claim a workflow works because the YAML parses. Say plainly what you
 verified and what you did not — an untested pipeline change is a guess, and labelling
 it as one is more useful than confidence that turns out to be wrong.
+
+A smoke test checks the artifact this run built, never one already installed on the
+machine. A package installed last week passes in place of a broken new build, and nothing
+in the output says which one ran. If the test needs an installed copy, the step that
+installs it is the one that says so, through a variable such as
+`BUNDLE_SMOKE_INSTALLED=1`. Without that variable, the test reads the build output.
