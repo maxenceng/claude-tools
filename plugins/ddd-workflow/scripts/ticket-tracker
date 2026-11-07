@@ -484,6 +484,22 @@ def close(number):
     return {"number": ticket["number"], "labelsRemoved": leftover}
 
 
+def fold(number, into):
+    ticket, target = fetch(number), fetch(into)
+    n, m = ticket["number"], target["number"]
+    if n == m:
+        raise Refusal("#%d cannot be folded into itself" % n)
+    if ticket["state"] != "OPEN" or ticket["status"] != "draft":
+        raise Refusal("#%d is not an open draft; only a captured ticket nothing has analysed is folded away" % n)
+    if target["state"] != "OPEN":
+        raise Refusal("#%d is closed; a ticket is folded only into an open one" % m)
+    leftover = status_labels(ticket)
+    if leftover:
+        gh("issue", "edit", str(number), "--remove-label", ",".join(leftover))
+    gh("issue", "close", str(number), "--duplicate-of", str(into))
+    return {"number": n, "into": m, "labelsRemoved": leftover}
+
+
 def board():
     rows = gh_json("issue", "list", "--state", "open", "--json", ISSUE_FIELDS, "--limit", LIST_LIMIT)
     tickets, unreadable = {status: [] for status in STATUSES}, []
@@ -708,6 +724,9 @@ def parser():
     verb.add_argument("--expect-updated-at")
     verb = verbs.add_parser("close", help="close a decision (resolved or ruled out) as completed")
     verb.add_argument("number")
+    verb = verbs.add_parser("fold", help="close an open draft as a duplicate of the ticket it was folded into")
+    verb.add_argument("number")
+    verb.add_argument("--into", required=True)
     verbs.add_parser("board", help="open tickets by status, unreadable ones with their reason")
     verbs.add_parser("notes", help="the Notes section of every issue, open and closed, for /debt")
     verb = verbs.add_parser("frontier", help="a map's open todo sub-issues whose dependencies are all closed")
@@ -752,6 +771,8 @@ def run(args):
         return finish(args.number, args.notes_file, args.expect_updated_at)
     if args.verb == "close":
         return close(args.number)
+    if args.verb == "fold":
+        return fold(args.number, args.into)
     if args.verb == "board":
         return board()
     if args.verb == "notes":
