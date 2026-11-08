@@ -220,6 +220,12 @@ const NO_NESTED_FUNCTIONS = [
   that began as `TicketList` is renamed `Rows` in the change that gives it a second caller.
 - When nothing fits, extend a primitive (a new value on an axis) or add one — in the same
   change, never by restyling in the screen.
+- A class in a primitive's CSS Module is named for its role there, never for another
+  primitive: `.pane` inside `Detail`, when `Pane` is a primitive, reads as that primitive.
+  Call it `.frame`.
+- A primitive that only works inside another's frame — a container query reading `cqi`, a
+  context it expects — is not exported from the design system. The frames that supply it
+  are, and `architecture.test.ts` refuses any other importer of it.
 
 Read `references/design-system.md` before adding or extending a primitive. For component API
 design, invoke the `vercel-composition-patterns` skill and the `vercel-react-best-practices`
@@ -273,8 +279,12 @@ do not catch.
 - Named predicates get plain unit tests (`problem.test.ts`, `queries.test.ts`); a local
   lint rule gets a RuleTester test beside it.
 - jsdom lays nothing out, so a criterion about how a screen looks — a line clamp, an
-  overflow, a wrap — is not proved by a test. Say so in the pull request and tick it only
-  once a screenshot of the rendered screen shows it.
+  overflow, a wrap — is not proved by a test. What a test can pin is the stylesheet: read
+  the CSS Module and assert the rule and tokens that produce the look (`clamp(…)`,
+  `grid-column`, `overflow-x`). Say in the pull request which criteria rest on that, and
+  tick them only once a screenshot of the rendered screen shows the look.
+- A test helper that imports a Node built-in (`node:fs` to read a stylesheet) is refused
+  outside tests by `architecture.test.ts`, so it never reaches the bundle.
 
 Read `references/tests.md` before writing one — it also explains the MSW setup in
 `src/test/setup.ts`, which looks wrong and is not.
@@ -331,4 +341,8 @@ browser through TanStack Query.
   value, and the copy rule reads every literal passed to it as copy.
 - A set of values with a meaning written as a string union outside the design system
   (`'diff' | 'comments' | 'files'`) — it is an enum.
+- A CSS Module class named after another primitive (`.pane` when `Pane` exists) — name it
+  for its role in this one.
+- A frame-dependent primitive exported from the design system — any screen can render it
+  outside the frame that makes it work.
 - A hand-kept list of aliases renaming generated types — import the generated name.
