@@ -43,6 +43,18 @@ behaviour on days you did not touch it, and debugging that is miserable.
 Cache dependencies, never build output. Stale build output produces failures that
 reproduce nowhere else.
 
+Key a cache on the pin it holds, with no `restore-keys` fallback. That way a bumped pin
+misses and downloads fresh, and never runs under the old one. Actions caches are scoped
+to the branch, so a pin bump runs cold twice: once on its PR, then again on the push to
+the default branch. Say that where the cache is decided, or the second cold run looks like
+a broken cache.
+
+Split a cache into its restore and save steps, and put the save right after the step that
+fills it. If the save waits for the job to end, a failure in some later step loses the
+cache. Gate each save on content known to be good, such as a checksum that matched or the
+filling step succeeding. `always()` alone can freeze a half-downloaded set, and every
+later run then reuses it.
+
 Keep secrets out of the repository and out of logs. If a workflow needs a credential
 it comes from the secret store, and its absence fails loudly rather than silently
 skipping a step.
