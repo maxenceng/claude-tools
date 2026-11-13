@@ -31,6 +31,13 @@ reach GitHub.
    `${CLAUDE_PLUGIN_ROOT}/skills/ddd-frontend/references/data-display.md` and the four
    states' appearance in `ddd-frontend`'s `SKILL.md`; impeccable reads neither.
 
+   When *Design direction* names an approved prototype, compare the build with it before any
+   reviewer runs: screenshot the same state and put the two side by side, pane by pane — each
+   pane's title text and tab names, title row height, row structure (columns, cards or lines,
+   outlines), spacing around labels, hover. Fix every difference that no decision recorded.
+   Checking only the pane the ticket is about leaves the rest for the human to find, one
+   review round each.
+
    Scope both, because a reviewer is a cold start: it re-reads what this session already
    knows, and it costs the running sum of everything it opens rather than the last file.
    Name the files the correctness review should read and tell it not to open the whole
