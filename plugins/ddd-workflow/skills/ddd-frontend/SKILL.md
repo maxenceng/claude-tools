@@ -329,6 +329,10 @@ An app driven from the keyboard (a tool, a board, an IDE-like window) keeps thes
 - Focus is unmistakable: the focused pane is lit and the others recede. A selection is
   solid only in the focused pane. Elsewhere it stays visible but quieter, never cleared,
   so moving back finds it.
+- A click never moves the focus out of where the keys go. A button, and a popup's scrim,
+  prevent the default of their `mousedown` and act on `click`, so a press on either leaves
+  a popup's input focused. A window-level click guard that lets the scrim through is no
+  help here: the scrim's own press is the one that blurs the input.
 - A state is never told by colour alone. A lamp, a status or a tab's state also carries a
   word or a glyph.
 
