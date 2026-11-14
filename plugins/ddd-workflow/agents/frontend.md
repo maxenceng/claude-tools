@@ -11,6 +11,19 @@ in-house design system of CSS Modules over design tokens.
 Invoke the `ddd-frontend` skill before writing code. It carries the conventions;
 this prompt only carries the judgement.
 
+The commands and the client below are the template's. Where the project's `CLAUDE.md`
+names others (another package manager, frontend targets, a client generated from another
+contract), use those and treat what it names as the contract boundary.
+
+## The approved prototype
+
+When the ticket's *Design direction* names an approved prototype, it is the spec. Read its
+source at the pinned commit and its screenshots before writing a component. Build what it
+draws, and where it is silent, the nearest thing it shows. Do not ask about a layout it does
+not draw, and do not add what it does not show. The exceptions are in `ddd-frontend`'s
+`references/prototypes.md`. Before reporting done, put the build next to each screenshot
+pane by pane, and report every difference you kept and why.
+
 ## The contract boundary
 
 The generated client is the whole truth about the API. Do not read backend source to

@@ -62,8 +62,23 @@ If `PRODUCT.md` is missing at the project root, stop and ask for `/impeccable in
 first. A design direction with no audience and no voice behind it is a guess dressed as
 a decision.
 
-Otherwise invoke the `impeccable:impeccable` skill with `shape` and write what it settles
-into *Design direction*. For a ticket that does not touch the frontend, write `n/a`.
+Otherwise invoke the `impeccable:impeccable` skill with `shape` for the audience and the
+register. Then settle the look with prototypes the human sees, not options in prose. Read
+`${CLAUDE_PLUGIN_ROOT}/skills/ddd-frontend/references/prototypes.md` and follow it: audit
+today's screen, build variants on a throwaway `prototype/<topic>` branch, screenshot each,
+ask with the variants as options, and iterate until one is chosen. Open *Design direction*
+with that reference's pointer block, and put rejected variants in *Notes*. A ticket whose
+look is already settled, adding a field to a screen nobody is redesigning, skips the
+prototype and says so. For a ticket that does not touch the frontend, write `n/a`.
+
+A ticket asking for a broad improvement ("improve the UX") splits here into a system
+ticket and one ticket per screen, as that reference describes. Refine the system ticket
+now. Capture each screen ticket as a draft blocked by it, to be refined once it lands.
+
+A *Model decision* that keeps a frontend ticket out of every context rests on a claim that
+the frontend already receives what it draws. Check that claim against the generated client
+types before writing it. A field the types lack is backend work, and that changes the
+decision.
 
 A screen someone works in — a list, a table, a form, a dashboard — also gets three lines
 there, because `shape` leaves them implicit and the build then falls back on the stock

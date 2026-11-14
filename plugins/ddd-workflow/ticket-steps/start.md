@@ -30,7 +30,15 @@ Then:
    class immediately, which is cheaper than finding it in review. `backend-ddd` loads the
    `ddd-backend` skill itself for the shape each test takes; invoke either skill directly
    only when the work is small enough to stay inline.
-   Hand the `frontend` agent the ticket's *Design direction* along with its criteria.
+   Hand the `frontend` agent the ticket's *Design direction* along with its criteria. When
+   it names an approved prototype, tell the agent the prototype is the spec. Build what it
+   draws, and where it is silent, the nearest thing it shows. Raise no layout question it
+   does not draw. The two exceptions are in
+   `${CLAUDE_PLUGIN_ROOT}/skills/ddd-frontend/references/prototypes.md`.
+   If the work shows *Model decision* is wrong, a frontend ticket needing data the client
+   does not receive being the usual case, correct the section before building past it. Add
+   one line beginning `Corrected at start:` that says what the earlier decision claimed. A
+   build that quietly diverges from its decision is the one `review` cannot check.
 4. Write the boundary case first where the ticket has one. A rule tested only in the
    middle of its range passes with an off-by-one in it.
    A `fix` ticket reproduces its failure before any code changes, and records the command
