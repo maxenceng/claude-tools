@@ -227,6 +227,11 @@ const NO_NESTED_FUNCTIONS = [
   context it expects — is not exported from the design system. The frames that supply it
   are, and `architecture.test.ts` refuses any other importer of it.
 
+- Stacking is a token scale (`--layer-sticky`, `--layer-overlay`), never a bare `z-index`
+  per stylesheet. A sticky header sits below every dialog and popup, or it covers the
+  field a dialog opened to edit. A row the cursor can reach carries a `scroll-margin-top`
+  of the sticky header's height, so scrolling it into view never parks it under the header.
+
 Read `references/design-system.md` before adding or extending a primitive. For component API
 design, invoke the `vercel-composition-patterns` skill and the `vercel-react-best-practices`
 skill when they are installed.
@@ -317,6 +322,12 @@ not, say so once and continue. Their Next.js, React Server Component and server-
 fetching rules do not apply: this is a Vite single-page app, and data is fetched in the
 browser through TanStack Query.
 
+A long list with a cursor (a diff, a table, a board) re-renders only the rows a change
+reaches. Each row is a memoised component whose props are what it draws (its line, whether
+the cursor is on it), never the whole list or a callback rebuilt each render. A cursor move
+then redraws two rows, and a keystroke in a box redraws one. A test counts the renders a
+move causes, so a later prop that defeats the memo fails the build rather than lagging.
+
 ## Frequent mistakes
 
 - An inline query key array instead of the `<context>Keys` factory.
@@ -346,3 +357,7 @@ browser through TanStack Query.
 - A frame-dependent primitive exported from the design system — any screen can render it
   outside the frame that makes it work.
 - A hand-kept list of aliases renaming generated types — import the generated name.
+- A bare `z-index` in a primitive's stylesheet — a sticky header then covers a dialog;
+  take a layer token.
+- A long list whose rows take the list, or a callback rebuilt every render, as a prop —
+  every cursor move re-renders every row.

@@ -301,6 +301,12 @@ through that context's `query` bean. It is not in the manager, which has no busi
 need for it. Where an input came from (an API write, an import) is set by the `toDomain`
 that builds it, never hardcoded in the domain.
 
+A secondary adapter maps fields; it never computes over them. A count that adds two of the
+vendor's totals and subtracts a third, a pick of the first matching item, a clamp at zero —
+each is a rule, so it is a domain factory or method the adapter calls with the raw values
+(`SeatCount.free(capacity, booked, held)`). Left in the adapter, the rule is
+tested only through a mocked vendor response, and a negative result goes unnoticed.
+
 Read `references/adapters.md` before writing a primary or secondary adapter — it covers
 entity field access rules, `saveAndFlush` vs `save`, translating the specific constraint
 exception rather than its parent, database-generated ids, and never editing a Liquibase
