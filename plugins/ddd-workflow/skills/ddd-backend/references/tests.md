@@ -248,6 +248,11 @@ removes that thing.
 Do not add a test for a getter, a builder setter, or a record accessor. They have no
 behaviour, and a suite padded with them takes longer to run and trains people to skim.
 
+A test named for a behaviour can still be one. "Keeps quotes and spaces as typed" on a value
+object that stores its string untouched only reads the accessor back. When the requirement is
+that a value passes through unchanged, test it where it could be changed — the adapter that
+quotes it into an argument list, a query or a file — not on the record that holds it.
+
 Do not re-pin a value object's own construction-time validation from one of its callers.
 Once `QuarantineThresholdTest` (or whichever value object's own test) covers "a
 non-positive value throws," an application-service or manager test that feeds the same
