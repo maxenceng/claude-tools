@@ -38,7 +38,10 @@ reach GitHub.
    Checking only the pane the ticket is about leaves the rest for the human to find, one
    review round each. Compare every state the prototype shot, the empty one included. Where
    the app cannot show a state live, render the build with the prototype's canned data in a
-   plain browser. The PR then says the live check was not made, and why. A difference a
+   plain browser: mount the real component in the prototype's harness, over its window, and
+   diff each state's screenshot pixel by pixel against the prototype's shot. A diff finds
+   what a side-by-side look misses, like a padding applied twice. The PR then says the live
+   check was not made, and why. A difference a
    decision does explain, a field an ADR keeps off or a non-colour marker added, goes in
    the PR as kept on purpose, so the human does not flag it again.
 
