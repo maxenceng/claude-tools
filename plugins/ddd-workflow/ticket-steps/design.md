@@ -8,10 +8,21 @@ Run `${CLAUDE_PLUGIN_ROOT}/scripts/ticket-tracker ready <n> design` first: it re
 not `in-progress`, or that does not touch `frontend/**`, with the reason. Status does not change here;
 this sits between `start` and `review`.
 
+The commands below are the template's (`npm`, `make fe-check`, Vite on 5173). Where the
+project's `CLAUDE.md` or `Makefile` names others, its package manager, its frontend
+targets, its port, use those. The project's commands win.
+
 ## Setup
 
 Start `make run` and `make -C frontend dev` in the background. Work out the route the
 ticket changes from its criteria and the diff; ask only if neither says.
+
+A desktop shell (Tauri, Electron) is the exception: never launch its window from a tool
+call, background or not. Some shells freeze the terminal the session runs in. Ask the
+human to launch it in their own terminal, capture it with the desktop's screenshot tool
+(`grim`, `screencapture`), and ask them to click where a state needs a gesture. Where the
+shell's web view exposes no DevTools protocol (WebKitGTK), the detector and the critique
+read the source and the screenshot only. Say so in the PR.
 
 ## One round
 
@@ -19,9 +30,12 @@ ticket changes from its criteria and the diff; ask only if neither says.
    run through the frontend so the pinned version and `frontend/.impeccable/config.json`
    apply. Fix every finding
    straight away and say what you fixed. A detector hit is a rule, not an opinion, so it
-   is not put to the human.
-2. Screenshot the route through `claude-in-chrome`. If it (or a local Chrome) is
-   unavailable, say so and stop: a critique without a screenshot is guessing.
+   is not put to the human. The one exception is a hit the human already kept on purpose.
+   Those are recorded in *Design direction*, and the fix is to silence it in the config,
+   not to change the look.
+2. Screenshot the route through `claude-in-chrome`, or as *Setup* says for a desktop
+   shell. If neither is possible, say so and stop: a critique without a screenshot is
+   guessing.
 3. Invoke the `impeccable:impeccable` skill with `critique`.
 4. Show the human the screenshot and the critique together, then ask through
    `AskUserQuestion` which move to make: the two to four named moves the critique points

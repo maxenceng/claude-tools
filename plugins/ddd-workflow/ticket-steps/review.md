@@ -36,7 +36,16 @@ reach GitHub.
    pane's title text and tab names, title row height, row structure (columns, cards or lines,
    outlines), spacing around labels, hover. Fix every difference that no decision recorded.
    Checking only the pane the ticket is about leaves the rest for the human to find, one
-   review round each.
+   review round each. Compare every state the prototype shot, the empty one included. Where
+   the app cannot show a state live, render the build with the prototype's canned data in a
+   plain browser. The PR then says the live check was not made, and why. A difference a
+   decision does explain, a field an ADR keeps off or a non-colour marker added, goes in
+   the PR as kept on purpose, so the human does not flag it again.
+
+   Read the diff's scope against *Model decision* too. Behaviour the decision did not
+   mention, a new pane, a new key, a changed focus rule, gets its ADR or a *Notes* line
+   now, before the PR. Recording it at `done` comes after the human has already reviewed
+   it unexplained.
 
    Scope both, because a reviewer is a cold start: it re-reads what this session already
    knows, and it costs the running sum of everything it opens rather than the last file.

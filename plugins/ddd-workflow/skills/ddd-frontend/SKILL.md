@@ -211,7 +211,9 @@ const NO_NESTED_FUNCTIONS = [
 - Tokens in `tokens.css` are the only raw values. A primitive's CSS Module reads
   `var(--…)`; a value with no token gets a token first.
 - A new or changed token pair — text or a mark on its ground — meets WCAG AA before review:
-  4.5:1 for text, 3:1 for large text and for marks. Dimmed text is still text.
+  4.5:1 for text, 3:1 for large text and for marks. Dimmed text is still text. A new fill or
+  tint (a selected card, a status tint) is checked against every ink drawn on it, the
+  dimmest first. A token test that measures each pair keeps the next fill honest.
 - A primitive takes one prop per visual axis, typed as a string literal union of token
   names (`gap="md"`, `tone="muted"`) — never a boolean mode, never `string`, never a
   `className` pass-through.
@@ -297,6 +299,9 @@ Read `references/tests.md` before writing one — it also explains the MSW setup
 ## Appearance
 
 Appearance follows the ticket's *Design direction* and is iterated with `/ticket design`.
+When that direction names an approved prototype, the prototype is the spec. Read
+`references/prototypes.md` for how prototypes are made at `refine` and what "build what it
+draws" excludes.
 `make fe-ci` runs impeccable's detector (`make design-check` in `frontend/`), so its
 findings fail CI, not review. Do not restyle anything outside the ticket. A change of look
 lands in a token or a primitive, so it changes every screen that uses it.
@@ -313,6 +318,19 @@ render; the screen's own structure (`<section aria-labelledby>`, `<form>`) stays
 A shortcut on a digit or a punctuation key matches `KeyboardEvent.code` (`Digit1`), never
 `key`: on AZERTY a bare digit key's `key` is `&`. A letter stays on `key`, which follows the
 layout the user reads.
+
+An app driven from the keyboard (a tool, a board, an IDE-like window) keeps these too:
+
+- Every action has a visible control and a key. A key-only action is undiscoverable, and a
+  button-only one is slow. Both call the same function. The control's tooltip and
+  accessible label name the key.
+- A key hint (a key bar, a chip beside a control) shows only keys that act in the current
+  state. A hint for a key that does nothing teaches the user to ignore hints.
+- Focus is unmistakable: the focused pane is lit and the others recede. A selection is
+  solid only in the focused pane. Elsewhere it stays visible but quieter, never cleared,
+  so moving back finds it.
+- A state is never told by colour alone. A lamp, a status or a tab's state also carries a
+  word or a glyph.
 
 ## General React advice
 
