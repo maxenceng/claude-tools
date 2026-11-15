@@ -315,6 +315,11 @@ Semantic HTML from the start: a button is a `<button>`, every input has a `<labe
 everything interactive is reachable by keyboard. The primitives do this for what they
 render; the screen's own structure (`<section aria-labelledby>`, `<form>`) stays semantic.
 
+Anything that measures text before drawing it (an SVG layout, a canvas, fitting a width)
+waits on `document.fonts.load` for every face it draws in, the italic and bold included.
+Measured in the fallback face, a label is sized for other glyphs and clipped once the real
+face arrives. A test pins that the faces load before the measuring call.
+
 A shortcut on a digit or a punctuation key matches `KeyboardEvent.code` (`Digit1`), never
 `key`: on AZERTY a bare digit key's `key` is `&`. A letter stays on `key`, which follows the
 layout the user reads.
