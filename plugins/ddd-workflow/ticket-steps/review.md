@@ -62,6 +62,12 @@ reach GitHub.
    the PR body under an `Open` heading, written as the decision it needs rather than as a
    fix. Push either way.
 
+   A branch rebased on main may find that main has taken the number its new ADR used. Before
+   pushing, run the project's ADR check (`make adr-check` where there is one). If the number
+   is taken, renumber the ADR: its file, its title, the index, and every reference in code,
+   tests and the PR body. Parallel branches pick numbers independently, and the clash only
+   shows once one of them lands.
+
    `Open` is for forks in this ticket's design and nothing else. Try the smallest fix
    that makes the code honest first; it is a fork only if two fixes genuinely differ in
    design. Drop a reviewer's question about behaviour the project has not asked for
