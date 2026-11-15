@@ -100,6 +100,12 @@ feature it does not show. Two exceptions, both checked before building:
 Anything else the build cannot draw as the prototype draws it is an `Open` item for the
 human, never a quiet departure.
 
+A dependency the build resolves at a newer major version than the prototype ran may have
+changed a default the approved look relies on (a drawing library's node style, a minimum
+size). Compare the build's shots with the prototype's, and pin each such default to the
+value the prototype had, in config, with the reason in the ADR. Left to the new default,
+the build drifts from the spec without anyone choosing it.
+
 ## A broad ticket splits
 
 "Improve the UX" is several tickets. Split it at `refine` into:
