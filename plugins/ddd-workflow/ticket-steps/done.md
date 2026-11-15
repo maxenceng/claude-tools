@@ -5,8 +5,9 @@ reach GitHub. This step runs after the merge. Its first move is `ticket-tracker 
 `updatedAt` it returns for the write in step 3.
 
 1. Confirm the work is merged. The `ticket-tracker done` call in step 3 is that check: it refuses
-   when no branch that `develop` linked to the ticket has a merged pull request and no merged pull
-   request names it with `Refs #<n>` or a closing keyword, and says so;
+   when no branch that `develop` linked to the ticket has a merged pull request, no merged pull
+   request names it with `Refs #<n>` or a closing keyword, and no pull request GitHub links as
+   closing it has merged (the `develop` link goes when the merge deletes the branch), and says so;
    then stop. Make that call before steps 4 to 7: the rest of this step writes a record of what
    landed, and nothing has landed yet.
 2. There is no status to set. The merge's `Closes #<n>` closed the issue as completed, and a

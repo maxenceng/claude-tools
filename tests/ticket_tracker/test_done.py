@@ -65,6 +65,20 @@ class Done(TrackerCase):
         self.assertEqual((stored["state"], stored["stateReason"]), ("CLOSED", "COMPLETED"))
         self.assertTrue(said["closedByDone"])
 
+    def test_done_accepts_a_merged_pull_request_github_records_as_closing_it_once_its_branch_is_deleted(self):
+        self.given(issue(140, labels=REVIEW, state="CLOSED", reason="COMPLETED",
+                         closedByPullRequestsReferences=[{"number": 232}]))
+        self.update(pull_requests={"232": {"state": "MERGED"}})
+        said = self.ok("done", "140")
+        self.assertEqual(self.load()["issues"]["140"]["labels"], ["type:feature", "context:board"])
+        self.assertFalse(said["closedByDone"])
+
+    def test_done_refuses_when_the_pull_request_github_links_as_closing_it_is_still_open(self):
+        self.given(issue(141, labels=REVIEW, closedByPullRequestsReferences=[{"number": 233}]))
+        self.update(pull_requests={"233": {"state": "OPEN"}})
+        self.refused("done", "141", why="#141 is not merged")
+        self.assertEqual(self.writes(), [])
+
     def test_done_refuses_when_a_merged_pull_request_only_mentions_the_issue_in_passing(self):
         self.given(issue(119, labels=REVIEW))
         self.update(merged_prs=[{"number": 160, "body": "Closes #1190. Unlike #119, this one is done."}])
