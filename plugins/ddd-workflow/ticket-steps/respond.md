@@ -95,6 +95,12 @@ the conversation does.
    Push here rather than at the end. CI is evidence you are about to need, and it takes
    minutes to arrive.
 
+   A branch rebased on main may find that main has taken the number its new ADR used. Before
+   pushing, run the project's ADR check (`make adr-check` where there is one). If the number
+   is taken, renumber the ADR: its file, its title, the index, and every reference in code,
+   tests and the PR body. Parallel branches pick numbers independently, and the clash only
+   shows once one of them lands.
+
 6. Re-check every acceptance criterion the change could have invalidated, against the
    pushed commit. Evidence gathered before the change does not cover the code after it,
    and a review fix that removes a dependency or a setting invalidates more than it
