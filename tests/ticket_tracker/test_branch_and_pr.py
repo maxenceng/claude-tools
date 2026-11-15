@@ -215,6 +215,14 @@ class WritingAPullRequestSection(TrackerCase):
         self.assertEqual(self.load()["pull_requests"]["7"]["body"],
                          "## Summary\n\nIt works.\n\n## Decided\n\n- **A title.** Kept.\n\n- **Another.** Also kept.\n\nCloses #77\n")
 
+    def test_an_attribution_line_after_the_closing_keyword_stays_after_it_at_the_end(self):
+        attribution = "\U0001F916 Generated with [Claude Code](https://claude.com/claude-code)"
+        self.given_pr(body=self.BODY + "\n" + attribution + "\n")
+        done = self.put({"Open": None, "Decided": "- **A title.** Kept."})
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(self.load()["pull_requests"]["7"]["body"],
+                         "## Summary\n\nIt works.\n\n## Decided\n\n- **A title.** Kept.\n\nCloses #77\n\n" + attribution + "\n")
+
     def test_a_write_reports_the_updated_at_to_expect_next(self):
         self.given_pr()
         written = json.loads(self.put({"Summary": "a"}).stdout)
