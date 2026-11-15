@@ -435,7 +435,11 @@ def has_merged_pull_request(number):
     if any(gh_json("pr", "list", "--state", "merged", "--head", branch, "--json", "number") for branch in branches):
         return True
     found = gh_json("pr", "list", "--state", "merged", "--search", "%s in:body" % number, "--json", "number,body")
-    return any(names_ticket(pr["body"], number) for pr in found)
+    if any(names_ticket(pr["body"], number) for pr in found):
+        return True
+    linked = gh_json("issue", "view", str(number), "--json", "closedByPullRequestsReferences")
+    return any(gh_json("pr", "view", str(pr["number"]), "--json", "state")["state"] == "MERGED"
+               for pr in linked.get("closedByPullRequestsReferences") or [])
 
 
 def status_labels(ticket):
@@ -449,7 +453,8 @@ def finish(number, notes_file, expected_at):
     n = ticket["number"]
     if not has_merged_pull_request(number):
         raise Refusal("#%d is not merged: no branch gh issue develop linked to it has a merged pull request, "
-                      "and no merged pull request names it with Refs or a closing keyword" % n)
+                      "no merged pull request names it with Refs or a closing keyword, "
+                      "and none GitHub links as closing it has merged" % n)
     edit, body = ["issue", "edit", str(number)], None
     if notes_file:
         refuse_if_moved(ticket, expected_at)
