@@ -59,6 +59,14 @@ to one token or one primitive.
 
 - **A token is named for its role, not its value**: `--color-danger`, not `--red-700`;
   `--space-md`, not `--space-12`. A rebrand changes values, not names.
+- **A token is read only for its meaning.** When a second meaning wants the same value —
+  a diagram's error line wanting `--ci-failed` — add a neutral token (`--failed`), point
+  both readers at it, and make the original an alias (`--ci-failed: var(--failed)`). The
+  value stays defined once, and changing CI's red no longer recolours the diagram.
+- **A contrast check names the ground the ink is actually drawn on**, read from the reader's
+  own CSS, not the usual surface. An error line inside a sunk block measures against the
+  sunk ground; a menu item measures against its hover ground too. Two meanings that share a
+  value but sit on different grounds may each need their own token.
 - **Every raw value is a token.** A primitive's module contains `var(--…)` and keywords,
   never a `px`, `rem`, hex or `oklch(…)`. A value with no token gets one in `tokens.css`
   first, in the dark block too when it is a colour.
