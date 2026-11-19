@@ -93,6 +93,11 @@ because the site is built from it" stops making sense the day the site is reconf
 project that has no site. Give the tool as the reason in *Context*, and keep it out of the rule in
 *Decision*.
 
+When an ADR names the check that holds its rule, describe the check by what it reads, not by the
+behaviour it is meant to secure. "The architecture test fails when a bound action name has no
+handler" is something a reader can verify against the test; "the test keeps every key working" is
+a promise the check does not make, and the next person trusts it for more than it covers.
+
 Adapted from [mattpocock/skills](https://github.com/mattpocock/skills)'s `domain-modeling`
 (MIT), retargeted at this repo's existing glossary/ADR conventions instead of introducing
 a competing `CONTEXT.md` format.
