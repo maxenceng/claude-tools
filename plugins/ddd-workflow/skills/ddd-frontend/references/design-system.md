@@ -67,6 +67,11 @@ to one token or one primitive.
   own CSS, not the usual surface. An error line inside a sunk block measures against the
   sunk ground; a menu item measures against its hover ground too. Two meanings that share a
   value but sit on different grounds may each need their own token.
+- **A state ground lies over the element's own ground, never in its place.** When a row can
+  carry a ground of its own (a status tile set through a custom property), a hover written as
+  `background: var(--hover-ground)` hides that tile under the pointer. Layer the translucent
+  ground over it instead:
+  `background: linear-gradient(var(--hover-ground), var(--hover-ground)), var(--row-ground, transparent)`.
 - **Every raw value is a token.** A primitive's module contains `var(--…)` and keywords,
   never a `px`, `rem`, hex or `oklch(…)`. A value with no token gets one in `tokens.css`
   first, in the dark block too when it is a colour.
