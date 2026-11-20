@@ -98,6 +98,12 @@ behaviour it is meant to secure. "The architecture test fails when a bound actio
 handler" is something a reader can verify against the test; "the test keeps every key working" is
 a promise the check does not make, and the next person trusts it for more than it covers.
 
+When a decision rests on how a library behaves rather than on its documented interface — which element
+it listens on, which state it reads at a press — the ADR lists each such behaviour, not only the one
+that prompted it, and its *Consequences* say which change in a library upgrade the tests would catch
+and which they would not. An upgrade that breaks an unlisted one breaks the decision with nothing
+pointing at why.
+
 Adapted from [mattpocock/skills](https://github.com/mattpocock/skills)'s `domain-modeling`
 (MIT), retargeted at this repo's existing glossary/ADR conventions instead of introducing
 a competing `CONTEXT.md` format.
