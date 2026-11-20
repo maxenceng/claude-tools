@@ -39,7 +39,9 @@ reach GitHub.
    review round each. Compare every state the prototype shot, the empty one included. Where
    the app cannot show a state live, render the build with the prototype's canned data in a
    plain browser: mount the real component in the prototype's harness, over its window, and
-   diff each state's screenshot pixel by pixel against the prototype's shot. A diff finds
+   diff each state's screenshot pixel by pixel against the prototype's shot. First mount the
+   prototype's own components the same way and diff them against its shots: zero pixels off
+   says the harness is faithful, so what differs next is the build. A diff finds
    what a side-by-side look misses, like a padding applied twice. The PR then says the live
    check was not made, and why. A difference a
    decision does explain, a field an ADR keeps off or a non-colour marker added, goes in
